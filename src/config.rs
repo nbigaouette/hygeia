@@ -14,7 +14,7 @@ static TOOLCHAIN_FILE: &str = ".python-version";
 
 #[derive(Debug)]
 pub struct Cfg {
-    version: VersionReq,
+    pub version: VersionReq,
 }
 
 pub fn load_config_file() -> Result<Cfg> {

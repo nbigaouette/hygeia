@@ -12,8 +12,8 @@ use crate::{utils, Result};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PythonVersion {
-    location: PathBuf,
-    version: Version,
+    pub location: PathBuf,
+    pub version: Version,
 }
 
 pub fn load_settings_file() -> Result<Settings> {
@@ -41,7 +41,7 @@ pub fn load_settings_file() -> Result<Settings> {
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Settings {
-    installed_python: Vec<PythonVersion>,
+    pub installed_python: Vec<PythonVersion>,
 }
 
 impl Settings {
