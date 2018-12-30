@@ -4,6 +4,7 @@ use failure::format_err;
 use log::{debug, error, warn};
 
 mod config;
+mod download;
 mod settings;
 mod utils;
 
