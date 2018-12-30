@@ -8,11 +8,21 @@ use failure::format_err;
 use log::{debug, error};
 use semver::VersionReq;
 
-use crate::Result;
+use crate::{utils, Result};
+
+static TOOLCHAIN_FILE: &str = ".python-version";
 
 #[derive(Debug)]
 pub struct Cfg {
     version: VersionReq,
+}
+
+pub fn load_config_file() -> Result<Cfg> {
+    if utils::path_exists(TOOLCHAIN_FILE) {
+        Cfg::from_file(TOOLCHAIN_FILE)
+    } else {
+        Cfg::from_user_input()
+    }
 }
 
 impl Cfg {
