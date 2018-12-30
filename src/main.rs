@@ -1,7 +1,7 @@
 use std::env;
 
 use failure::format_err;
-use log::{debug, error};
+use log::{debug, error, warn};
 
 mod config;
 mod settings;
@@ -42,6 +42,23 @@ fn pycors() -> Result<()> {
 
     debug!("settings: {:?}", settings);
     debug!("cfg: {:?}", cfg);
+
+    // Check if a compatible version is available. If not, download.utils
+    let compatible = settings
+        .installed_python
+        .iter()
+        .find(|installed_python| cfg.version.matches(&installed_python.version));
+    match compatible {
+        None => {
+            warn!("No compatible version found for {}", cfg.version);
+        }
+        Some(compatible) => {
+            debug!(
+                "Found compatible installed version: {} (in {:?})",
+                compatible.version, compatible.location
+            );
+        }
+    }
 
     Ok(())
 }
