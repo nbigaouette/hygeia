@@ -10,13 +10,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::{utils, Result};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PythonVersion {
     pub location: PathBuf,
     pub version: Version,
 }
 
-pub fn load_settings_file() -> Result<Settings> {
+pub fn load_settings_file() -> Result<(Settings, PathBuf)> {
     let pycors_home = utils::pycors_home()?;
     let settings_file = pycors_home.join("settings.toml");
 
@@ -25,18 +25,17 @@ pub fn load_settings_file() -> Result<Settings> {
         fs::create_dir_all(&pycors_home)?;
     }
 
-    if !utils::path_exists(&settings_file) {
+    if utils::path_exists(&settings_file) {
+        Ok((Settings::from_file(&settings_file)?, settings_file))
+    } else {
         debug!(
             "File {:?} does not exists. Creatin a default one.",
             settings_file
         );
         let settings = Settings::default();
-        let settings_toml = toml::to_string_pretty(&settings)?;
-        let mut output = File::create(&settings_file)?;
-        output.write(settings_toml.as_bytes())?;
+        settings.save_to(&settings_file)?;
+        Ok((settings, settings_file))
     }
-
-    Settings::from_file(&settings_file)
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -57,5 +56,11 @@ impl Settings {
         let settings: Settings = toml::from_str(&contents)?;
 
         Ok(settings)
+    }
+
+    pub fn save_to<P: AsRef<Path>>(&self, path: P) -> Result<usize> {
+        let settings_toml = toml::to_string_pretty(self)?;
+        let mut output = File::create(&path)?;
+        Ok(output.write(settings_toml.as_bytes())?)
     }
 }
