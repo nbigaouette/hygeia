@@ -1,6 +1,3 @@
-// https://www.python.org/ftp/python/
-// https://www.python.org/ftp/python/3.7.2/Python-3.7.2.tgz
-
 use std::{
     fs::{create_dir_all, File},
     io::{BufWriter, Read, Write},
