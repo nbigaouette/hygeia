@@ -1,2 +1,6 @@
 /target
 **/*.rs.bk
+*.zip
+*.tar.gz
+*.tgz
+*.asc
