@@ -50,26 +50,23 @@ pub fn download_source(version: &Version) -> Result<()> {
             None => 1024_u64, // default chunk size
         } as usize;
 
-        let mut buf = Vec::new();
-
         let bar = create_progress_bar(&filename, ct_len);
+
+        let mut out = BufWriter::new(File::create(filename)?);
 
         loop {
             let mut buffer = vec![0; chunk_size];
-            let bcount = resp.read(&mut buffer[..]).unwrap();
+            let bcount = resp.read(&mut buffer[..])?;
             buffer.truncate(bcount);
-            if !buffer.is_empty() {
-                buf.extend(buffer.into_boxed_slice().into_vec().iter().cloned());
-                bar.inc(bcount as u64);
-            } else {
+            if buffer.is_empty() {
                 break;
+            } else {
+                out.write_all(&mut buffer)?;
+                bar.inc(bcount as u64);
             }
         }
 
         bar.finish();
-
-        let mut out = BufWriter::new(File::create(filename)?);
-        out.write_all(&mut buf);
 
         Ok(())
     } else {
