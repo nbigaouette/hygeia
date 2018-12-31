@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{utils, Result};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PythonVersion {
     pub location: PathBuf,
     pub version: Version,

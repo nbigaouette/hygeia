@@ -1,6 +1,6 @@
 use std::{
     fs::File,
-    io::{self, BufRead, BufReader},
+    io::{self, BufRead, BufReader, Write},
     path::Path,
 };
 
@@ -17,11 +17,11 @@ pub struct Cfg {
     pub version: VersionReq,
 }
 
-pub fn load_config_file() -> Result<Cfg> {
+pub fn load_config_file() -> Option<Result<Cfg>> {
     if utils::path_exists(TOOLCHAIN_FILE) {
-        Cfg::from_file(TOOLCHAIN_FILE)
+        Some(Cfg::from_file(TOOLCHAIN_FILE))
     } else {
-        Cfg::from_user_input()
+        None
     }
 }
 
@@ -41,6 +41,20 @@ impl Cfg {
         Ok(Cfg {
             version: line.parse()?,
         })
+    }
+
+    pub fn save(&self) -> Result<usize> {
+        self.save_to(TOOLCHAIN_FILE)
+    }
+
+    pub fn save_to<P: AsRef<Path>>(&self, path: P) -> Result<usize> {
+        debug!("Writing configuration to file {:?}", path.as_ref());
+
+        let version = format!("{}", self.version);
+        let mut output = File::create(&path)?;
+        let l1 = output.write(version.as_bytes())?;
+        let l2 = output.write(b"\n")?;
+        Ok(l1 + l2)
     }
 
     pub fn from_user_input() -> Result<Cfg> {
