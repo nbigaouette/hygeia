@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use failure::format_err;
-use log::{debug, info, warn};
+use log::{debug, info};
 use prettytable::{cell, row, Cell, Row, Table};
 use semver::{Version, VersionReq};
 use structopt::StructOpt;
@@ -145,7 +145,7 @@ fn print_to_stdout_available_python_versions(cfg: &Option<Cfg>, settings: &Setti
 fn install_python(
     cfg: &Option<Cfg>,
     settings: &mut Settings,
-    settings_file: PathBuf,
+    _settings_file: PathBuf,
 ) -> Result<()> {
     let version: VersionReq = match cfg {
         None => Cfg::from_user_input()?.version,
