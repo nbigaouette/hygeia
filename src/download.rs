@@ -2,26 +2,38 @@
 // https://www.python.org/ftp/python/3.7.2/Python-3.7.2.tgz
 
 use std::{
-    fs::File,
+    fs::{create_dir_all, File},
     io::{self, BufWriter, Read, Write},
+    path::{Path, PathBuf},
 };
 
 use failure::format_err;
 use indicatif::{ProgressBar, ProgressStyle};
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use reqwest::Client;
 use semver::Version;
 use url::Url;
 
 use crate::{utils, Result};
 
-pub fn download_from_url(url: &Url) -> Result<()> {
+pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()> {
+    let download_to = download_to.as_ref();
+
+    if !utils::path_exists(&download_to) {
+        debug!("Directory {:?} does not exists. Creating.", download_to);
+        create_dir_all(&download_to)?;
+    }
+
     let filename = url
         .path_segments()
         .ok_or_else(|| format_err!("Could not extract filename from url"))?
         .last()
         .ok_or_else(|| format_err!("Could not get last segment from url path"))?
         .to_string();
+
+    let mut file_path = PathBuf::new();
+    file_path.push(download_to);
+    file_path.push(&filename);
 
     info!("Downloading {}...", url);
 
@@ -51,7 +63,7 @@ pub fn download_from_url(url: &Url) -> Result<()> {
 
         let bar = create_progress_bar(&filename, ct_len);
 
-        let mut out = BufWriter::new(File::create(filename)?);
+        let mut out = BufWriter::new(File::create(file_path)?);
 
         loop {
             let mut buffer = vec![0; chunk_size];
@@ -78,7 +90,8 @@ pub fn download_from_url(url: &Url) -> Result<()> {
 
 pub fn download_source(version: &Version) -> Result<()> {
     let url = build_url(&version)?;
-    download_from_url(&url)
+    let download_dir = utils::pycors_home()?.join("downloads");
+    download_from_url(&url, download_dir)
 }
 
 fn build_url(version: &Version) -> Result<Url> {
