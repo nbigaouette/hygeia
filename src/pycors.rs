@@ -108,12 +108,12 @@ fn print_to_stdout_available_python_versions(cfg: &Option<Cfg>, settings: &Setti
     }
 
     for installed_python in &settings.installed_python {
-        let aligment = prettytable::format::Alignment::CENTER;
+        let alignment = prettytable::format::Alignment::CENTER;
 
         let green = prettytable::Attr::ForegroundColor(prettytable::color::GREEN);
 
-        let mut cell_active = Cell::new_align("", aligment);
-        let mut cell_version = Cell::new_align(&format!("{}", installed_python.version), aligment);
+        let mut cell_active = Cell::new_align("", alignment);
+        let mut cell_version = Cell::new_align(&format!("{}", installed_python.version), alignment);
         let mut cell_path = Cell::new_align(
             &format!("{}", installed_python.location.display()),
             prettytable::format::Alignment::LEFT,
@@ -121,7 +121,7 @@ fn print_to_stdout_available_python_versions(cfg: &Option<Cfg>, settings: &Setti
 
         if let Some(active_python) = active_python {
             if active_python == installed_python {
-                cell_active = Cell::new_align("✓", aligment);
+                cell_active = Cell::new_align("✓", alignment);
                 cell_active = cell_active
                     .with_style(prettytable::Attr::Bold)
                     .with_style(green);
