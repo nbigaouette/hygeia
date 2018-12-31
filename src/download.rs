@@ -34,56 +34,61 @@ pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()
     file_path.push(download_to);
     file_path.push(&filename);
 
-    info!("Downloading {}...", url);
-
-    let mut resp = reqwest::get(url.as_str())?;
-
-    if resp.status().is_success() {
-        let headers = resp.headers().clone();
-        let ct_len = match headers
-            .get(reqwest::header::CONTENT_LENGTH)
-            .map(|ct_len| ct_len.clone())
-        {
-            Some(ct_len) => {
-                let ct_len: u64 = ct_len.to_str()?.parse()?;
-                info!("Downloading {} bytes...", ct_len);
-                Some(ct_len)
-            }
-            None => {
-                warn!("Could not find out file size");
-                None
-            }
-        };
-
-        let chunk_size = match ct_len {
-            Some(x) => x / 99_u64,
-            None => 1024_u64, // default chunk size
-        } as usize;
-
-        let bar = create_progress_bar(&filename, ct_len);
-
-        let mut out = BufWriter::new(File::create(file_path)?);
-
-        loop {
-            let mut buffer = vec![0; chunk_size];
-            let bcount = resp.read(&mut buffer[..])?;
-            buffer.truncate(bcount);
-            if buffer.is_empty() {
-                break;
-            } else {
-                out.write_all(&mut buffer)?;
-                bar.inc(bcount as u64);
-            }
-        }
-
-        bar.finish();
-
+    if file_path.exists() {
+        info!("File {} already downloaded. Skipping.", filename);
         Ok(())
     } else {
-        error!("Failed to download {}: {:?}", resp.url(), resp.status());
-        let res = resp.error_for_status();
-        res.map(|_| ())
-            .map_err(|e| format_err!("Failed to download file: {:?}", e))
+        info!("Downloading {}...", url);
+
+        let mut resp = reqwest::get(url.as_str())?;
+
+        if resp.status().is_success() {
+            let headers = resp.headers().clone();
+            let ct_len = match headers
+                .get(reqwest::header::CONTENT_LENGTH)
+                .map(|ct_len| ct_len.clone())
+            {
+                Some(ct_len) => {
+                    let ct_len: u64 = ct_len.to_str()?.parse()?;
+                    info!("Downloading {} bytes...", ct_len);
+                    Some(ct_len)
+                }
+                None => {
+                    warn!("Could not find out file size");
+                    None
+                }
+            };
+
+            let chunk_size = match ct_len {
+                Some(x) => x / 99_u64,
+                None => 1024_u64, // default chunk size
+            } as usize;
+
+            let bar = create_progress_bar(&filename, ct_len);
+
+            let mut out = BufWriter::new(File::create(file_path)?);
+
+            loop {
+                let mut buffer = vec![0; chunk_size];
+                let bcount = resp.read(&mut buffer[..])?;
+                buffer.truncate(bcount);
+                if buffer.is_empty() {
+                    break;
+                } else {
+                    out.write_all(&mut buffer)?;
+                    bar.inc(bcount as u64);
+                }
+            }
+
+            bar.finish();
+
+            Ok(())
+        } else {
+            error!("Failed to download {}: {:?}", resp.url(), resp.status());
+            let res = resp.error_for_status();
+            res.map(|_| ())
+                .map_err(|e| format_err!("Failed to download file: {:?}", e))
+        }
     }
 }
 
