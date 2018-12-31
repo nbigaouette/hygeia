@@ -3,11 +3,11 @@ use std::path::PathBuf;
 use failure::format_err;
 use log::{debug, info};
 use prettytable::{cell, row, Cell, Row, Table};
-use semver::{Version, VersionReq};
+use semver::VersionReq;
 use structopt::StructOpt;
 
 use crate::config::Cfg;
-use crate::download::download_source;
+use crate::download::{download_source, find_all_python_versions};
 use crate::settings::{PythonVersion, Settings};
 use crate::Result;
 use crate::{Command, Opt};
@@ -162,8 +162,14 @@ fn install_python(
         info!("Python version {} already installed!", version);
     } else {
         // Get the last version compatible with the given version
-        // download_source(&version)?;
-        download_source(&Version::parse("3.7.2")?)?;
+        let versions = find_all_python_versions()?;
+        let version_to_install = versions
+            .iter()
+            .rev()
+            .find(|available_version| version.matches(&available_version))
+            .ok_or_else(|| format_err!("Failed to find a compatible version to {}", version))?;
+        info!("Found Python version {}", version_to_install);
+        download_source(&version_to_install)?;
     }
 
     Ok(())
