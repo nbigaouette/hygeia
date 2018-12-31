@@ -45,8 +45,9 @@ mod tests {
 
     #[test]
     fn get_pycors_home() {
-        env::set_var("PYCORS_HOME", "/tmp");
+        let tmp_dir = env::temp_dir();
+        env::set_var("PYCORS_HOME", &tmp_dir);
         let ph = pycors_home().unwrap();
-        assert_eq!(ph, Path::new("/tmp"));
+        assert_eq!(ph, Path::new(&tmp_dir));
     }
 }
