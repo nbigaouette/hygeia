@@ -3,14 +3,13 @@
 
 use std::{
     fs::{create_dir_all, File},
-    io::{self, BufWriter, Read, Write},
+    io::{BufWriter, Read, Write},
     path::{Path, PathBuf},
 };
 
 use failure::format_err;
 use indicatif::{ProgressBar, ProgressStyle};
 use log::{debug, error, info, warn};
-use reqwest::Client;
 use semver::Version;
 use url::Url;
 
