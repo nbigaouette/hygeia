@@ -15,8 +15,7 @@ use url::Url;
 
 use crate::{utils, Result};
 
-pub fn download_source(version: &Version) -> Result<()> {
-    let url = build_url(&version).unwrap();
+pub fn download_from_url(url: &Url) -> Result<()> {
     let filename = url
         .path_segments()
         .ok_or_else(|| format_err!("Could not extract filename from url"))?
@@ -26,8 +25,8 @@ pub fn download_source(version: &Version) -> Result<()> {
 
     info!("Downloading {}...", url);
 
-    let client = Client::new();
-    let mut resp = client.get(url).send()?;
+    let mut resp = reqwest::get(url.as_str())?;
+
     if resp.status().is_success() {
         let headers = resp.headers().clone();
         let ct_len = match headers
@@ -75,6 +74,11 @@ pub fn download_source(version: &Version) -> Result<()> {
         res.map(|_| ())
             .map_err(|e| format_err!("Failed to download file: {:?}", e))
     }
+}
+
+pub fn download_source(version: &Version) -> Result<()> {
+    let url = build_url(&version)?;
+    download_from_url(&url)
 }
 
 fn build_url(version: &Version) -> Result<Url> {
