@@ -47,6 +47,10 @@ enum Command {
     /// will install ~3.6
     #[structopt(name = "use")]
     Use { version: String },
+
+    /// Install version from `.python-version`.
+    #[structopt(name = "install")]
+    Install,
 }
 
 fn main() -> Result<()> {

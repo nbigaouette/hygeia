@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use failure::format_err;
-use log::{debug, warn};
+use log::{debug, info, warn};
 use prettytable::{cell, row, Cell, Row, Table};
 use semver::VersionReq;
 use structopt::StructOpt;
@@ -22,6 +22,7 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &mut Settings, settings_file: PathBuf
             }
             Command::List => print_to_stdout_available_python_versions(cfg, settings)?,
             Command::Use { version } => use_given_version(&version, settings)?,
+            Command::Install => install_python(cfg, settings, settings_file)?,
         }
     } else {
     }
@@ -163,5 +164,27 @@ fn select_python_version(
     }
 }
 
-//     debug!("Saving settings to {:?}", settings_file);
-//     settings.save_to(settings_file)?;
+fn install_python(
+    cfg: &Option<Cfg>,
+    settings: &mut Settings,
+    settings_file: PathBuf,
+) -> Result<()> {
+    let version: VersionReq = match cfg {
+        None => Cfg::from_user_input()?.version,
+        Some(cfg) => cfg.version.clone(),
+    };
+    debug!("Installing Python {}", version);
+
+    if settings
+        .installed_python
+        .iter()
+        .find(|installed_python| version.matches(&installed_python.version))
+        .is_some()
+    {
+        info!("Python version {} already installed!", version);
+    } else {
+        unimplemented!()
+    }
+
+    Ok(())
+}
