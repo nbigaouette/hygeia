@@ -141,29 +141,6 @@ fn print_to_stdout_available_python_versions(cfg: &Option<Cfg>, settings: &Setti
     Ok(())
 }
 
-fn select_python_version(
-    required_version: &VersionReq,
-    installed_python: &[PythonVersion],
-) -> Result<PythonVersion> {
-    // Check if a compatible version is available. If not, download it.
-    let compatible = installed_python
-        .iter()
-        .find(|installed_python| required_version.matches(&installed_python.version));
-    match compatible {
-        None => {
-            warn!("No compatible version found for {}", required_version);
-            Err(format_err!("Not implemented"))
-        }
-        Some(compatible) => {
-            debug!(
-                "Found compatible installed version: {} (in {:?})",
-                compatible.version, compatible.location
-            );
-            Ok(compatible.clone())
-        }
-    }
-}
-
 fn install_python(
     cfg: &Option<Cfg>,
     settings: &mut Settings,
