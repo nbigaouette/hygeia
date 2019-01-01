@@ -6,17 +6,16 @@ use std::{
 
 use log::{debug, error};
 use semver::Version;
-use serde::{Deserialize, Serialize};
 
 use crate::{utils, Result};
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct PythonVersion {
     pub location: PathBuf,
     pub version: Version,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default)]
 pub struct Settings {
     pub installed_python: Vec<PythonVersion>,
 }
