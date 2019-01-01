@@ -49,14 +49,12 @@ pub fn extract_source(version: &Version) -> Result<()> {
 }
 
 pub fn compile_source(version: &Version) -> Result<()> {
-    let message = format!("Compiling {}...", version);
-
     // Compilation
     configure(&version)?;
     make(&version)?;
     make_install(&version)?;
 
-    unimplemented!()
+    Ok(())
 }
 
 fn configure(version: &Version) -> Result<()> {
