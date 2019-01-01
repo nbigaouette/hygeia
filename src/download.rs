@@ -14,6 +14,8 @@ use url::Url;
 use crate::{utils, Result};
 
 pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()> {
+    let line_header = "[1/5] Download";
+
     let download_to = download_to.as_ref();
 
     if !utils::path_exists(&download_to) {
@@ -33,7 +35,10 @@ pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()
     file_path.push(&filename);
 
     if file_path.exists() {
-        info!("File {} already downloaded. Skipping.", filename);
+        println!(
+            "  {} skipped: file {} already downloaded.",
+            line_header, filename
+        );
         Ok(())
     } else {
         info!("Downloading {}...", url);
@@ -62,7 +67,9 @@ pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()
                 None => 1024_u64, // default chunk size
             } as usize;
 
-            let bar = create_progress_bar(&filename, ct_len);
+            let message = format!("{}ing {:?}...", line_header, filename);
+
+            let bar = create_progress_bar(&message, ct_len);
 
             let mut out = BufWriter::new(File::create(file_path)?);
 
@@ -92,7 +99,7 @@ pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()
 
 pub fn download_source(version: &Version) -> Result<()> {
     let url = build_url(&version)?;
-    let download_dir = utils::pycors_home()?.join("cache").join("downloads");
+    let download_dir = utils::pycors_download()?;
     download_from_url(&url, download_dir)
 }
 
@@ -103,11 +110,12 @@ fn build_url(version: &Version) -> Result<Url> {
     } else {
         format!("{}.{}", main_version, version.patch)
     };
-    let version_file = format!("{}", version).replace("-", "");
+
+    let filename = utils::build_filename(&version)?;
 
     let to_download = Url::parse(&format!(
-        "https://www.python.org/ftp/python/{}/Python-{}.tgz",
-        version_path, version_file
+        "https://www.python.org/ftp/python/{}/{}",
+        version_path, filename
     ))?;
 
     Ok(to_download)
@@ -123,7 +131,7 @@ fn create_progress_bar(msg: &str, length: Option<u64>) -> ProgressBar {
     match length.is_some() {
         true => bar
             .set_style(ProgressStyle::default_bar()
-                .template("{msg} {spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} eta: {eta}")
+                .template("{spinner:.green} {msg} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} eta: {eta}")
                 .progress_chars("=> ")),
         false => bar.set_style(ProgressStyle::default_spinner()),
     };

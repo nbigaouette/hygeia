@@ -4,6 +4,7 @@ use failure::format_err;
 use log::{debug, error};
 use structopt::StructOpt;
 
+mod compile;
 mod config;
 mod download;
 mod pycors;
