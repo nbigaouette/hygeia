@@ -49,10 +49,20 @@ pub fn pycors_extract() -> Result<PathBuf> {
     Ok(pycors_cache()?.join("extracted"))
 }
 
-pub fn build_filename(version: &Version) -> Result<String> {
+pub fn install_dir(version: &Version) -> Result<PathBuf> {
+    Ok(pycors_home()?
+        .join("installed")
+        .join(format!("{}", version)))
+}
+
+pub fn build_basename(version: &Version) -> Result<String> {
     let version_file = format!("{}", version).replace("-", "");
 
-    Ok(format!("Python-{}.tgz", version_file))
+    Ok(format!("Python-{}", version_file))
+}
+
+pub fn build_filename(version: &Version) -> Result<String> {
+    Ok(format!("{}.tgz", build_basename(version)?))
 }
 
 #[cfg(test)]
@@ -65,6 +75,23 @@ mod tests {
         env::set_var("PYCORS_HOME", &tmp_dir);
         let ph = pycors_home().unwrap();
         assert_eq!(ph, Path::new(&tmp_dir));
+    }
+
+    #[test]
+    fn build_basename_from_version_372() {
+        let version = Version::parse("3.7.2").unwrap();
+
+        let filename = build_basename(&version).unwrap();
+
+        assert_eq!(&filename, "Python-3.7.2");
+    }
+
+    #[test]
+    fn build_basename_from_version_372rc1() {
+        let version = Version::parse("3.7.2-rc1").unwrap();
+
+        let filename = build_basename(&version).unwrap();
+        assert_eq!(&filename, "Python-3.7.2rc1");
     }
 
     #[test]
