@@ -6,6 +6,7 @@ use prettytable::{cell, row, Cell, Row, Table};
 use semver::VersionReq;
 use structopt::StructOpt;
 
+use crate::compile::extract_source;
 use crate::config::Cfg;
 use crate::download::{download_source, find_all_python_versions};
 use crate::settings::{PythonVersion, Settings};
@@ -169,6 +170,7 @@ fn install_python(
             .ok_or_else(|| format_err!("Failed to find a compatible version to {}", version))?;
         info!("Found Python version {}", version_to_install);
         download_source(&version_to_install)?;
+        extract_source(&version_to_install)?;
     }
 
     Ok(())
