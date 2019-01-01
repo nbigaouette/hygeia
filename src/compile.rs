@@ -10,7 +10,6 @@ use std::{
 use failure::format_err;
 use flate2::read::GzDecoder;
 use indicatif::{ProgressBar, ProgressStyle};
-use log::debug;
 use semver::Version;
 use subprocess::{Exec, Redirection};
 use tar::Archive;
@@ -87,8 +86,9 @@ fn configure(version: &Version) -> Result<()> {
                 tx.send(SpinnerMessage::Stop)?;
                 return Err(format_err!("Error reading stdout: {:?}", e));
             }
-            Ok(line) => {
+            Ok(mut line) => {
                 // FIXME: Save to log file
+                line.truncate(80);
                 let message = format!("{}: {}", line_header, line);
                 tx.send(SpinnerMessage::Message(message))?
             }
@@ -108,17 +108,98 @@ fn configure(version: &Version) -> Result<()> {
 }
 
 fn make(version: &Version) -> Result<()> {
-    let extract_dir = utils::pycors_extract()?;
+    let basename = utils::build_basename(&version)?;
+    let extract_dir = utils::pycors_extract()?.join(&basename);
+
     env::set_current_dir(&extract_dir)?;
 
-    unimplemented!()
+    let line_header = "[4/5] Make";
+
+    let (tx, child) = spinner_in_thread("./configure");
+
+    let stream = Exec::cmd("make")
+        .stderr(Redirection::Merge)
+        .stream_stdout()?;
+
+    let br = BufReader::new(stream);
+
+    for line in br.lines() {
+        match line {
+            Err(e) => {
+                tx.send(SpinnerMessage::Message(format!(
+                    "Error reading stdout: {:?}",
+                    e
+                )))?;
+                tx.send(SpinnerMessage::Stop)?;
+                return Err(format_err!("Error reading stdout: {:?}", e));
+            }
+            Ok(mut line) => {
+                // FIXME: Save to log file
+                line.truncate(80);
+                let message = format!("{}: {}", line_header, line);
+                tx.send(SpinnerMessage::Message(message))?
+            }
+        };
+    }
+
+    // Send signal to thread to stop
+    let message = format!("{} done", line_header);
+    tx.send(SpinnerMessage::Message(message))?;
+    tx.send(SpinnerMessage::Stop)?;
+
+    child
+        .join()
+        .map_err(|e| format_err!("Failed to join threads: {:?}", e))?;
+
+    Ok(())
 }
 
 fn make_install(version: &Version) -> Result<()> {
-    let extract_dir = utils::pycors_extract()?;
+    let basename = utils::build_basename(&version)?;
+    let extract_dir = utils::pycors_extract()?.join(&basename);
+
     env::set_current_dir(&extract_dir)?;
 
-    unimplemented!()
+    let line_header = "[5/5] Make install";
+
+    let (tx, child) = spinner_in_thread("make install");
+
+    let stream = Exec::cmd("make")
+        .arg("install")
+        .stderr(Redirection::Merge)
+        .stream_stdout()?;
+
+    let br = BufReader::new(stream);
+
+    for line in br.lines() {
+        match line {
+            Err(e) => {
+                tx.send(SpinnerMessage::Message(format!(
+                    "Error reading stdout: {:?}",
+                    e
+                )))?;
+                tx.send(SpinnerMessage::Stop)?;
+                return Err(format_err!("Error reading stdout: {:?}", e));
+            }
+            Ok(mut line) => {
+                // FIXME: Save to log file
+                line.truncate(80);
+                let message = format!("{}: {}", line_header, line);
+                tx.send(SpinnerMessage::Message(message))?
+            }
+        };
+    }
+
+    // Send signal to thread to stop
+    let message = format!("{} done", line_header);
+    tx.send(SpinnerMessage::Message(message))?;
+    tx.send(SpinnerMessage::Stop)?;
+
+    child
+        .join()
+        .map_err(|e| format_err!("Failed to join threads: {:?}", e))?;
+
+    Ok(())
 }
 
 fn create_spinner(msg: &str) -> ProgressBar {
