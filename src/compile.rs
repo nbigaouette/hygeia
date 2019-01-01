@@ -50,122 +50,42 @@ pub fn extract_source(version: &Version) -> Result<()> {
 
 pub fn compile_source(version: &Version) -> Result<()> {
     // Compilation
-    configure(&version)?;
-    make(&version)?;
-    make_install(&version)?;
 
-    Ok(())
-}
-
-fn configure(version: &Version) -> Result<()> {
-    let basename = utils::build_basename(&version)?;
-    let extract_dir = utils::pycors_extract()?.join(&basename);
     let install_dir = utils::install_dir(version)?;
 
-    env::set_current_dir(&extract_dir)?;
+    run_cmd_template(
+        &version,
+        "[3/5] Configure",
+        "./configure",
+        &[
+            "--prefix",
+            install_dir.to_str().ok_or_else(|| {
+                format_err!("Error converting install dir {:?} to `str`", install_dir)
+            })?,
+        ],
+    )?;
 
-    let line_header = "[3/5] Configure";
-
-    let (tx, child) = spinner_in_thread(line_header.to_string());
-
-    let stream = Exec::cmd("./configure")
-        .arg("--prefix")
-        .arg(install_dir)
-        .stderr(Redirection::Merge)
-        .stream_stdout()?;
-
-    let br = BufReader::new(stream);
-
-    for line in br.lines() {
-        match line {
-            Err(e) => {
-                tx.send(SpinnerMessage::Message(format!(
-                    "Error reading stdout: {:?}",
-                    e
-                )))?;
-                tx.send(SpinnerMessage::Stop)?;
-                return Err(format_err!("Error reading stdout: {:?}", e));
-            }
-            Ok(mut line) => {
-                // FIXME: Save to log file
-                line.truncate(MAX_LINE_LENGTH);
-                let message = format!("{}: {}", line_header, line);
-                tx.send(SpinnerMessage::Message(message))?
-            }
-        };
-    }
-
-    // Send signal to thread to stop
-    let message = format!("{} done.", line_header);
-    tx.send(SpinnerMessage::Message(message))?;
-    tx.send(SpinnerMessage::Stop)?;
-
-    child
-        .join()
-        .map_err(|e| format_err!("Failed to join threads: {:?}", e))?;
+    run_cmd_template::<&str>(&version, "[4/5] Make", "make", &[])?;
+    run_cmd_template(&version, "[5/5] Make install", "make", &["install"])?;
 
     Ok(())
 }
 
-fn make(version: &Version) -> Result<()> {
+fn run_cmd_template<S: AsRef<std::ffi::OsStr>>(
+    version: &Version,
+    line_header: &str,
+    cmd: &str,
+    args: &[S],
+) -> Result<()> {
     let basename = utils::build_basename(&version)?;
     let extract_dir = utils::pycors_extract()?.join(&basename);
 
     env::set_current_dir(&extract_dir)?;
 
-    let line_header = "[4/5] Make";
-
     let (tx, child) = spinner_in_thread(line_header.to_string());
 
-    let stream = Exec::cmd("make")
-        .stderr(Redirection::Merge)
-        .stream_stdout()?;
-
-    let br = BufReader::new(stream);
-
-    for line in br.lines() {
-        match line {
-            Err(e) => {
-                tx.send(SpinnerMessage::Message(format!(
-                    "Error reading stdout: {:?}",
-                    e
-                )))?;
-                tx.send(SpinnerMessage::Stop)?;
-                return Err(format_err!("Error reading stdout: {:?}", e));
-            }
-            Ok(mut line) => {
-                // FIXME: Save to log file
-                line.truncate(MAX_LINE_LENGTH);
-                let message = format!("{}: {}", line_header, line);
-                tx.send(SpinnerMessage::Message(message))?
-            }
-        };
-    }
-
-    // Send signal to thread to stop
-    let message = format!("{} done.", line_header);
-    tx.send(SpinnerMessage::Message(message))?;
-    tx.send(SpinnerMessage::Stop)?;
-
-    child
-        .join()
-        .map_err(|e| format_err!("Failed to join threads: {:?}", e))?;
-
-    Ok(())
-}
-
-fn make_install(version: &Version) -> Result<()> {
-    let basename = utils::build_basename(&version)?;
-    let extract_dir = utils::pycors_extract()?.join(&basename);
-
-    env::set_current_dir(&extract_dir)?;
-
-    let line_header = "[5/5] Make install";
-
-    let (tx, child) = spinner_in_thread(line_header.to_string());
-
-    let stream = Exec::cmd("make")
-        .arg("install")
+    let stream = Exec::cmd(cmd)
+        .args(args)
         .stderr(Redirection::Merge)
         .stream_stdout()?;
 
