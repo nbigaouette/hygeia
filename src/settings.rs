@@ -29,7 +29,7 @@ pub fn load_settings_file() -> Result<(Settings, PathBuf)> {
         Ok((Settings::from_file(&settings_file)?, settings_file))
     } else {
         debug!(
-            "File {:?} does not exists. Creatin a default one.",
+            "File {:?} does not exists. Creating a default one.",
             settings_file
         );
         let settings = Settings::default();

@@ -1,12 +1,13 @@
 use std::path::PathBuf;
 
 use failure::format_err;
-use log::{debug, info, warn};
+use log::{debug, info};
 use prettytable::{cell, row, Cell, Row, Table};
 use semver::VersionReq;
 use structopt::StructOpt;
 
 use crate::config::Cfg;
+use crate::download::{download_source, find_all_python_versions};
 use crate::settings::{PythonVersion, Settings};
 use crate::Result;
 use crate::{Command, Opt};
@@ -107,12 +108,12 @@ fn print_to_stdout_available_python_versions(cfg: &Option<Cfg>, settings: &Setti
     }
 
     for installed_python in &settings.installed_python {
-        let aligment = prettytable::format::Alignment::CENTER;
+        let alignment = prettytable::format::Alignment::CENTER;
 
         let green = prettytable::Attr::ForegroundColor(prettytable::color::GREEN);
 
-        let mut cell_active = Cell::new_align("", aligment);
-        let mut cell_version = Cell::new_align(&format!("{}", installed_python.version), aligment);
+        let mut cell_active = Cell::new_align("", alignment);
+        let mut cell_version = Cell::new_align(&format!("{}", installed_python.version), alignment);
         let mut cell_path = Cell::new_align(
             &format!("{}", installed_python.location.display()),
             prettytable::format::Alignment::LEFT,
@@ -120,7 +121,7 @@ fn print_to_stdout_available_python_versions(cfg: &Option<Cfg>, settings: &Setti
 
         if let Some(active_python) = active_python {
             if active_python == installed_python {
-                cell_active = Cell::new_align("✓", aligment);
+                cell_active = Cell::new_align("✓", alignment);
                 cell_active = cell_active
                     .with_style(prettytable::Attr::Bold)
                     .with_style(green);
@@ -144,7 +145,7 @@ fn print_to_stdout_available_python_versions(cfg: &Option<Cfg>, settings: &Setti
 fn install_python(
     cfg: &Option<Cfg>,
     settings: &mut Settings,
-    settings_file: PathBuf,
+    _settings_file: PathBuf,
 ) -> Result<()> {
     let version: VersionReq = match cfg {
         None => Cfg::from_user_input()?.version,
@@ -160,7 +161,14 @@ fn install_python(
     {
         info!("Python version {} already installed!", version);
     } else {
-        unimplemented!()
+        // Get the last version compatible with the given version
+        let versions = find_all_python_versions()?;
+        let version_to_install = versions
+            .iter()
+            .find(|available_version| version.matches(&available_version))
+            .ok_or_else(|| format_err!("Failed to find a compatible version to {}", version))?;
+        info!("Found Python version {}", version_to_install);
+        download_source(&version_to_install)?;
     }
 
     Ok(())

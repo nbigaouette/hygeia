@@ -1,7 +1,7 @@
-use std::{env, path::PathBuf};
+use std::env;
 
 use failure::format_err;
-use log::{debug, error, warn};
+use log::{debug, error};
 use structopt::StructOpt;
 
 mod config;
@@ -11,9 +11,9 @@ mod settings;
 mod shim;
 mod utils;
 
-use crate::config::{load_config_file, Cfg};
+use crate::config::load_config_file;
 use crate::pycors::pycors;
-use crate::settings::{load_settings_file, PythonVersion, Settings};
+use crate::settings::load_settings_file;
 use crate::shim::python_shim;
 
 pub type Result<T> = std::result::Result<T, failure::Error>;
