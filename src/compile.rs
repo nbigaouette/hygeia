@@ -53,18 +53,30 @@ pub fn compile_source(version: &Version) -> Result<()> {
 
     let install_dir = utils::install_dir(version)?;
 
-    run_cmd_template(
-        &version,
-        "[3/5] Configure",
-        "./configure",
-        &[
-            "--prefix",
-            install_dir.to_str().ok_or_else(|| {
-                format_err!("Error converting install dir {:?} to `str`", install_dir)
-            })?,
-        ],
-    )?;
+    let mut configure_args = vec![
+        "--prefix".to_string(),
+        install_dir
+            .to_str()
+            .ok_or_else(|| format_err!("Error converting install dir {:?} to `str`", install_dir))?
+            .to_string(),
+        "--with-pydebug".to_string(),
+    ];
 
+    // See https://devguide.python.org/setup/#macos-and-os-x
+    #[cfg(target_os = "macos")]
+    {
+        // let openssl_prefix = "brew --prefix openssl";
+        let openssl_prefix = "/usr/local/opt/openssl";
+        if version >= &Version::new(3, 7, 0) {
+            let ssl_arg = format!("--with-openssl={}", openssl_prefix);
+            configure_args.push(ssl_arg);
+        } else {
+            env::set_var("CPPFLAGS", format!("-I{}/include", openssl_prefix));
+            env::set_var("LDFLAGS", format!("-L{}/lib", openssl_prefix));
+        };
+    }
+
+    run_cmd_template(&version, "[3/5] Configure", "./configure", &configure_args)?;
     run_cmd_template::<&str>(&version, "[4/5] Make", "make", &[])?;
     run_cmd_template(&version, "[5/5] Make install", "make", &["install"])?;
 
