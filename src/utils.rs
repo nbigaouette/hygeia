@@ -5,7 +5,6 @@ use std::{
 
 use dirs::home_dir;
 use failure::format_err;
-use log::debug;
 use semver::Version;
 
 use crate::Result;
@@ -30,8 +29,6 @@ pub fn pycors_home() -> Result<PathBuf> {
         None => Err(format_err!("Cannot find pycors' home directory")),
         Some(home) => Ok(home),
     }?;
-
-    debug!("Found pycor's home: {:?}", home);
 
     Ok(home)
 }
