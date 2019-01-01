@@ -1,7 +1,7 @@
 use std::{
     env,
     fs::File,
-    io::{BufRead, BufReader},
+    io::{BufRead, BufReader, Write},
     sync::mpsc::channel,
     thread,
     time::Duration,
@@ -10,6 +10,7 @@ use std::{
 use failure::format_err;
 use flate2::read::GzDecoder;
 use indicatif::{ProgressBar, ProgressStyle};
+use log::debug;
 use semver::Version;
 use subprocess::{Exec, Redirection};
 use tar::Archive;
@@ -79,6 +80,17 @@ pub fn compile_source(version: &Version) -> Result<()> {
     run_cmd_template(&version, "[3/5] Configure", "./configure", &configure_args)?;
     run_cmd_template::<&str>(&version, "[4/5] Make", "make", &[])?;
     run_cmd_template(&version, "[5/5] Make install", "make", &["install"])?;
+
+    // Create a file containing the version so the folder can be reloaded in a `Settings`
+    let version_file_path = install_dir.join("version");
+    let version_str = format!("{}", version);
+    debug!(
+        "Saving version {} to {}",
+        version,
+        version_file_path.display()
+    );
+    let mut output = File::create(&version_file_path)?;
+    output.write(version_str.as_bytes())?;
 
     Ok(())
 }
