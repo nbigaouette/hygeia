@@ -103,11 +103,12 @@ fn build_url(version: &Version) -> Result<Url> {
     } else {
         format!("{}.{}", main_version, version.patch)
     };
-    let version_file = format!("{}", version).replace("-", "");
+
+    let filename = utils::build_filename(&version)?;
 
     let to_download = Url::parse(&format!(
-        "https://www.python.org/ftp/python/{}/Python-{}.tgz",
-        version_path, version_file
+        "https://www.python.org/ftp/python/{}/{}",
+        version_path, filename
     ))?;
 
     Ok(to_download)
