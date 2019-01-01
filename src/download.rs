@@ -14,6 +14,8 @@ use url::Url;
 use crate::{utils, Result};
 
 pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()> {
+    let line_header = "[1/5] Download";
+
     let download_to = download_to.as_ref();
 
     if !utils::path_exists(&download_to) {
@@ -62,7 +64,9 @@ pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()
                 None => 1024_u64, // default chunk size
             } as usize;
 
-            let bar = create_progress_bar(&filename, ct_len);
+            let message = format!("{}ing {:?}...", line_header, filename);
+
+            let bar = create_progress_bar(&message, ct_len);
 
             let mut out = BufWriter::new(File::create(file_path)?);
 
@@ -124,7 +128,7 @@ fn create_progress_bar(msg: &str, length: Option<u64>) -> ProgressBar {
     match length.is_some() {
         true => bar
             .set_style(ProgressStyle::default_bar()
-                .template("{msg} {spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} eta: {eta}")
+                .template("{spinner:.green} {msg} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} eta: {eta}")
                 .progress_chars("=> ")),
         false => bar.set_style(ProgressStyle::default_spinner()),
     };

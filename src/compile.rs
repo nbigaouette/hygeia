@@ -37,7 +37,7 @@ pub fn extract_source(version: &Version) -> Result<()> {
     archive.unpack(extract_dir)?;
 
     // Send signal to thread to stop
-    let message = format!("{}ion of {:?} done", line_header, file_path);
+    let message = format!("{}ion of {:?} done.", line_header, file_path);
     tx.send(SpinnerMessage::Message(message))?;
     tx.send(SpinnerMessage::Stop)?;
 
@@ -66,7 +66,7 @@ fn configure(version: &Version) -> Result<()> {
 
     let line_header = "[3/5] Configure";
 
-    let (tx, child) = spinner_in_thread("./configure");
+    let (tx, child) = spinner_in_thread(line_header.to_string());
 
     let stream = Exec::cmd("./configure")
         .arg("--prefix")
@@ -96,7 +96,7 @@ fn configure(version: &Version) -> Result<()> {
     }
 
     // Send signal to thread to stop
-    let message = format!("{} done", line_header);
+    let message = format!("{} done.", line_header);
     tx.send(SpinnerMessage::Message(message))?;
     tx.send(SpinnerMessage::Stop)?;
 
@@ -115,7 +115,7 @@ fn make(version: &Version) -> Result<()> {
 
     let line_header = "[4/5] Make";
 
-    let (tx, child) = spinner_in_thread("./configure");
+    let (tx, child) = spinner_in_thread(line_header.to_string());
 
     let stream = Exec::cmd("make")
         .stderr(Redirection::Merge)
@@ -143,7 +143,7 @@ fn make(version: &Version) -> Result<()> {
     }
 
     // Send signal to thread to stop
-    let message = format!("{} done", line_header);
+    let message = format!("{} done.", line_header);
     tx.send(SpinnerMessage::Message(message))?;
     tx.send(SpinnerMessage::Stop)?;
 
@@ -162,7 +162,7 @@ fn make_install(version: &Version) -> Result<()> {
 
     let line_header = "[5/5] Make install";
 
-    let (tx, child) = spinner_in_thread("make install");
+    let (tx, child) = spinner_in_thread(line_header.to_string());
 
     let stream = Exec::cmd("make")
         .arg("install")
@@ -191,7 +191,7 @@ fn make_install(version: &Version) -> Result<()> {
     }
 
     // Send signal to thread to stop
-    let message = format!("{} done", line_header);
+    let message = format!("{} done.", line_header);
     tx.send(SpinnerMessage::Message(message))?;
     tx.send(SpinnerMessage::Stop)?;
 
@@ -206,7 +206,7 @@ fn create_spinner(msg: &str) -> ProgressBar {
     let bar = ProgressBar::new_spinner();
 
     bar.set_message(msg);
-    bar.set_style(ProgressStyle::default_spinner());
+    bar.set_style(ProgressStyle::default_spinner().template("{spinner:.green} {msg}"));
 
     bar
 }
