@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use failure::format_err;
 use log::{debug, info};
 use prettytable::{cell, row, Cell, Row, Table};
@@ -13,7 +11,7 @@ use crate::settings::{PythonVersion, Settings};
 use crate::Result;
 use crate::{Command, Opt};
 
-pub fn pycors(cfg: &Option<Cfg>, settings: &mut Settings, settings_file: PathBuf) -> Result<()> {
+pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
     let opt = Opt::from_args();
     debug!("{:?}", opt);
 
@@ -24,7 +22,7 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &mut Settings, settings_file: PathBuf
             }
             Command::List => print_to_stdout_available_python_versions(cfg, settings)?,
             Command::Use { version } => use_given_version(&version, settings)?,
-            Command::Install => install_python(cfg, settings, settings_file)?,
+            Command::Install => install_python(cfg, settings)?,
         }
     } else {
     }
@@ -143,11 +141,7 @@ fn print_to_stdout_available_python_versions(cfg: &Option<Cfg>, settings: &Setti
     Ok(())
 }
 
-fn install_python(
-    cfg: &Option<Cfg>,
-    settings: &mut Settings,
-    _settings_file: PathBuf,
-) -> Result<()> {
+fn install_python(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
     let version: VersionReq = match cfg {
         None => Cfg::from_user_input()?.version,
         Some(cfg) => cfg.version.clone(),

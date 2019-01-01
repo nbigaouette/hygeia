@@ -49,10 +49,12 @@ pub fn pycors_extract() -> Result<PathBuf> {
     Ok(pycors_cache()?.join("extracted"))
 }
 
+pub fn pycors_installed() -> Result<PathBuf> {
+    Ok(pycors_home()?.join("installed"))
+}
+
 pub fn install_dir(version: &Version) -> Result<PathBuf> {
-    Ok(pycors_home()?
-        .join("installed")
-        .join(format!("{}", version)))
+    Ok(pycors_installed()?.join(format!("{}", version)))
 }
 
 pub fn build_basename(version: &Version) -> Result<String> {

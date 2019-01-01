@@ -14,7 +14,7 @@ mod utils;
 
 use crate::config::load_config_file;
 use crate::pycors::pycors;
-use crate::settings::load_settings_file;
+use crate::settings::Settings;
 use crate::shim::python_shim;
 
 pub type Result<T> = std::result::Result<T, failure::Error>;
@@ -57,7 +57,7 @@ enum Command {
 fn main() -> Result<()> {
     env_logger::init();
 
-    let (mut settings, settings_file) = load_settings_file()?;
+    let settings = Settings::new()?;
     // Invert the Option<Result> to Result<Option> and use ? to unwrap the Result.
     let cfg_opt = load_config_file().map_or(Ok(None), |v| v.map(Some))?;
 
@@ -69,7 +69,7 @@ fn main() -> Result<()> {
         Some(arg) => {
             if arg.ends_with("pycors") {
                 debug!("Running pycors");
-                pycors(&cfg_opt, &mut settings, settings_file)?;
+                pycors(&cfg_opt, &settings)?;
             } else {
                 debug!("Running a Python shim");
                 python_shim()?;
