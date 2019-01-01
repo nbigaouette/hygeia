@@ -92,7 +92,7 @@ pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()
 
 pub fn download_source(version: &Version) -> Result<()> {
     let url = build_url(&version)?;
-    let download_dir = utils::pycors_home()?.join("downloads");
+    let download_dir = utils::pycors_home()?.join("cache").join("downloads");
     download_from_url(&url, download_dir)
 }
 
