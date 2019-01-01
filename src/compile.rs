@@ -16,6 +16,8 @@ use tar::Archive;
 
 use crate::{utils, Result};
 
+const MAX_LINE_LENGTH: usize = 110;
+
 pub fn extract_source(version: &Version) -> Result<()> {
     let download_dir = utils::pycors_download()?;
     let filename = utils::build_filename(&version)?;
@@ -88,7 +90,7 @@ fn configure(version: &Version) -> Result<()> {
             }
             Ok(mut line) => {
                 // FIXME: Save to log file
-                line.truncate(80);
+                line.truncate(MAX_LINE_LENGTH);
                 let message = format!("{}: {}", line_header, line);
                 tx.send(SpinnerMessage::Message(message))?
             }
@@ -135,7 +137,7 @@ fn make(version: &Version) -> Result<()> {
             }
             Ok(mut line) => {
                 // FIXME: Save to log file
-                line.truncate(80);
+                line.truncate(MAX_LINE_LENGTH);
                 let message = format!("{}: {}", line_header, line);
                 tx.send(SpinnerMessage::Message(message))?
             }
@@ -183,7 +185,7 @@ fn make_install(version: &Version) -> Result<()> {
             }
             Ok(mut line) => {
                 // FIXME: Save to log file
-                line.truncate(80);
+                line.truncate(MAX_LINE_LENGTH);
                 let message = format!("{}: {}", line_header, line);
                 tx.send(SpinnerMessage::Message(message))?
             }
