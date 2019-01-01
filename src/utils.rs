@@ -48,6 +48,10 @@ pub fn pycors_download() -> Result<PathBuf> {
     Ok(pycors_cache()?.join("downloads"))
 }
 
+pub fn pycors_extract() -> Result<PathBuf> {
+    Ok(pycors_cache()?.join("extracted"))
+}
+
 pub fn build_filename(version: &Version) -> Result<String> {
     let version_file = format!("{}", version).replace("-", "");
 
