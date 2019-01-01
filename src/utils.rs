@@ -39,6 +39,14 @@ fn dot_dir(name: &str) -> Option<PathBuf> {
     home_dir().map(|p| p.join(name))
 }
 
+pub fn pycors_cache() -> Result<PathBuf> {
+    Ok(pycors_home()?.join("cache"))
+}
+
+pub fn pycors_download() -> Result<PathBuf> {
+    Ok(pycors_cache()?.join("downloads"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
