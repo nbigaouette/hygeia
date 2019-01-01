@@ -22,10 +22,12 @@ pub fn extract_source(version: &Version) -> Result<()> {
     let filename = utils::build_filename(&version)?;
     let file_path = download_dir.join(&filename);
     let extract_dir = utils::pycors_extract()?;
-    let message = format!("Extracting {:?}...", file_path);
-    debug!("{}", message);
 
-    let tar_gz = File::open(file_path)?;
+    let line_header = "[2/5] Extract";
+
+    let message = format!("{}ing {:?}...", line_header, file_path);
+
+    let tar_gz = File::open(&file_path)?;
 
     let (tx, child) = spinner_in_thread(message);
 
@@ -33,13 +35,14 @@ pub fn extract_source(version: &Version) -> Result<()> {
     let mut archive = Archive::new(tar);
     archive.unpack(extract_dir)?;
 
+    // Send signal to thread to stop
+    let message = format!("{}ion of {:?} done", line_header, file_path);
+    tx.send(SpinnerMessage::Message(message))?;
     tx.send(SpinnerMessage::Stop)?;
 
     child
         .join()
         .map_err(|e| format_err!("Failed to join threads: {:?}", e))?;
-
-    debug!("Extraction done.");
 
     Ok(())
 }
@@ -62,7 +65,7 @@ fn configure(version: &Version) -> Result<()> {
 
     env::set_current_dir(&extract_dir)?;
 
-    let line_header = "[3/5] Configure:";
+    let line_header = "[3/5] Configure";
 
     let (tx, child) = spinner_in_thread("./configure");
 
@@ -86,14 +89,14 @@ fn configure(version: &Version) -> Result<()> {
             }
             Ok(line) => {
                 // FIXME: Save to log file
-                let message = format!("{} {}", line_header, line);
+                let message = format!("{}: {}", line_header, line);
                 tx.send(SpinnerMessage::Message(message))?
             }
         };
     }
 
     // Send signal to thread to stop
-    let message = format!("{} Done", line_header);
+    let message = format!("{} done", line_header);
     tx.send(SpinnerMessage::Message(message))?;
     tx.send(SpinnerMessage::Stop)?;
 
