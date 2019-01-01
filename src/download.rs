@@ -35,7 +35,10 @@ pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()
     file_path.push(&filename);
 
     if file_path.exists() {
-        info!("File {} already downloaded. Skipping.", filename);
+        println!(
+            "  {} skipped: file {} already downloaded.",
+            line_header, filename
+        );
         Ok(())
     } else {
         info!("Downloading {}...", url);
