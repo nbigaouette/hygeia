@@ -165,7 +165,6 @@ fn install_python(
         let versions = find_all_python_versions()?;
         let version_to_install = versions
             .iter()
-            .rev()
             .find(|available_version| version.matches(&available_version))
             .ok_or_else(|| format_err!("Failed to find a compatible version to {}", version))?;
         info!("Found Python version {}", version_to_install);
