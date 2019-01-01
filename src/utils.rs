@@ -50,7 +50,7 @@ pub fn pycors_extract() -> Result<PathBuf> {
 }
 
 pub fn pycors_installed() -> Result<PathBuf> {
-    Ok(pycors_cache()?.join("installed"))
+    Ok(pycors_home()?.join("installed"))
 }
 
 pub fn install_dir(version: &Version) -> Result<PathBuf> {
