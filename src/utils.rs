@@ -13,6 +13,19 @@ pub fn path_exists<P: AsRef<Path>>(path: P) -> bool {
     fs::metadata(path).is_ok()
 }
 
+pub fn copy_file<P1: AsRef<Path>, P2: AsRef<Path>>(from: P1, to: P2) -> Result<u64> {
+    if from.as_ref() == to.as_ref() {
+        Err(format_err!(
+            "Will not copy {:?} unto {:?} as this would probably truncate it.",
+            from.as_ref(),
+            to.as_ref()
+        ))
+    } else {
+        let number_of_bytes_copied = fs::copy(from, to)?;
+        Ok(number_of_bytes_copied)
+    }
+}
+
 pub fn pycors_home() -> Result<PathBuf> {
     let env_var = env::var_os("PYCORS_HOME");
 
