@@ -11,7 +11,7 @@ use std::{
 use failure::format_err;
 use flate2::read::GzDecoder;
 use indicatif::{ProgressBar, ProgressStyle};
-use log::{debug, warn};
+use log::debug;
 use semver::Version;
 use subprocess::{Exec, Redirection};
 use tar::Archive;
