@@ -30,8 +30,6 @@ fn run<S>(cfg: &Option<Cfg>, settings: &Settings, command: &str, arguments: &[S]
 where
     S: AsRef<str> + std::convert::AsRef<std::ffi::OsStr> + std::fmt::Debug,
 {
-    let arguments = arguments.as_ref();
-
     let cfg = cfg
         .as_ref()
         .ok_or_else(|| format_err!("No Python runtime configured. Use `pycors use <version>`."))?;
