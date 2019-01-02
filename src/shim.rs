@@ -1,13 +1,14 @@
-use std::env;
+use std::{env, fs, io::Write};
 
 use failure::format_err;
-use log::debug;
+use log::{debug, error};
 use shlex;
 use subprocess::{Exec, Redirection};
 
 use crate::config::Cfg;
 use crate::pycors::active_version;
 use crate::settings::Settings;
+use crate::utils;
 use crate::Result;
 
 pub fn python_shim(cfg: &Option<Cfg>, settings: &Settings, arguments: &[String]) -> Result<()> {
@@ -30,8 +31,6 @@ fn run<S>(cfg: &Option<Cfg>, settings: &Settings, command: &str, arguments: &[S]
 where
     S: AsRef<str> + std::convert::AsRef<std::ffi::OsStr> + std::fmt::Debug,
 {
-    let arguments = arguments.as_ref();
-
     let cfg = cfg
         .as_ref()
         .ok_or_else(|| format_err!("No Python runtime configured. Use `pycors use <version>`."))?;
@@ -59,4 +58,88 @@ where
         .join()?;
 
     Ok(())
+}
+
+pub fn setup_shim(shell: &str) -> Result<()> {
+    debug!("Setting up the shim...");
+
+    // Copy itself into ~/.pycors/bin
+    let pycors_home_dir = utils::pycors_home()?;
+    let bin_dir = pycors_home_dir.join("bin");
+    if !utils::path_exists(&bin_dir) {
+        debug!("Directory {:?} does not exists, creating.", bin_dir);
+        fs::create_dir_all(&bin_dir)?;
+    }
+    let copy_from = env::current_exe()?;
+    let copy_to = bin_dir.join("pycors");
+    debug!("Copying {:?} into {:?}...", copy_from, copy_to);
+    utils::copy_file(&copy_from, &copy_to)?;
+
+    // Once the shim is in place, create hard links to it.
+    let hardlinks_version_suffix = &[
+        "python###",
+        "idle###",
+        "pip###",
+        "pydoc###",
+        // Internals
+        "python###-config",
+        "python###dm-config",
+        // Extras
+        "pipenv###",
+        "poetry###",
+    ];
+    let hardlinks_dash_version_suffix = &["2to3###", "easy_install###", "pyvenv###"];
+
+    // Create simple hardlinks: `pycors` --> `bin`
+    utils::create_hard_links(&copy_from, hardlinks_version_suffix, &bin_dir, "")?;
+    utils::create_hard_links(&copy_from, hardlinks_dash_version_suffix, &bin_dir, "")?;
+
+    // Create major version hardlinks: `pycors` --> `bin3` and `pycors` --> `bin2`
+    for major in &["2", "3"] {
+        utils::create_hard_links(&copy_from, hardlinks_version_suffix, &bin_dir, major)?;
+        utils::create_hard_links(
+            &copy_from,
+            hardlinks_dash_version_suffix,
+            &bin_dir,
+            &format!("-{}", major),
+        )?;
+    }
+
+    // Add ~/.pycors/bin to $PATH in ~/.bash_profile
+    let shell = shell
+        .parse::<structopt::clap::Shell>()
+        .map_err(|string| format_err!("{}", string))?;
+
+    match shell {
+        structopt::clap::Shell::Bash => {
+            #[cfg(target_os = "windows")]
+            {
+                error!("Windows support not yet implemented.");
+                Err(format_err!("{}", message))
+            }
+            #[cfg(not(target_os = "windows"))]
+            {
+                let home =
+                    dirs::home_dir().ok_or_else(|| format_err!("Error getting home directory"))?;
+                let bash_profile = home.join(".bash_profile");
+                debug!("Adding {:?} to $PATH in {:?}...", bin_dir, bash_profile);
+                let mut file = fs::OpenOptions::new().append(true).open(&bash_profile)?;
+                let lines = &[
+                    String::from(""),
+                    "#################################################".to_string(),
+                    "# These lines were added by pycors.".to_string(),
+                    "# See https://github.com/nbigaouette/pycors".to_string(),
+                    format!(r#"export PATH="{}:$PATH""#, bin_dir.display()),
+                    "#################################################".to_string(),
+                ];
+                for line in lines {
+                    // debug!("    {}", line);
+                    writeln!(file, "{}", line)?;
+                }
+
+                Ok(())
+            }
+        }
+        _ => Err(format_err!("Unsupported shell: {}", shell)),
+    }
 }

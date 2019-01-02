@@ -5,12 +5,26 @@ use std::{
 
 use dirs::home_dir;
 use failure::format_err;
+use log::debug;
 use semver::Version;
 
 use crate::Result;
 
 pub fn path_exists<P: AsRef<Path>>(path: P) -> bool {
     fs::metadata(path).is_ok()
+}
+
+pub fn copy_file<P1: AsRef<Path>, P2: AsRef<Path>>(from: P1, to: P2) -> Result<u64> {
+    if from.as_ref() == to.as_ref() {
+        Err(format_err!(
+            "Will not copy {:?} unto {:?} as this would probably truncate it.",
+            from.as_ref(),
+            to.as_ref()
+        ))
+    } else {
+        let number_of_bytes_copied = fs::copy(from, to)?;
+        Ok(number_of_bytes_copied)
+    }
 }
 
 pub fn pycors_home() -> Result<PathBuf> {
@@ -65,6 +79,37 @@ pub fn build_basename(version: &Version) -> Result<String> {
 
 pub fn build_filename(version: &Version) -> Result<String> {
     Ok(format!("{}.tgz", build_basename(version)?))
+}
+
+pub fn create_hard_links<S, P1, P2>(
+    copy_from: P1,
+    new_files: &[S],
+    in_dir: P2,
+    replace_sharps_with: &str,
+) -> Result<()>
+where
+    S: AsRef<str> + std::convert::AsRef<std::ffi::OsStr> + std::fmt::Debug,
+    P1: AsRef<Path>,
+    P2: Into<PathBuf>,
+{
+    let in_dir = in_dir.into();
+    for new_file in new_files {
+        let filename_str: &str = new_file.as_ref();
+        let filename_string = filename_str.to_string().replace("###", replace_sharps_with);
+        let new_file = Path::new(&filename_string);
+        let new_path = in_dir.join(new_file);
+        if new_path.exists() {
+            fs::remove_file(&new_path)?;
+        }
+        debug!(
+            "Creating hard link from {:?} to {:?}...",
+            copy_from.as_ref(),
+            new_path
+        );
+        fs::hard_link(copy_from.as_ref(), &new_path)?;
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]

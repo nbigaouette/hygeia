@@ -64,6 +64,13 @@ enum Command {
     ///     pycors run "python -c \"print('string with spaces')\""
     #[structopt(name = "run")]
     Run { command: String },
+
+    /// Setup the shim
+    ///
+    /// This will install pycor's binary to `~/.pycors/bin` and add the
+    /// directory to the `$PATH` environment variable (through `~/.bash_profile`).
+    #[structopt(name = "setup")]
+    Setup { shell: String },
 }
 
 fn main() -> Result<()> {
