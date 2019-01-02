@@ -5,6 +5,7 @@ use std::{
 
 use dirs::home_dir;
 use failure::format_err;
+use log::debug;
 use semver::Version;
 
 use crate::Result;
@@ -78,6 +79,37 @@ pub fn build_basename(version: &Version) -> Result<String> {
 
 pub fn build_filename(version: &Version) -> Result<String> {
     Ok(format!("{}.tgz", build_basename(version)?))
+}
+
+pub fn create_hard_links<S, P1, P2>(
+    copy_from: P1,
+    new_files: &[S],
+    in_dir: P2,
+    replace_sharps_with: &str,
+) -> Result<()>
+where
+    S: AsRef<str> + std::convert::AsRef<std::ffi::OsStr> + std::fmt::Debug,
+    P1: AsRef<Path>,
+    P2: Into<PathBuf>,
+{
+    let in_dir = in_dir.into();
+    for new_file in new_files {
+        let filename_str: &str = new_file.as_ref();
+        let filename_string = filename_str.to_string().replace("###", replace_sharps_with);
+        let new_file = Path::new(&filename_string);
+        let new_path = in_dir.join(new_file);
+        if new_path.exists() {
+            fs::remove_file(&new_path)?;
+        }
+        debug!(
+            "Creating hard link from {:?} to {:?}...",
+            copy_from.as_ref(),
+            new_path
+        );
+        fs::hard_link(copy_from.as_ref(), &new_path)?;
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
