@@ -1,7 +1,8 @@
 use std::{
     env,
-    fs::File,
+    fs::{self, File},
     io::{BufRead, BufReader, Write},
+    path::Path,
     sync::mpsc::channel,
     thread,
     time::Duration,
@@ -10,7 +11,7 @@ use std::{
 use failure::format_err;
 use flate2::read::GzDecoder;
 use indicatif::{ProgressBar, ProgressStyle};
-use log::debug;
+use log::{debug, warn};
 use semver::Version;
 use subprocess::{Exec, Redirection};
 use tar::Archive;
@@ -80,6 +81,39 @@ pub fn compile_source(version: &Version) -> Result<()> {
     run_cmd_template(&version, "[3/5] Configure", "./configure", &configure_args)?;
     run_cmd_template::<&str>(&version, "[4/5] Make", "make", &[])?;
     run_cmd_template(&version, "[5/5] Make install", "make", &["install"])?;
+
+    // Create symbolic links from binaries with `3` suffix
+    let bin_dir = install_dir.join("bin");
+    let basenames_to_link = &[
+        "easy_install-###",
+        "idle###",
+        "pip###",
+        "pydoc###",
+        "python###",
+        "python###dm",
+        "python###dm-config",
+        "pyvenv-###",
+    ];
+    let ver_maj_min = format!("{}.{}", version.major, version.minor);
+    let ver_maj = format!("{}", version.major);
+    env::set_current_dir(&bin_dir)?;
+    for basename_to_link in basenames_to_link {
+        let basename_src = basename_to_link.replace("###", &ver_maj_min);
+        // Create a hard link to the file containing the version (major.minor)
+        let basename_dest = basename_to_link.replace("-###", "").replace("###", "");
+        if Path::new(&basename_dest).exists() {
+            fs::remove_file(&basename_dest)?;
+        }
+        fs::hard_link(&basename_src, &basename_dest)?;
+        // Create a hard link to the file containing the major version only
+        let basename_dest = basename_to_link
+            .replace("-###", &ver_maj)
+            .replace("###", &ver_maj);
+        if Path::new(&basename_dest).exists() {
+            fs::remove_file(&basename_dest)?;
+        }
+        fs::hard_link(&basename_src, &basename_dest)?;
+    }
 
     // Create a file containing the version so the folder can be reloaded in a `Settings`
     let version_file_path = install_dir.join("version");
