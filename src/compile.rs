@@ -104,12 +104,11 @@ fn run_cmd_template<S: AsRef<std::ffi::OsStr>>(
     let basename = utils::build_basename(&version)?;
     let extract_dir = utils::pycors_extract()?.join(&basename);
 
-    env::set_current_dir(&extract_dir)?;
-
     let (tx, child) = spinner_in_thread(line_header.to_string());
 
     let stream = Exec::cmd(cmd)
         .args(args)
+        .cwd(&extract_dir)
         .stderr(Redirection::Merge)
         .stream_stdout()?;
 
