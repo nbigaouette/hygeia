@@ -1,4 +1,4 @@
-use std::env;
+use std::{env, fs};
 
 use failure::format_err;
 use log::debug;
@@ -8,6 +8,7 @@ use subprocess::{Exec, Redirection};
 use crate::config::Cfg;
 use crate::pycors::active_version;
 use crate::settings::Settings;
+use crate::utils;
 use crate::Result;
 
 pub fn python_shim(cfg: &Option<Cfg>, settings: &Settings, arguments: &[String]) -> Result<()> {
@@ -63,6 +64,46 @@ pub fn setup_shim(shell: &str) -> Result<()> {
     debug!("Setting up the shim...");
 
     // Copy itself into ~/.pycors/bin
+    let pycors_home_dir = utils::pycors_home()?;
+    let bin_dir = pycors_home_dir.join("bin");
+    if !utils::path_exists(&bin_dir) {
+        debug!("Directory {:?} does not exists, creating.", bin_dir);
+        fs::create_dir_all(&bin_dir)?;
+    }
+    let copy_from = env::current_exe()?;
+    let copy_to = bin_dir.join("pycors");
+    debug!("Copying {:?} into {:?}...", copy_from, copy_to);
+    utils::copy_file(&copy_from, &copy_to)?;
+
+    // Once the shim is in place, create hard links to it.
+    let hardlinks_version_suffix = &[
+        "python###",
+        "idle###",
+        "pip###",
+        "pydoc###",
+        // Internals
+        "python###-config",
+        "python###dm-config",
+        // Extras
+        "pipenv###",
+        "poetry###",
+    ];
+    let hardlinks_dash_version_suffix = &["2to3###", "easy_install###", "pyvenv###"];
+
+    // Create simple hardlinks: `pycors` --> `bin`
+    utils::create_hard_links(&copy_from, hardlinks_version_suffix, &bin_dir, "")?;
+    utils::create_hard_links(&copy_from, hardlinks_dash_version_suffix, &bin_dir, "")?;
+
+    // Create major version hardlinks: `pycors` --> `bin3` and `pycors` --> `bin2`
+    for major in &["2", "3"] {
+        utils::create_hard_links(&copy_from, hardlinks_version_suffix, &bin_dir, major)?;
+        utils::create_hard_links(
+            &copy_from,
+            hardlinks_dash_version_suffix,
+            &bin_dir,
+            &format!("-{}", major),
+        )?;
+    }
 
     // Add ~/.pycors/bin to $PATH in ~/.bash_profile
     let shell = shell
