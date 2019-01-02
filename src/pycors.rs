@@ -10,7 +10,7 @@ use crate::compile::{compile_source, extract_source};
 use crate::config::Cfg;
 use crate::download::{download_source, find_all_python_versions};
 use crate::settings::{PythonVersion, Settings};
-use crate::shim::run_command;
+use crate::shim::{run_command, setup_shim};
 use crate::utils;
 use crate::Result;
 use crate::{Command, Opt};
@@ -31,6 +31,7 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
             }
             Command::Uninstall { version } => uninstall_python(&version, settings)?,
             Command::Run { command } => run_command(cfg, settings, &command)?,
+            Command::Setup => setup_shim()?,
         }
     } else {
     }

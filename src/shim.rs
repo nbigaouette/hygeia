@@ -60,3 +60,9 @@ where
 
     Ok(())
 }
+
+pub fn setup_shim() -> Result<()> {
+    debug!("Setting up the shim...");
+
+    Ok(())
+}
