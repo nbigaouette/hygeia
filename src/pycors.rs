@@ -11,6 +11,7 @@ use crate::config::Cfg;
 use crate::download::{download_source, find_all_python_versions};
 use crate::settings::{PythonVersion, Settings};
 use crate::shim::run_command;
+use crate::utils;
 use crate::Result;
 use crate::{Command, Opt};
 
@@ -25,7 +26,9 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
             }
             Command::List => print_to_stdout_available_python_versions(cfg, settings)?,
             Command::Use { version } => use_given_version(&version, settings)?,
-            Command::Install => install_python(cfg, settings)?,
+            Command::Install => {
+                install_python(cfg, settings)?;
+            }
             Command::Uninstall { version } => uninstall_python(&version, settings)?,
             Command::Run { command } => run_command(cfg, settings, &command)?,
         }
@@ -50,8 +53,21 @@ fn use_given_version(requested_version: &str, settings: &Settings) -> Result<()>
     let version: VersionReq = requested_version.parse()?;
     debug!("Semantic version requirement: {}", version);
 
-    let python_to_use = active_version(&version, settings)
-        .ok_or_else(|| format_err!("No compatible version found"))?;
+    let python_to_use = match active_version(&version, settings) {
+        Some(python_to_use) => python_to_use.clone(),
+        None => {
+            let new_cfg = Some(Cfg { version });
+            let version = install_python(&new_cfg, settings)?
+                .ok_or_else(|| format_err!("A Python version should have been installed"))?;
+            let install_dir = utils::install_dir(&version)?;
+
+            PythonVersion {
+                version,
+                location: install_dir,
+            }
+        }
+    };
+    //
 
     debug!(
         "Using {} from {}",
@@ -149,7 +165,7 @@ fn print_to_stdout_available_python_versions(cfg: &Option<Cfg>, settings: &Setti
     Ok(())
 }
 
-fn install_python(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
+fn install_python(cfg: &Option<Cfg>, settings: &Settings) -> Result<Option<Version>> {
     let version: VersionReq = match cfg {
         None => Cfg::from_user_input()?.version,
         Some(cfg) => cfg.version.clone(),
@@ -163,20 +179,22 @@ fn install_python(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
         .is_some()
     {
         info!("Python version {} already installed!", version);
+
+        Ok(None)
     } else {
         // Get the last version compatible with the given version
         let versions = find_all_python_versions()?;
         let version_to_install = versions
-            .iter()
+            .into_iter()
             .find(|available_version| version.matches(&available_version))
             .ok_or_else(|| format_err!("Failed to find a compatible version to {}", version))?;
         info!("Found Python version {}", version_to_install);
         download_source(&version_to_install)?;
         extract_source(&version_to_install)?;
         compile_source(&version_to_install)?;
-    }
 
-    Ok(())
+        Ok(Some(version_to_install))
+    }
 }
 
 fn uninstall_python(version_str: &str, settings: &Settings) -> Result<()> {
