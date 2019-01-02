@@ -65,7 +65,10 @@ fn use_given_version(requested_version: &str, settings: &Settings) -> Result<()>
     Ok(())
 }
 
-fn active_version<'a>(version: &VersionReq, settings: &'a Settings) -> Option<&'a PythonVersion> {
+pub fn active_version<'a>(
+    version: &VersionReq,
+    settings: &'a Settings,
+) -> Option<&'a PythonVersion> {
     // Find the compatible versions from the installed list
     let mut compatible_versions: Vec<&'a PythonVersion> = settings
         .installed_python
