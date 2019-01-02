@@ -1,7 +1,9 @@
+use std::fs;
+
 use failure::format_err;
 use log::{debug, info};
 use prettytable::{cell, row, Cell, Row, Table};
-use semver::VersionReq;
+use semver::{Version, VersionReq};
 use structopt::StructOpt;
 
 use crate::compile::{compile_source, extract_source};
@@ -24,6 +26,7 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
             Command::List => print_to_stdout_available_python_versions(cfg, settings)?,
             Command::Use { version } => use_given_version(&version, settings)?,
             Command::Install => install_python(cfg, settings)?,
+            Command::Uninstall { version } => uninstall_python(&version, settings)?,
             Command::Run { command } => run_command(cfg, settings, &command)?,
         }
     } else {
@@ -171,6 +174,25 @@ fn install_python(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
         download_source(&version_to_install)?;
         extract_source(&version_to_install)?;
         compile_source(&version_to_install)?;
+    }
+
+    Ok(())
+}
+
+fn uninstall_python(version_str: &str, settings: &Settings) -> Result<()> {
+    let version = Version::parse(version_str)?;
+
+    if let Some(found) = settings
+        .installed_python
+        .iter()
+        .find(|installed_python| version == installed_python.version)
+    {
+        debug!(
+            "Found Python {} installed in {}",
+            found.version,
+            found.location.display()
+        );
+        fs::remove_dir_all(&found.location)?;
     }
 
     Ok(())
