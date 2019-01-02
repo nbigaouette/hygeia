@@ -24,14 +24,13 @@ pub fn run(cfg: &Option<Cfg>, settings: &Settings, commands: &str) -> Result<()>
 
     debug!("active_python: {:?}", active_python);
 
+    let bin_path = active_python.location.join("bin");
+
     let path_env = env::var("PATH")?;
     if path_env.is_empty() {
-        env::set_var("PATH", &active_python.location);
+        env::set_var("PATH", &bin_path);
     } else {
-        env::set_var(
-            "PATH",
-            format!("{}:{}", active_python.location.display(), path_env),
-        );
+        env::set_var("PATH", format!("{}:{}", bin_path.display(), path_env));
     }
 
     let s = shlex::split(&commands)
