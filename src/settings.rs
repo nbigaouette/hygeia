@@ -1,8 +1,4 @@
-use std::{
-    fs::{self, File},
-    io::{BufReader, Read},
-    path::PathBuf,
-};
+use std::{fs, path::PathBuf};
 
 use log::{debug, error, warn};
 use semver::Version;
@@ -33,31 +29,28 @@ impl Settings {
                     match dir {
                         Ok(dir) => {
                             let location = dir.path();
-                            let version_file_path = location.join("version");
-                            debug!("Loading version from {}", version_file_path.display());
-                            let input = match File::open(&version_file_path) {
-                                Err(e) => {
-                                    error!("Error opening file {:?}: {:?}", version_file_path, e);
+                            let version_str = match location.file_name() {
+                                None => {
+                                    error!(
+                                        "Could not get the version from directory: {:?}",
+                                        dir.path().display()
+                                    );
                                     continue;
                                 }
-                                Ok(input) => input,
+                                Some(dir) => match dir.to_str() {
+                                    None => {
+                                        error!("Could not convert directory to str: {:?}", dir);
+                                        continue;
+                                    }
+                                    Some(dir_str) => dir_str,
+                                },
                             };
-                            let mut buffered = BufReader::new(input);
 
-                            let mut buffer = String::new();
-                            match buffered.read_to_string(&mut buffer) {
-                                Err(e) => {
-                                    error!("Error reading file {:?}: {:?}", version_file_path, e);
-                                    continue;
-                                }
-                                Ok(_) => {}
-                            }
-
-                            let version = match Version::parse(buffer.trim()) {
+                            let version = match Version::parse(version_str.trim()) {
                                 Err(e) => {
                                     error!(
                                         "Error parsing version string {:?}: {:?}",
-                                        buffer.trim(),
+                                        version_str.trim(),
                                         e
                                     );
                                     continue;

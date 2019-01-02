@@ -1,7 +1,7 @@
 use std::{
     env,
     fs::{self, File},
-    io::{BufRead, BufReader, Write},
+    io::{BufRead, BufReader},
     path::Path,
     sync::mpsc::channel,
     thread,
@@ -11,7 +11,6 @@ use std::{
 use failure::format_err;
 use flate2::read::GzDecoder;
 use indicatif::{ProgressBar, ProgressStyle};
-use log::debug;
 use semver::Version;
 use subprocess::{Exec, Redirection};
 use tar::Archive;
@@ -114,17 +113,6 @@ pub fn compile_source(version: &Version) -> Result<()> {
         }
         fs::hard_link(&basename_src, &basename_dest)?;
     }
-
-    // Create a file containing the version so the folder can be reloaded in a `Settings`
-    let version_file_path = install_dir.join("version");
-    let version_str = format!("{}", version);
-    debug!(
-        "Saving version {} to {}",
-        version,
-        version_file_path.display()
-    );
-    let mut output = File::create(&version_file_path)?;
-    output.write(version_str.as_bytes())?;
 
     Ok(())
 }
