@@ -56,7 +56,8 @@ enum Command {
     /// Run a binary from the installed `.python-version`.
     ///
     /// For example:
-    ///     pycors run python -v
+    ///     pycors run "python -v"
+    ///     pycors run "python -c \"print('string with spaces')\""
     #[structopt(name = "run")]
     Run { command: String },
 }
@@ -68,19 +69,20 @@ fn main() -> Result<()> {
     // Invert the Option<Result> to Result<Option> and use ? to unwrap the Result.
     let cfg_opt = load_config_file().map_or(Ok(None), |v| v.map(Some))?;
 
-    match env::args().next() {
-        None => {
-            error!("Cannot get first argument.");
-            Err(format_err!("Cannot get first argument"))?
-        }
-        Some(arg) => {
-            if arg.ends_with("pycors") {
-                debug!("Running pycors");
-                pycors(&cfg_opt, &settings)?;
-            } else {
-                debug!("Running a Python shim");
-                python_shim()?;
-            }
+    let arguments: Vec<_> = env::args().collect();
+    let (first_arg, remaining_args) = arguments.split_at(1);
+
+    if first_arg.is_empty() {
+        error!("Cannot get first argument.");
+        Err(format_err!("Cannot get first argument"))?
+    } else {
+        let first_arg = &first_arg[0];
+        if first_arg.ends_with("pycors") {
+            debug!("Running pycors");
+            pycors(&cfg_opt, &settings)?;
+        } else {
+            debug!("Running a Python shim");
+            python_shim(&cfg_opt, &settings, remaining_args)?;
         }
     }
 
