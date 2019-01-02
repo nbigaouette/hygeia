@@ -67,7 +67,6 @@ fn use_given_version(requested_version: &str, settings: &Settings) -> Result<()>
             }
         }
     };
-    //
 
     debug!(
         "Using {} from {}",
