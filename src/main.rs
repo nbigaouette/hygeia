@@ -52,6 +52,13 @@ enum Command {
     /// Install version from `.python-version`.
     #[structopt(name = "install")]
     Install,
+
+    /// Run a binary from the installed `.python-version`.
+    ///
+    /// For example:
+    ///     pycors run python -v
+    #[structopt(name = "run")]
+    Run { command: String },
 }
 
 fn main() -> Result<()> {

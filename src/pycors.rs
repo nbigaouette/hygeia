@@ -8,6 +8,7 @@ use crate::compile::{compile_source, extract_source};
 use crate::config::Cfg;
 use crate::download::{download_source, find_all_python_versions};
 use crate::settings::{PythonVersion, Settings};
+use crate::shim::run;
 use crate::Result;
 use crate::{Command, Opt};
 
@@ -23,6 +24,7 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
             Command::List => print_to_stdout_available_python_versions(cfg, settings)?,
             Command::Use { version } => use_given_version(&version, settings)?,
             Command::Install => install_python(cfg, settings)?,
+            Command::Run { command } => run(cfg, settings, &command)?,
         }
     } else {
     }
