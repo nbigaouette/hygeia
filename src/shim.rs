@@ -61,8 +61,18 @@ where
     Ok(())
 }
 
-pub fn setup_shim() -> Result<()> {
+pub fn setup_shim(shell: &str) -> Result<()> {
     debug!("Setting up the shim...");
 
-    Ok(())
+    // Copy itself into ~/.pycors/bin
+
+    // Add ~/.pycors/bin to $PATH in ~/.bash_profile
+    let shell = shell
+        .parse::<structopt::clap::Shell>()
+        .map_err(|string| format_err!("{}", string))?;
+
+    match shell {
+        structopt::clap::Shell::Bash => Ok(()),
+        _ => Err(format_err!("Unsupported shell: {}", shell)),
+    }
 }

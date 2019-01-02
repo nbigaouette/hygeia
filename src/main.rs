@@ -70,7 +70,7 @@ enum Command {
     /// This will install pycor's binary to `~/.pycors/bin` and add the
     /// directory to the `$PATH` environment variable (through `~/.bash_profile`).
     #[structopt(name = "setup")]
-    Setup,
+    Setup { shell: String },
 }
 
 fn main() -> Result<()> {

@@ -31,7 +31,7 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
             }
             Command::Uninstall { version } => uninstall_python(&version, settings)?,
             Command::Run { command } => run_command(cfg, settings, &command)?,
-            Command::Setup => setup_shim()?,
+            Command::Setup { shell } => setup_shim(&shell)?,
         }
     } else {
     }
