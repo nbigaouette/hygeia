@@ -55,8 +55,20 @@ where
         .or_else(|| latest_interpreter_in_settings.as_ref())
         .ok_or_else(|| format_err!("No Python runtime configured. Use `pycors use <version>`."))?;
 
-    let active_python = active_version(&cfg.version, settings)
-        .ok_or_else(|| format_err!("No active Python runtime found."))?;
+    let active_python = active_version(&cfg.version, settings).ok_or_else(|| {
+        error!(
+            "Could not find Python {} as requested from the file `.python-version`.",
+            cfg.version
+        );
+        error!("Either:");
+        error!("    1) Remove the file `.python-version` to use (one of) the interpreter(s) available in your $PATH.");
+        error!("    2) Edit the file to use an installed interpreter.");
+        error!("       For example, to list available interpreters:");
+        error!("           pycors list");
+        error!("       Then select a version to use:");
+        error!("           pycors use ~3.7");
+        format_err!("No active Python runtime found.")
+    })?;
 
     debug!("active_python: {:?}", active_python);
 
