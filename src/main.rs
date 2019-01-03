@@ -83,19 +83,33 @@ fn main() -> Result<()> {
     let cfg_opt = load_config_file().map_or(Ok(None), |v| v.map(Some))?;
 
     let arguments: Vec<_> = env::args().collect();
-    let (first_arg, remaining_args) = arguments.split_at(1);
+    let (_, remaining_args) = arguments.split_at(1);
 
-    if first_arg.is_empty() {
-        error!("Cannot get first argument.");
-        Err(format_err!("Cannot get first argument"))?
-    } else {
-        let first_arg = &first_arg[0];
-        if first_arg.ends_with("pycors") {
-            debug!("Running pycors");
-            pycors(&cfg_opt, &settings)?;
-        } else {
-            debug!("Running a Python shim");
-            python_shim(&cfg_opt, &settings, remaining_args)?;
+    match env::current_exe() {
+        Err(e) => {
+            let err_message = format!("Cannot get executable's path: {:?}", e);
+            error!("{}", err_message);
+            Err(format_err!("{}", err_message))?
+        }
+        Ok(current_exe) => {
+            let exe = match current_exe.file_name() {
+                Some(file_name) => file_name.to_str().ok_or_else(|| {
+                    format_err!("Could not get str representation of {:?}", file_name)
+                })?,
+                None => {
+                    let err_message = format!("Cannot get executable's path: {:?}", current_exe);
+                    error!("{}", err_message);
+                    Err(format_err!("{}", err_message))?
+                }
+            };
+
+            if exe.starts_with("pycors") {
+                debug!("Running pycors");
+                pycors(&cfg_opt, &settings)?;
+            } else {
+                debug!("Running a Python shim");
+                python_shim(exe, &cfg_opt, &settings, remaining_args)?;
+            }
         }
     }
 
