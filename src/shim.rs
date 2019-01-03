@@ -4,6 +4,7 @@ use failure::format_err;
 use log::debug;
 #[cfg(target_os = "windows")]
 use log::error;
+use semver::VersionReq;
 use shlex;
 use structopt::{clap::Shell, StructOpt};
 use subprocess::{Exec, Redirection};
@@ -38,8 +39,20 @@ fn run<S>(cfg: &Option<Cfg>, settings: &Settings, command: &str, arguments: &[S]
 where
     S: AsRef<str> + std::convert::AsRef<std::ffi::OsStr> + std::fmt::Debug,
 {
-    let cfg = cfg
+    // If `cfg` is `None`, check if there is something in `Settings`; pick the first found
+    // interpreter to construct a `cfg`.
+    // Since the `cfg` used in the functions is expected to be a reference, we need to store
+    // the setting's cfg in a variable to be able to refer to it.
+    let latest_interpreter_in_settings = match settings.installed_python.iter().nth(0) {
+        None => None,
+        Some(latest_interpreter_found) => Some(Cfg {
+            version: VersionReq::exact(&latest_interpreter_found.version),
+        }),
+    };
+
+    let cfg: &Cfg = cfg
         .as_ref()
+        .or_else(|| latest_interpreter_in_settings.as_ref())
         .ok_or_else(|| format_err!("No Python runtime configured. Use `pycors use <version>`."))?;
 
     let active_python = active_version(&cfg.version, settings)
