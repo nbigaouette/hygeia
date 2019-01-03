@@ -5,6 +5,7 @@ use log::debug;
 #[cfg(target_os = "windows")]
 use log::error;
 use shlex;
+use structopt::{clap::Shell, StructOpt};
 use subprocess::{Exec, Redirection};
 
 use crate::config::Cfg;
@@ -61,7 +62,7 @@ where
     Ok(())
 }
 
-pub fn setup_shim(shell: &str) -> Result<()> {
+pub fn setup_shim(shell: &Shell) -> Result<()> {
     debug!("Setting up the shim...");
 
     // Copy itself into ~/.pycors/bin
@@ -107,9 +108,6 @@ pub fn setup_shim(shell: &str) -> Result<()> {
     }
 
     // Add ~/.pycors/bin to $PATH in ~/.bash_profile
-    let shell = shell
-        .parse::<structopt::clap::Shell>()
-        .map_err(|string| format_err!("{}", string))?;
 
     match shell {
         structopt::clap::Shell::Bash => {

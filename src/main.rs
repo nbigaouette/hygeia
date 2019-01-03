@@ -33,7 +33,7 @@ enum Command {
     /// For example:
     ///     pycors autocomplete bash > /etc/bash_completion.d/pycors.bash-completion
     #[structopt(name = "autocomplete")]
-    Autocomplete { shell: String },
+    Autocomplete { shell: structopt::clap::Shell },
 
     /// List installed Python versions.
     #[structopt(name = "list")]
@@ -69,8 +69,10 @@ enum Command {
     ///
     /// This will install pycor's binary to `~/.pycors/bin` and add the
     /// directory to the `$PATH` environment variable (through `~/.bash_profile`).
+    ///
+    /// Supported shells: Bash, Fish, Zsh, PowerShell and Elvish.
     #[structopt(name = "setup")]
-    Setup { shell: String },
+    Setup { shell: structopt::clap::Shell },
 }
 
 fn main() -> Result<()> {

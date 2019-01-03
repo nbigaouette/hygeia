@@ -4,7 +4,7 @@ use failure::format_err;
 use log::{debug, info};
 use prettytable::{cell, row, Cell, Row, Table};
 use semver::{Version, VersionReq};
-use structopt::StructOpt;
+use structopt::{clap::Shell, StructOpt};
 
 use crate::compile::{compile_source, extract_source};
 use crate::config::Cfg;
@@ -39,11 +39,8 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
     Ok(())
 }
 
-fn print_autocomplete_to_stdout(shell: &str) -> Result<()> {
-    let shell = shell
-        .parse::<structopt::clap::Shell>()
-        .map_err(|string| format_err!("{}", string))?;
-    Opt::clap().gen_completions_to("pycors", shell, &mut std::io::stdout());
+fn print_autocomplete_to_stdout(shell: &Shell) -> Result<()> {
+    Opt::clap().gen_completions_to("pycors", *shell, &mut std::io::stdout());
     Ok(())
 }
 
