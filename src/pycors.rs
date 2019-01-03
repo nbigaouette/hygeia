@@ -1,5 +1,3 @@
-use std::fs;
-
 use failure::format_err;
 use log::{debug, info};
 use prettytable::{cell, row, Cell, Row, Table};
