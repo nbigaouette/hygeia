@@ -56,7 +56,8 @@ where
         env::set_var("PATH", format!("{}:{}", bin_path.display(), path_env));
     }
 
-    debug!("Command: {:?}   Arguments: {:?}", command, arguments);
+    debug!("Command:   {:?}", command_full_path);
+    debug!("Arguments: {:?}", arguments);
 
     Exec::cmd(&command)
         .args(arguments)
