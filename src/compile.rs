@@ -189,12 +189,11 @@ fn spinner_in_thread<S: Into<String>>(
         let d = Duration::from_millis(100);
 
         loop {
-            match rx.recv_timeout(d) {
-                Ok(msg) => match msg {
+            if let Ok(msg) = rx.recv_timeout(d) {
+                match msg {
                     SpinnerMessage::Stop => break,
                     SpinnerMessage::Message(message) => pb.set_message(&message),
-                },
-                Err(_) => {}
+                }
             }
             pb.inc(1);
         }
