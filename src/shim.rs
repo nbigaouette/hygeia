@@ -1,14 +1,12 @@
 use std::{env, fs, io::Write};
 
 use failure::format_err;
-use log::{debug, error};
-use semver::VersionReq;
+use log::debug;
 use shlex;
 use structopt::{clap::Shell, StructOpt};
 use subprocess::{Exec, Redirection};
 
 use crate::config::Cfg;
-use crate::pycors::active_version;
 use crate::settings::Settings;
 use crate::utils;
 use crate::{Opt, Result};
@@ -67,21 +65,21 @@ where
                 } else {
                     debug!(
                         "Appending Python interpreter major version {} to command.",
-                        active_python.version.major
+                        interpreter_to_use.version.major
                     );
-                    format!("{}{}", command, active_python.version.major)
+                    format!("{}{}", command, interpreter_to_use.version.major)
                 };
             command_string_with_major_version
         }
     };
 
-    let command_full_path = active_python
+    let command_full_path = interpreter_to_use
         .location
         .join(command_string_with_major_version);
     let command_full_path = if command_full_path.exists() {
         command_full_path
     } else {
-        active_python.location.join(command)
+        interpreter_to_use.location.join(command)
     };
 
     debug!("Command:   {:?}", command_full_path);
