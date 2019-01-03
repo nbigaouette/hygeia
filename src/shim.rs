@@ -1,9 +1,7 @@
 use std::{env, fs, io::Write};
 
 use failure::format_err;
-use log::debug;
-#[cfg(target_os = "windows")]
-use log::error;
+use log::{debug, error};
 use semver::VersionReq;
 use shlex;
 use structopt::{clap::Shell, StructOpt};
@@ -72,19 +70,53 @@ where
 
     debug!("active_python: {:?}", active_python);
 
-    let bin_path = active_python.location.join("bin");
+    // NOTE: Make sure the command given by the user contains the major Python version
+    //       appended. This should prevent having a Python 3 interpreter in `.python-version`
+    //       but being called `python` by the user, ending up executing, say, /usr/local/bin/python`
+    //       which is itself a Python 2 interpreter.
+    let last_command_char = format!(
+        "{}",
+        command
+            .chars()
+            .last()
+            .ok_or_else(|| format_err!("Cannot get last character from command {:?}", command))?
+    );
 
-    let path_env = env::var("PATH")?;
-    if path_env.is_empty() {
-        env::set_var("PATH", &bin_path);
+    let command_string_with_major_version = {
+        #[cfg(target_os = "windows")]
+        {
+            error!("Adding the major Python version to binary not implemented on Windows");
+            command.to_string()
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            let command_string_with_major_version =
+                if last_command_char == "2" || last_command_char == "3" {
+                    command.to_string()
+                } else {
+                    debug!(
+                        "Appending Python interpreter major version {} to command.",
+                        active_python.version.major
+                    );
+                    format!("{}{}", command, active_python.version.major)
+                };
+            command_string_with_major_version
+        }
+    };
+
+    let command_full_path = active_python
+        .location
+        .join(command_string_with_major_version);
+    let command_full_path = if command_full_path.exists() {
+        command_full_path
     } else {
-        env::set_var("PATH", format!("{}:{}", bin_path.display(), path_env));
-    }
+        active_python.location.join(command)
+    };
 
-    // debug!("Command:   {:?}", command_full_path);
+    debug!("Command:   {:?}", command_full_path);
     debug!("Arguments: {:?}", arguments);
 
-    Exec::cmd(&command)
+    Exec::cmd(&command_full_path)
         .args(arguments)
         .stdout(Redirection::None)
         .stderr(Redirection::None)
