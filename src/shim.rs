@@ -121,6 +121,7 @@ pub fn setup_shim(shell: &Shell) -> Result<()> {
         // Extras
         "pipenv###",
         "poetry###",
+        "pytest###",
     ];
     let hardlinks_dash_version_suffix = &["2to3###", "easy_install###", "pyvenv###"];
 
