@@ -31,7 +31,6 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
             Command::Install => {
                 install_python(cfg, settings)?;
             }
-            Command::Uninstall { version } => uninstall_python(&version, settings)?,
             Command::Run { command } => run_command(cfg, settings, &command)?,
             Command::Setup { shell } => setup_shim(&shell)?,
         }
@@ -188,23 +187,4 @@ fn install_python(cfg: &Option<Cfg>, settings: &Settings) -> Result<Option<Versi
 
         Ok(Some(version_to_install))
     }
-}
-
-fn uninstall_python(version_str: &str, settings: &Settings) -> Result<()> {
-    let version = Version::parse(version_str)?;
-
-    if let Some(found) = settings
-        .installed_python
-        .iter()
-        .find(|installed_python| version == installed_python.version)
-    {
-        debug!(
-            "Found Python {} installed in {}",
-            found.version,
-            found.location.display()
-        );
-        fs::remove_dir_all(&found.location)?;
-    }
-
-    Ok(())
 }

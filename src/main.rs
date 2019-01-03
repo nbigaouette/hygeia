@@ -69,10 +69,6 @@ enum Command {
     #[structopt(name = "install")]
     Install,
 
-    /// Uninstall the given installed version
-    #[structopt(name = "uninstall")]
-    Uninstall { version: String },
-
     /// Run a binary from the installed `.python-version`.
     ///
     /// For example:
