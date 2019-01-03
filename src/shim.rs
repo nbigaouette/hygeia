@@ -14,8 +14,13 @@ use crate::settings::Settings;
 use crate::utils;
 use crate::{Opt, Result};
 
-pub fn python_shim(cfg: &Option<Cfg>, settings: &Settings, arguments: &[String]) -> Result<()> {
-    run(cfg, settings, "python", arguments)
+pub fn python_shim(
+    command: &str,
+    cfg: &Option<Cfg>,
+    settings: &Settings,
+    arguments: &[String],
+) -> Result<()> {
+    run(cfg, settings, command, arguments)
 }
 
 pub fn run_command(cfg: &Option<Cfg>, settings: &Settings, command_and_args: &str) -> Result<()> {
