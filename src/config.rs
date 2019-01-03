@@ -37,10 +37,10 @@ impl Cfg {
             None => Err(format_err!("File does not even contains a line"))?,
             Some(line_result) => line_result?,
         };
+        let version: VersionReq = line.parse()?;
+        debug!("Found version \"{}\"", version);
 
-        Ok(Cfg {
-            version: line.parse()?,
-        })
+        Ok(Cfg { version })
     }
 
     pub fn save(&self) -> Result<usize> {
