@@ -25,6 +25,7 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
                 print_autocomplete_to_stdout(&shell)?;
             }
             Command::List => print_to_stdout_available_python_versions(cfg, settings)?,
+            Command::Path => print_active_interpreter_path(cfg, settings)?,
             Command::Use { version } => use_given_version(&version, settings)?,
             Command::Install => {
                 install_python(cfg, settings)?;
@@ -41,6 +42,12 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
 
 fn print_autocomplete_to_stdout(shell: &Shell) -> Result<()> {
     Opt::clap().gen_completions_to("pycors", *shell, &mut std::io::stdout());
+    Ok(())
+}
+
+fn print_active_interpreter_path(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
+    let interpreter_to_use = utils::get_interpreter_to_use(cfg, settings)?;
+    println!("{}", interpreter_to_use.location.display());
     Ok(())
 }
 

@@ -39,6 +39,14 @@ enum Command {
     #[structopt(name = "list")]
     List,
 
+    /// Get path to active interpreter
+    ///
+    /// For example:
+    ///     pycors path
+    ///     /usr/local/bin
+    #[structopt(name = "path")]
+    Path,
+
     /// Use specified Python versions.
     ///
     /// The specified Python version will be installed if not already installed.
