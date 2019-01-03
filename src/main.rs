@@ -28,14 +28,14 @@ struct Opt {
 
 #[derive(StructOpt, Debug)]
 enum Command {
-    /// Print to stdout an autocomplete script for the specified shell.
+    /// Print to stdout an autocomplete script for the specified shell
     ///
     /// For example:
     ///     pycors autocomplete bash > /etc/bash_completion.d/pycors.bash-completion
     #[structopt(name = "autocomplete")]
     Autocomplete { shell: structopt::clap::Shell },
 
-    /// List installed Python versions.
+    /// List installed Python versions
     #[structopt(name = "list")]
     List,
 
@@ -55,7 +55,7 @@ enum Command {
     #[structopt(name = "version")]
     Version,
 
-    /// Use specified Python versions.
+    /// Use specified Python versions
     ///
     /// The specified Python version will be installed if not already installed.
     ///
@@ -65,11 +65,11 @@ enum Command {
     #[structopt(name = "use")]
     Use { version: String },
 
-    /// Install version from `.python-version`.
+    /// Install version from `.python-version`
     #[structopt(name = "install")]
     Install,
 
-    /// Run a binary from the installed `.python-version`.
+    /// Run a binary from the installed `.python-version`
     ///
     /// For example:
     ///     pycors run "python -v"
