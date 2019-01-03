@@ -98,7 +98,7 @@ pub fn active_version<'a>(
     compatible_versions.sort_by_key(|compatible_version| &compatible_version.version);
     debug!("Compatible versions found: {:?}", compatible_versions);
 
-    compatible_versions.last().map(|v| *v)
+    compatible_versions.last().cloned()
 }
 
 fn print_to_stdout_available_python_versions(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
