@@ -108,6 +108,11 @@ pub fn setup_shim(shell: &Shell) -> Result<()> {
     }
 
     // Add ~/.pycors/bin to $PATH in ~/.bash_profile
+    // Create an dummy file that will be recognized when searching the PATH for
+    // python interpreters. We don't want to "find" the shims we install here.
+    let pycors_dummy_file = bin_dir.join("pycors_dummy_file");
+    let mut file = fs::File::create(&pycors_dummy_file)?;
+    writeln!(file, "This file's job is to tell pycors the directory contains shim, not real Python interpreters.")?;
 
     match shell {
         structopt::clap::Shell::Bash => {

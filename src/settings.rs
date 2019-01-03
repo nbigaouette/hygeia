@@ -162,6 +162,12 @@ where
                 break;
             }
 
+            debug!("python_path: {}", python_path.display());
+            if python_path.join("pycors_dummy_file").exists() {
+                debug!("Skipping pycors' shim directory.");
+                break;
+            }
+
             debug!("Found python executable in {}", python_path.display());
 
             let full_executable_path = python_pathbuf.join(&executable);
