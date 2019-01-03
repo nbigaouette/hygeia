@@ -99,7 +99,7 @@ pub fn setup_shim(shell: &Shell) -> Result<()> {
 
     // Copy itself into ~/.pycors/bin
     let pycors_home_dir = utils::pycors_home()?;
-    let bin_dir = pycors_home_dir.join("bin");
+    let bin_dir = pycors_home_dir.join("shims");
     if !utils::path_exists(&bin_dir) {
         debug!("Directory {:?} does not exists, creating.", bin_dir);
         fs::create_dir_all(&bin_dir)?;
