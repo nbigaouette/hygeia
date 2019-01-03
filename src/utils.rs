@@ -243,7 +243,7 @@ mod tests {
 
     #[test]
     fn create_hard_links_success() {
-        let in_dir = env::temp_dir();
+        let in_dir = env::current_dir().unwrap().join("target");
         let hardlinks_location = &[
             in_dir
                 .join("dummy_hardlink_1-###")
