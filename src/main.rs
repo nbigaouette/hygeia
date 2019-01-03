@@ -47,6 +47,14 @@ enum Command {
     #[structopt(name = "path")]
     Path,
 
+    /// Get version of active interpreter
+    ///
+    /// For example:
+    ///     pycors version
+    ///     3.7.2
+    #[structopt(name = "version")]
+    Version,
+
     /// Use specified Python versions.
     ///
     /// The specified Python version will be installed if not already installed.
