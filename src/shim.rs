@@ -37,38 +37,9 @@ fn run<S>(cfg: &Option<Cfg>, settings: &Settings, command: &str, arguments: &[S]
 where
     S: AsRef<str> + std::convert::AsRef<std::ffi::OsStr> + std::fmt::Debug,
 {
-    // If `cfg` is `None`, check if there is something in `Settings`; pick the first found
-    // interpreter to construct a `cfg`.
-    // Since the `cfg` used in the functions is expected to be a reference, we need to store
-    // the setting's cfg in a variable to be able to refer to it.
-    let latest_interpreter_in_settings = match settings.installed_python.iter().nth(0) {
-        None => None,
-        Some(latest_interpreter_found) => Some(Cfg {
-            version: VersionReq::exact(&latest_interpreter_found.version),
-        }),
-    };
+    let interpreter_to_use = utils::get_interpreter_to_use(cfg, settings)?;
 
-    let cfg: &Cfg = cfg
-        .as_ref()
-        .or_else(|| latest_interpreter_in_settings.as_ref())
-        .ok_or_else(|| format_err!("No Python runtime configured. Use `pycors use <version>`."))?;
-
-    let active_python = active_version(&cfg.version, settings).ok_or_else(|| {
-        error!(
-            "Could not find Python {} as requested from the file `.python-version`.",
-            cfg.version
-        );
-        error!("Either:");
-        error!("    1) Remove the file `.python-version` to use (one of) the interpreter(s) available in your $PATH.");
-        error!("    2) Edit the file to use an installed interpreter.");
-        error!("       For example, to list available interpreters:");
-        error!("           pycors list");
-        error!("       Then select a version to use:");
-        error!("           pycors use ~3.7");
-        format_err!("No active Python runtime found.")
-    })?;
-
-    debug!("active_python: {:?}", active_python);
+    debug!("interpreter_to_use: {:?}", interpreter_to_use);
 
     // NOTE: Make sure the command given by the user contains the major Python version
     //       appended. This should prevent having a Python 3 interpreter in `.python-version`
