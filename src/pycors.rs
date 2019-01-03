@@ -51,7 +51,7 @@ fn use_given_version(requested_version: &str, settings: &Settings) -> Result<()>
     let version: VersionReq = requested_version.parse()?;
     debug!("Semantic version requirement: {}", version);
 
-    let python_to_use = match active_version(&version, settings) {
+    let python_to_use = match utils::active_version(&version, settings) {
         Some(python_to_use) => python_to_use.clone(),
         None => {
             let new_cfg = Some(Cfg { version });
@@ -81,23 +81,6 @@ fn use_given_version(requested_version: &str, settings: &Settings) -> Result<()>
     Ok(())
 }
 
-pub fn active_version<'a>(
-    version: &VersionReq,
-    settings: &'a Settings,
-) -> Option<&'a PythonVersion> {
-    // Find the compatible versions from the installed list
-    let mut compatible_versions: Vec<&'a PythonVersion> = settings
-        .installed_python
-        .iter()
-        .filter(|installed_python| version.matches(&installed_python.version))
-        .collect();
-    // Sort to get latest version
-    compatible_versions.sort_by_key(|compatible_version| &compatible_version.version);
-    debug!("Compatible versions found: {:?}", compatible_versions);
-
-    compatible_versions.last().cloned()
-}
-
 fn print_to_stdout_available_python_versions(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
     let mut table = Table::new();
     // Header
@@ -105,7 +88,7 @@ fn print_to_stdout_available_python_versions(cfg: &Option<Cfg>, settings: &Setti
 
     let active_python = match cfg {
         None => None,
-        Some(cfg) => active_version(&cfg.version, settings),
+        Some(cfg) => utils::active_version(&cfg.version, settings),
     };
 
     if active_python.is_none() {

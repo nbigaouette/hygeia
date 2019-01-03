@@ -116,6 +116,23 @@ where
     Ok(())
 }
 
+pub fn active_version<'a>(
+    version: &VersionReq,
+    settings: &'a Settings,
+) -> Option<&'a PythonVersion> {
+    // Find the compatible versions from the installed list
+    let mut compatible_versions: Vec<&'a PythonVersion> = settings
+        .installed_python
+        .iter()
+        .filter(|installed_python| version.matches(&installed_python.version))
+        .collect();
+    // Sort to get latest version
+    compatible_versions.sort_by_key(|compatible_version| &compatible_version.version);
+    debug!("Compatible versions found: {:?}", compatible_versions);
+
+    compatible_versions.last().cloned()
+}
+
 pub fn get_interpreter_to_use(cfg: &Option<Cfg>, settings: &Settings) -> Result<PythonVersion> {
     // If `cfg` is `None`, check if there is something in `Settings`; pick the first found
     // interpreter to construct a `cfg`.
