@@ -5,10 +5,14 @@ use std::{
 
 use dirs::home_dir;
 use failure::format_err;
-use log::debug;
-use semver::Version;
+use log::{debug, error};
+use semver::{Version, VersionReq};
 
-use crate::Result;
+use crate::{
+    config::Cfg,
+    settings::{PythonVersion, Settings},
+    Result,
+};
 
 pub fn path_exists<P: AsRef<Path>>(path: P) -> bool {
     fs::metadata(path).is_ok()
@@ -110,6 +114,38 @@ where
     }
 
     Ok(())
+}
+
+pub fn get_interpreter_to_use(cfg: &Option<Cfg>, settings: &Settings) -> Result<PythonVersion> {
+    // If `cfg` is `None`, check if there is something in `Settings`; pick the first found
+    // interpreter to construct a `cfg`.
+    let cfg: Cfg = cfg
+        .as_ref() // &Option<Cfg> -> Option<&Cfg>
+        .cloned() // Option<&Cfg> -> Option<Cfg>
+        .or_else(|| match settings.installed_python.iter().nth(0) {
+            None => None,
+            Some(latest_interpreter_found) => Some(Cfg {
+                version: VersionReq::exact(&latest_interpreter_found.version),
+            }),
+        })
+        .ok_or_else(|| format_err!("No Python runtime configured. Use `pycors use <version>`."))?;
+
+    let active_python = active_version(&cfg.version, settings).ok_or_else(|| {
+        error!(
+            "Could not find Python {} as requested from the file `.python-version`.",
+            cfg.version
+        );
+        error!("Either:");
+        error!("    1) Remove the file `.python-version` to use (one of) the interpreter(s) available in your $PATH.");
+        error!("    2) Edit the file to use an installed interpreter.");
+        error!("       For example, to list available interpreters:");
+        error!("           pycors list");
+        error!("       Then select a version to use:");
+        error!("           pycors use ~3.7");
+        format_err!("No active Python runtime found.")
+    })?.clone();
+
+    Ok(active_python)
 }
 
 #[cfg(test)]
