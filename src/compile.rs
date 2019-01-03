@@ -168,12 +168,12 @@ fn run_cmd_template<S: AsRef<std::ffi::OsStr>>(
 }
 
 fn create_spinner(msg: &str) -> ProgressBar {
-    let bar = ProgressBar::new_spinner();
+    let pb = ProgressBar::new_spinner();
 
-    bar.set_message(msg);
-    bar.set_style(ProgressStyle::default_spinner().template("{spinner:.green} {msg}"));
+    pb.set_message(msg);
+    pb.set_style(ProgressStyle::default_spinner().template("{spinner:.green} {msg}"));
 
-    bar
+    pb
 }
 
 fn spinner_in_thread<S: Into<String>>(
@@ -185,21 +185,21 @@ fn spinner_in_thread<S: Into<String>>(
     let message = message.into();
     let (tx, rx) = channel();
     let child = thread::spawn(move || {
-        let bar = create_spinner(&message);
+        let pb = create_spinner(&message);
         let d = Duration::from_millis(100);
 
         loop {
             match rx.recv_timeout(d) {
                 Ok(msg) => match msg {
                     SpinnerMessage::Stop => break,
-                    SpinnerMessage::Message(message) => bar.set_message(&message),
+                    SpinnerMessage::Message(message) => pb.set_message(&message),
                 },
                 Err(_) => {}
             }
-            bar.inc(1);
+            pb.inc(1);
         }
 
-        bar.finish();
+        pb.finish();
     });
 
     (tx, child)
