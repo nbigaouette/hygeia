@@ -68,7 +68,7 @@ pub fn compile_source(version: &Version) -> Result<()> {
     {
         // let openssl_prefix = "brew --prefix openssl";
         let openssl_prefix = "/usr/local/opt/openssl";
-        if version >= &Version::new(3, 7, 0) {
+        if *version >= Version::new(3, 7, 0) {
             let ssl_arg = format!("--with-openssl={}", openssl_prefix);
             configure_args.push(ssl_arg);
         } else {
