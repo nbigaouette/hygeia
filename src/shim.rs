@@ -114,7 +114,8 @@ pub fn setup_shim(shell: &str) -> Result<()> {
         structopt::clap::Shell::Bash => {
             #[cfg(target_os = "windows")]
             {
-                error!("Windows support not yet implemented.");
+                let message = "Windows support not yet implemented.";
+                error!("{}", message);
                 Err(format_err!("{}", message))
             }
             #[cfg(not(target_os = "windows"))]
