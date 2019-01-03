@@ -47,10 +47,7 @@ pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()
 
         if resp.status().is_success() {
             let headers = resp.headers().clone();
-            let ct_len = match headers
-                .get(reqwest::header::CONTENT_LENGTH)
-                .map(|ct_len| ct_len.clone())
-            {
+            let ct_len = match headers.get(reqwest::header::CONTENT_LENGTH).cloned() {
                 Some(ct_len) => {
                     let ct_len: u64 = ct_len.to_str()?.parse()?;
                     debug!("Downloading {} bytes...", ct_len);
