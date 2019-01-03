@@ -76,7 +76,7 @@ enum Command {
 fn main() -> Result<()> {
     env_logger::init();
 
-    let settings = Settings::new()?;
+    let settings = Settings::from_pycors_home()?;
     // Invert the Option<Result> to Result<Option> and use ? to unwrap the Result.
     let cfg_opt = load_config_file().map_or(Ok(None), |v| v.map(Some))?;
 

@@ -17,7 +17,7 @@ pub struct Settings {
 }
 
 impl Settings {
-    pub fn new() -> Result<Settings> {
+    pub fn from_pycors_home() -> Result<Settings> {
         let install_dir = utils::pycors_installed()?;
 
         let mut installed_python = Vec::new();
