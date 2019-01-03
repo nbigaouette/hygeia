@@ -54,6 +54,7 @@ pub fn compile_source(version: &Version) -> Result<()> {
 
     let install_dir = utils::install_dir(version)?;
 
+    #[allow(unused_mut)]
     let mut configure_args = vec![
         "--prefix".to_string(),
         install_dir
