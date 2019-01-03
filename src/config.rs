@@ -12,7 +12,7 @@ use crate::{utils, Result};
 
 static TOOLCHAIN_FILE: &str = ".python-version";
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Cfg {
     pub version: VersionReq,
 }
