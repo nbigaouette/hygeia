@@ -22,8 +22,7 @@ pub fn run_command(cfg: &Option<Cfg>, settings: &Settings, command_and_args: &st
         .ok_or_else(|| format_err!("Failed to split command from {:?}", command_and_args))?;
     let (cmd, arguments) = s.split_at(1);
     let cmd = cmd
-        .iter()
-        .nth(0)
+        .get(0)
         .ok_or_else(|| format_err!("Failed to extract command from {:?}", command_and_args))?;
 
     run(cfg, settings, cmd, arguments)
