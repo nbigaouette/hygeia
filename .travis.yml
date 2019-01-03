@@ -9,6 +9,7 @@ sudo: required
 env:
   global:
     - CRATE_NAME=pycors
+    - RUST_BACKTRACE=1
 
 matrix:
   include:

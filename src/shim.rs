@@ -1,18 +1,25 @@
 use std::{env, fs, io::Write};
 
 use failure::format_err;
-use log::{debug, error};
+use log::debug;
+#[cfg(target_os = "windows")]
+use log::error;
 use shlex;
+use structopt::{clap::Shell, StructOpt};
 use subprocess::{Exec, Redirection};
 
 use crate::config::Cfg;
-use crate::pycors::active_version;
 use crate::settings::Settings;
 use crate::utils;
-use crate::Result;
+use crate::{Opt, Result};
 
-pub fn python_shim(cfg: &Option<Cfg>, settings: &Settings, arguments: &[String]) -> Result<()> {
-    run(cfg, settings, "python", arguments)
+pub fn python_shim(
+    command: &str,
+    cfg: &Option<Cfg>,
+    settings: &Settings,
+    arguments: &[String],
+) -> Result<()> {
+    run(cfg, settings, command, arguments)
 }
 
 pub fn run_command(cfg: &Option<Cfg>, settings: &Settings, command_and_args: &str) -> Result<()> {
@@ -20,8 +27,7 @@ pub fn run_command(cfg: &Option<Cfg>, settings: &Settings, command_and_args: &st
         .ok_or_else(|| format_err!("Failed to split command from {:?}", command_and_args))?;
     let (cmd, arguments) = s.split_at(1);
     let cmd = cmd
-        .iter()
-        .nth(0)
+        .get(0)
         .ok_or_else(|| format_err!("Failed to extract command from {:?}", command_and_args))?;
 
     run(cfg, settings, cmd, arguments)
@@ -31,27 +37,57 @@ fn run<S>(cfg: &Option<Cfg>, settings: &Settings, command: &str, arguments: &[S]
 where
     S: AsRef<str> + std::convert::AsRef<std::ffi::OsStr> + std::fmt::Debug,
 {
-    let cfg = cfg
-        .as_ref()
-        .ok_or_else(|| format_err!("No Python runtime configured. Use `pycors use <version>`."))?;
+    let interpreter_to_use = utils::get_interpreter_to_use(cfg, settings)?;
 
-    let active_python = active_version(&cfg.version, settings)
-        .ok_or_else(|| format_err!("No active Python runtime found."))?;
+    debug!("interpreter_to_use: {:?}", interpreter_to_use);
 
-    debug!("active_python: {:?}", active_python);
+    // NOTE: Make sure the command given by the user contains the major Python version
+    //       appended. This should prevent having a Python 3 interpreter in `.python-version`
+    //       but being called `python` by the user, ending up executing, say, /usr/local/bin/python`
+    //       which is itself a Python 2 interpreter.
+    let last_command_char = format!(
+        "{}",
+        command
+            .chars()
+            .last()
+            .ok_or_else(|| format_err!("Cannot get last character from command {:?}", command))?
+    );
 
-    let bin_path = active_python.location.join("bin");
+    let command_string_with_major_version = {
+        #[cfg(target_os = "windows")]
+        {
+            error!("Adding the major Python version to binary not implemented on Windows");
+            command.to_string()
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            let command_string_with_major_version =
+                if last_command_char == "2" || last_command_char == "3" {
+                    command.to_string()
+                } else {
+                    debug!(
+                        "Appending Python interpreter major version {} to command.",
+                        interpreter_to_use.version.major
+                    );
+                    format!("{}{}", command, interpreter_to_use.version.major)
+                };
+            command_string_with_major_version
+        }
+    };
 
-    let path_env = env::var("PATH")?;
-    if path_env.is_empty() {
-        env::set_var("PATH", &bin_path);
+    let command_full_path = interpreter_to_use
+        .location
+        .join(command_string_with_major_version);
+    let command_full_path = if command_full_path.exists() {
+        command_full_path
     } else {
-        env::set_var("PATH", format!("{}:{}", bin_path.display(), path_env));
-    }
+        interpreter_to_use.location.join(command)
+    };
 
-    debug!("Command: {:?}   Arguments: {:?}", command, arguments);
+    debug!("Command:   {:?}", command_full_path);
+    debug!("Arguments: {:?}", arguments);
 
-    Exec::cmd(&command)
+    Exec::cmd(&command_full_path)
         .args(arguments)
         .stdout(Redirection::None)
         .stderr(Redirection::None)
@@ -60,12 +96,12 @@ where
     Ok(())
 }
 
-pub fn setup_shim(shell: &str) -> Result<()> {
+pub fn setup_shim(shell: &Shell) -> Result<()> {
     debug!("Setting up the shim...");
 
     // Copy itself into ~/.pycors/bin
     let pycors_home_dir = utils::pycors_home()?;
-    let bin_dir = pycors_home_dir.join("bin");
+    let bin_dir = pycors_home_dir.join("shims");
     if !utils::path_exists(&bin_dir) {
         debug!("Directory {:?} does not exists, creating.", bin_dir);
         fs::create_dir_all(&bin_dir)?;
@@ -87,6 +123,7 @@ pub fn setup_shim(shell: &str) -> Result<()> {
         // Extras
         "pipenv###",
         "poetry###",
+        "pytest###",
     ];
     let hardlinks_dash_version_suffix = &["2to3###", "easy_install###", "pyvenv###"];
 
@@ -105,11 +142,13 @@ pub fn setup_shim(shell: &str) -> Result<()> {
         )?;
     }
 
-    // Add ~/.pycors/bin to $PATH in ~/.bash_profile
-    let shell = shell
-        .parse::<structopt::clap::Shell>()
-        .map_err(|string| format_err!("{}", string))?;
+    // Create an dummy file that will be recognized when searching the PATH for
+    // python interpreters. We don't want to "find" the shims we install here.
+    let pycors_dummy_file = bin_dir.join("pycors_dummy_file");
+    let mut file = fs::File::create(&pycors_dummy_file)?;
+    writeln!(file, "This file's job is to tell pycors the directory contains shim, not real Python interpreters.")?;
 
+    // Add ~/.pycors/bin to $PATH in ~/.bash_profile and install autocomplete
     match shell {
         structopt::clap::Shell::Bash => {
             #[cfg(target_os = "windows")]
@@ -123,6 +162,12 @@ pub fn setup_shim(shell: &str) -> Result<()> {
                 let home =
                     dirs::home_dir().ok_or_else(|| format_err!("Error getting home directory"))?;
                 let bash_profile = home.join(".bash_profile");
+
+                // Add the autocomplete too
+                let autocomplete_file = pycors_home_dir.join("pycors.bash-completion");
+                let mut f = fs::File::create(&autocomplete_file)?;
+                Opt::clap().gen_completions_to("pycors", *shell, &mut f);
+
                 debug!("Adding {:?} to $PATH in {:?}...", bin_dir, bash_profile);
                 let mut file = fs::OpenOptions::new().append(true).open(&bash_profile)?;
                 let lines = &[
@@ -131,6 +176,7 @@ pub fn setup_shim(shell: &str) -> Result<()> {
                     "# These lines were added by pycors.".to_string(),
                     "# See https://github.com/nbigaouette/pycors".to_string(),
                     format!(r#"export PATH="{}:$PATH""#, bin_dir.display()),
+                    format!(r#"source "{}""#, autocomplete_file.display()),
                     "#################################################".to_string(),
                 ];
                 for line in lines {

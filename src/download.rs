@@ -47,10 +47,7 @@ pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()
 
         if resp.status().is_success() {
             let headers = resp.headers().clone();
-            let ct_len = match headers
-                .get(reqwest::header::CONTENT_LENGTH)
-                .map(|ct_len| ct_len.clone())
-            {
+            let ct_len = match headers.get(reqwest::header::CONTENT_LENGTH).cloned() {
                 Some(ct_len) => {
                     let ct_len: u64 = ct_len.to_str()?.parse()?;
                     debug!("Downloading {} bytes...", ct_len);
@@ -69,7 +66,7 @@ pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()
 
             let message = format!("{}ing {:?}...", line_header, filename);
 
-            let bar = create_progress_bar(&message, ct_len);
+            let pb = create_progress_bar(&message, ct_len);
 
             let mut out = BufWriter::new(File::create(file_path)?);
 
@@ -80,12 +77,12 @@ pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()
                 if buffer.is_empty() {
                     break;
                 } else {
-                    out.write_all(&mut buffer)?;
-                    bar.inc(bcount as u64);
+                    out.write_all(&buffer)?;
+                    pb.inc(bcount as u64);
                 }
             }
 
-            bar.finish();
+            pb.finish();
 
             Ok(())
         } else {
@@ -122,21 +119,22 @@ fn build_url(version: &Version) -> Result<Url> {
 }
 
 fn create_progress_bar(msg: &str, length: Option<u64>) -> ProgressBar {
-    let bar = match length {
+    let pb = match length {
         Some(len) => ProgressBar::new(len),
         None => ProgressBar::new_spinner(),
     };
 
-    bar.set_message(msg);
-    match length.is_some() {
-        true => bar
+    pb.set_message(msg);
+    if length.is_some() {
+        pb
             .set_style(ProgressStyle::default_bar()
                 .template("{spinner:.green} {msg} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} eta: {eta}")
-                .progress_chars("=> ")),
-        false => bar.set_style(ProgressStyle::default_spinner()),
-    };
+                .progress_chars("=> "));
+    } else {
+        pb.set_style(ProgressStyle::default_spinner());
+    }
 
-    bar
+    pb
 }
 
 pub fn find_all_python_versions() -> Result<Vec<Version>> {

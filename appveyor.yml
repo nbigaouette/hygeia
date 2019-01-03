@@ -7,6 +7,8 @@ environment:
 
     CRATE_NAME: pycors
 
+    RUST_BACKTRACE: 1
+
   matrix:
     # MinGW
     # - TARGET: i686-pc-windows-gnu

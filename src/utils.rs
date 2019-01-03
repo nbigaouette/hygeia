@@ -5,10 +5,14 @@ use std::{
 
 use dirs::home_dir;
 use failure::format_err;
-use log::debug;
-use semver::Version;
+use log::{debug, error};
+use semver::{Version, VersionReq};
 
-use crate::Result;
+use crate::{
+    config::Cfg,
+    settings::{PythonVersion, Settings},
+    Result,
+};
 
 pub fn path_exists<P: AsRef<Path>>(path: P) -> bool {
     fs::metadata(path).is_ok()
@@ -112,16 +116,148 @@ where
     Ok(())
 }
 
+pub fn active_version<'a>(
+    version: &VersionReq,
+    settings: &'a Settings,
+) -> Option<&'a PythonVersion> {
+    // Find the compatible versions from the installed list
+    let mut compatible_versions: Vec<&'a PythonVersion> = settings
+        .installed_python
+        .iter()
+        .filter(|installed_python| version.matches(&installed_python.version))
+        .collect();
+    // Sort to get latest version
+    compatible_versions.sort_by_key(|compatible_version| &compatible_version.version);
+    debug!("Compatible versions found: {:?}", compatible_versions);
+
+    compatible_versions.last().cloned()
+}
+
+pub fn get_interpreter_to_use(cfg: &Option<Cfg>, settings: &Settings) -> Result<PythonVersion> {
+    // If `cfg` is `None`, check if there is something in `Settings`; pick the first found
+    // interpreter to construct a `cfg`.
+    let cfg: Cfg = cfg
+        .as_ref() // &Option<Cfg> -> Option<&Cfg>
+        .cloned() // Option<&Cfg> -> Option<Cfg>
+        .or_else(|| match settings.installed_python.iter().nth(0) {
+            None => None,
+            Some(latest_interpreter_found) => Some(Cfg {
+                version: VersionReq::exact(&latest_interpreter_found.version),
+            }),
+        })
+        .ok_or_else(|| format_err!("No Python runtime configured. Use `pycors use <version>`."))?;
+
+    let active_python = active_version(&cfg.version, settings).ok_or_else(|| {
+        error!(
+            "Could not find Python {} as requested from the file `.python-version`.",
+            cfg.version
+        );
+        error!("Either:");
+        error!("    1) Remove the file `.python-version` to use (one of) the interpreter(s) available in your $PATH.");
+        error!("    2) Edit the file to use an installed interpreter.");
+        error!("       For example, to list available interpreters:");
+        error!("           pycors list");
+        error!("       Then select a version to use:");
+        error!("           pycors use ~3.7");
+        format_err!("No active Python runtime found.")
+    })?.clone();
+
+    Ok(active_python)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn get_pycors_home() {
+    fn path_exists_success() {
+        assert!(path_exists("target"));
+    }
+
+    #[test]
+    fn path_exists_fail() {
+        assert!(!path_exists("non-existing-directory"));
+    }
+
+    #[test]
+    fn copy_file_success() {
+        let copied_file_location = env::temp_dir().join("dummy_copied_file");
+        let _ = fs::remove_file(&copied_file_location);
+        assert!(!copied_file_location.exists());
+        let nb_bytes_copied = copy_file("LICENSE-APACHE", &copied_file_location).unwrap();
+        assert_eq!(nb_bytes_copied, 10838);
+        assert!(copied_file_location.exists());
+        let _ = fs::remove_file(&copied_file_location);
+    }
+
+    #[test]
+    fn copy_file_overwrite() {
+        copy_file("LICENSE-APACHE", "LICENSE-APACHE").unwrap_err();
+    }
+
+    #[test]
+    fn pycors_home_default() {
+        env::remove_var("PYCORS_HOME");
+        let default_home = pycors_home().unwrap();
+        let expected = home_dir().unwrap().join(".pycors");
+        assert_eq!(default_home, expected);
+    }
+
+    #[test]
+    fn pycors_home_from_env_variable() {
         let tmp_dir = env::temp_dir();
         env::set_var("PYCORS_HOME", &tmp_dir);
-        let ph = pycors_home().unwrap();
-        assert_eq!(ph, Path::new(&tmp_dir));
+        let tmp_home = pycors_home().unwrap();
+        assert_eq!(tmp_home, Path::new(&tmp_dir));
+    }
+
+    #[test]
+    fn dot_dir_sucess() {
+        env::remove_var("PYCORS_HOME");
+        let dir = dot_dir(".dummy").unwrap();
+        let expected = home_dir().unwrap().join(".dummy");
+        assert_eq!(dir, expected);
+    }
+
+    #[test]
+    fn pycors_directories() {
+        env::remove_var("PYCORS_HOME");
+        let dir = pycors_cache().unwrap();
+        let expected = home_dir().unwrap().join(".pycors").join("cache");
+        assert_eq!(dir, expected);
+
+        let dir = pycors_download().unwrap();
+        let expected = home_dir()
+            .unwrap()
+            .join(".pycors")
+            .join("cache")
+            .join("downloads");
+        assert_eq!(dir, expected);
+
+        let dir = pycors_extract().unwrap();
+        let expected = home_dir()
+            .unwrap()
+            .join(".pycors")
+            .join("cache")
+            .join("extracted");
+        assert_eq!(dir, expected);
+
+        let dir = pycors_installed().unwrap();
+        let expected = home_dir().unwrap().join(".pycors").join("installed");
+        assert_eq!(dir, expected);
+    }
+
+    #[test]
+    fn install_dir_version() {
+        env::remove_var("PYCORS_HOME");
+        let version = Version::parse("3.7.2").unwrap();
+        let dir = install_dir(&version).unwrap();
+        let expected = home_dir()
+            .unwrap()
+            .join(".pycors")
+            .join("installed")
+            .join("3.7.2");
+        assert_eq!(dir, expected);
     }
 
     #[test]
@@ -157,4 +293,37 @@ mod tests {
         let filename = build_filename(&version).unwrap();
         assert_eq!(&filename, "Python-3.7.2rc1.tgz");
     }
+
+    #[test]
+    #[ignore]
+    fn create_hard_links_success() {
+        let in_dir = env::current_dir().unwrap().join("target");
+        let hardlinks_location = &[
+            in_dir
+                .join("dummy_hardlink_1-###")
+                .to_str()
+                .unwrap()
+                .to_string(),
+            in_dir
+                .join("dummy_hardlink_2-###")
+                .to_str()
+                .unwrap()
+                .to_string(),
+        ];
+        for hardlink_location in hardlinks_location {
+            let _ = fs::remove_file(hardlink_location);
+        }
+        for hardlink_location in hardlinks_location {
+            assert!(!Path::new(hardlink_location).exists());
+        }
+        create_hard_links("LICENSE-APACHE", hardlinks_location, &in_dir, "replaced").unwrap();
+        for hardlink_location in hardlinks_location {
+            assert!(Path::new(&hardlink_location.replace("###", "replaced")).exists());
+        }
+        for hardlink_location in hardlinks_location {
+            assert!(Path::new(&hardlink_location.replace("###", "replaced")).exists());
+            let _ = fs::remove_file(&hardlink_location.replace("###", "replaced"));
+        }
+    }
+
 }

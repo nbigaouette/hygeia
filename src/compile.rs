@@ -54,6 +54,7 @@ pub fn compile_source(version: &Version) -> Result<()> {
 
     let install_dir = utils::install_dir(version)?;
 
+    #[allow(unused_mut)]
     let mut configure_args = vec![
         "--prefix".to_string(),
         install_dir
@@ -68,7 +69,7 @@ pub fn compile_source(version: &Version) -> Result<()> {
     {
         // let openssl_prefix = "brew --prefix openssl";
         let openssl_prefix = "/usr/local/opt/openssl";
-        if version >= &Version::new(3, 7, 0) {
+        if *version >= Version::new(3, 7, 0) {
             let ssl_arg = format!("--with-openssl={}", openssl_prefix);
             configure_args.push(ssl_arg);
         } else {
@@ -168,12 +169,12 @@ fn run_cmd_template<S: AsRef<std::ffi::OsStr>>(
 }
 
 fn create_spinner(msg: &str) -> ProgressBar {
-    let bar = ProgressBar::new_spinner();
+    let pb = ProgressBar::new_spinner();
 
-    bar.set_message(msg);
-    bar.set_style(ProgressStyle::default_spinner().template("{spinner:.green} {msg}"));
+    pb.set_message(msg);
+    pb.set_style(ProgressStyle::default_spinner().template("{spinner:.green} {msg}"));
 
-    bar
+    pb
 }
 
 fn spinner_in_thread<S: Into<String>>(
@@ -185,21 +186,20 @@ fn spinner_in_thread<S: Into<String>>(
     let message = message.into();
     let (tx, rx) = channel();
     let child = thread::spawn(move || {
-        let bar = create_spinner(&message);
+        let pb = create_spinner(&message);
         let d = Duration::from_millis(100);
 
         loop {
-            match rx.recv_timeout(d) {
-                Ok(msg) => match msg {
+            if let Ok(msg) = rx.recv_timeout(d) {
+                match msg {
                     SpinnerMessage::Stop => break,
-                    SpinnerMessage::Message(message) => bar.set_message(&message),
-                },
-                Err(_) => {}
+                    SpinnerMessage::Message(message) => pb.set_message(&message),
+                }
             }
-            bar.inc(1);
+            pb.inc(1);
         }
 
-        bar.finish();
+        pb.finish();
     });
 
     (tx, child)

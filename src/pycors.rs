@@ -4,7 +4,7 @@ use failure::format_err;
 use log::{debug, info};
 use prettytable::{cell, row, Cell, Row, Table};
 use semver::{Version, VersionReq};
-use structopt::StructOpt;
+use structopt::{clap::Shell, StructOpt};
 
 use crate::compile::{compile_source, extract_source};
 use crate::config::Cfg;
@@ -25,11 +25,12 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
                 print_autocomplete_to_stdout(&shell)?;
             }
             Command::List => print_to_stdout_available_python_versions(cfg, settings)?,
+            Command::Path => print_active_interpreter_path(cfg, settings)?,
+            Command::Version => print_active_interpreter_version(cfg, settings)?,
             Command::Use { version } => use_given_version(&version, settings)?,
             Command::Install => {
                 install_python(cfg, settings)?;
             }
-            Command::Uninstall { version } => uninstall_python(&version, settings)?,
             Command::Run { command } => run_command(cfg, settings, &command)?,
             Command::Setup { shell } => setup_shim(&shell)?,
         }
@@ -39,11 +40,20 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
     Ok(())
 }
 
-fn print_autocomplete_to_stdout(shell: &str) -> Result<()> {
-    let shell = shell
-        .parse::<structopt::clap::Shell>()
-        .map_err(|string| format_err!("{}", string))?;
-    Opt::clap().gen_completions_to("pycors", shell, &mut std::io::stdout());
+fn print_autocomplete_to_stdout(shell: &Shell) -> Result<()> {
+    Opt::clap().gen_completions_to("pycors", *shell, &mut std::io::stdout());
+    Ok(())
+}
+
+fn print_active_interpreter_path(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
+    let interpreter_to_use = utils::get_interpreter_to_use(cfg, settings)?;
+    println!("{}", interpreter_to_use.location.display());
+    Ok(())
+}
+
+fn print_active_interpreter_version(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
+    let interpreter_to_use = utils::get_interpreter_to_use(cfg, settings)?;
+    println!("{}", interpreter_to_use.version);
     Ok(())
 }
 
@@ -54,7 +64,7 @@ fn use_given_version(requested_version: &str, settings: &Settings) -> Result<()>
     let version: VersionReq = requested_version.parse()?;
     debug!("Semantic version requirement: {}", version);
 
-    let python_to_use = match active_version(&version, settings) {
+    let python_to_use = match utils::active_version(&version, settings) {
         Some(python_to_use) => python_to_use.clone(),
         None => {
             let new_cfg = Some(Cfg { version });
@@ -84,23 +94,6 @@ fn use_given_version(requested_version: &str, settings: &Settings) -> Result<()>
     Ok(())
 }
 
-pub fn active_version<'a>(
-    version: &VersionReq,
-    settings: &'a Settings,
-) -> Option<&'a PythonVersion> {
-    // Find the compatible versions from the installed list
-    let mut compatible_versions: Vec<&'a PythonVersion> = settings
-        .installed_python
-        .iter()
-        .filter(|installed_python| version.matches(&installed_python.version))
-        .collect();
-    // Sort to get latest version
-    compatible_versions.sort_by_key(|compatible_version| &compatible_version.version);
-    debug!("Compatible versions found: {:?}", compatible_versions);
-
-    compatible_versions.last().map(|v| *v)
-}
-
 fn print_to_stdout_available_python_versions(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
     let mut table = Table::new();
     // Header
@@ -108,7 +101,7 @@ fn print_to_stdout_available_python_versions(cfg: &Option<Cfg>, settings: &Setti
 
     let active_python = match cfg {
         None => None,
-        Some(cfg) => active_version(&cfg.version, settings),
+        Some(cfg) => utils::active_version(&cfg.version, settings),
     };
 
     if active_python.is_none() {
@@ -175,8 +168,7 @@ fn install_python(cfg: &Option<Cfg>, settings: &Settings) -> Result<Option<Versi
     if settings
         .installed_python
         .iter()
-        .find(|installed_python| version.matches(&installed_python.version))
-        .is_some()
+        .any(|installed_python| version.matches(&installed_python.version))
     {
         info!("Python version {} already installed!", version);
 
@@ -195,23 +187,4 @@ fn install_python(cfg: &Option<Cfg>, settings: &Settings) -> Result<Option<Versi
 
         Ok(Some(version_to_install))
     }
-}
-
-fn uninstall_python(version_str: &str, settings: &Settings) -> Result<()> {
-    let version = Version::parse(version_str)?;
-
-    if let Some(found) = settings
-        .installed_python
-        .iter()
-        .find(|installed_python| version == installed_python.version)
-    {
-        debug!(
-            "Found Python {} installed in {}",
-            found.version,
-            found.location.display()
-        );
-        fs::remove_dir_all(&found.location)?;
-    }
-
-    Ok(())
 }
