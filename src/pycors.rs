@@ -175,8 +175,7 @@ fn install_python(cfg: &Option<Cfg>, settings: &Settings) -> Result<Option<Versi
     if settings
         .installed_python
         .iter()
-        .find(|installed_python| version.matches(&installed_python.version))
-        .is_some()
+        .any(|installed_python| version.matches(&installed_python.version))
     {
         info!("Python version {} already installed!", version);
 
