@@ -125,13 +125,14 @@ fn create_progress_bar(msg: &str, length: Option<u64>) -> ProgressBar {
     };
 
     pb.set_message(msg);
-    match length.is_some() {
-        true => pb
+    if length.is_some() {
+        pb
             .set_style(ProgressStyle::default_bar()
                 .template("{spinner:.green} {msg} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} eta: {eta}")
-                .progress_chars("=> ")),
-        false => pb.set_style(ProgressStyle::default_spinner()),
-    };
+                .progress_chars("=> "));
+    } else {
+        pb.set_style(ProgressStyle::default_spinner());
+    }
 
     pb
 }
