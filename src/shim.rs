@@ -12,7 +12,7 @@ use crate::config::Cfg;
 use crate::pycors::active_version;
 use crate::settings::Settings;
 use crate::utils;
-use crate::Result;
+use crate::{Opt, Result};
 
 pub fn python_shim(cfg: &Option<Cfg>, settings: &Settings, arguments: &[String]) -> Result<()> {
     run(cfg, settings, "python", arguments)
@@ -107,13 +107,13 @@ pub fn setup_shim(shell: &Shell) -> Result<()> {
         )?;
     }
 
-    // Add ~/.pycors/bin to $PATH in ~/.bash_profile
     // Create an dummy file that will be recognized when searching the PATH for
     // python interpreters. We don't want to "find" the shims we install here.
     let pycors_dummy_file = bin_dir.join("pycors_dummy_file");
     let mut file = fs::File::create(&pycors_dummy_file)?;
     writeln!(file, "This file's job is to tell pycors the directory contains shim, not real Python interpreters.")?;
 
+    // Add ~/.pycors/bin to $PATH in ~/.bash_profile and install autocomplete
     match shell {
         structopt::clap::Shell::Bash => {
             #[cfg(target_os = "windows")]
@@ -127,6 +127,12 @@ pub fn setup_shim(shell: &Shell) -> Result<()> {
                 let home =
                     dirs::home_dir().ok_or_else(|| format_err!("Error getting home directory"))?;
                 let bash_profile = home.join(".bash_profile");
+
+                // Add the autocomplete too
+                let autocomplete_file = pycors_home_dir.join("pycors.bash-completion");
+                let mut f = fs::File::create(&autocomplete_file)?;
+                Opt::clap().gen_completions_to("pycors", *shell, &mut f);
+
                 debug!("Adding {:?} to $PATH in {:?}...", bin_dir, bash_profile);
                 let mut file = fs::OpenOptions::new().append(true).open(&bash_profile)?;
                 let lines = &[
@@ -135,6 +141,7 @@ pub fn setup_shim(shell: &Shell) -> Result<()> {
                     "# These lines were added by pycors.".to_string(),
                     "# See https://github.com/nbigaouette/pycors".to_string(),
                     format!(r#"export PATH="{}:$PATH""#, bin_dir.display()),
+                    format!(r#"source "{}""#, autocomplete_file.display()),
                     "#################################################".to_string(),
                 ];
                 for line in lines {
