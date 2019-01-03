@@ -117,11 +117,94 @@ mod tests {
     use super::*;
 
     #[test]
-    fn get_pycors_home() {
+    fn path_exists_success() {
+        assert!(path_exists("target"));
+    }
+
+    #[test]
+    fn path_exists_fail() {
+        assert!(!path_exists("non-existing-directory"));
+    }
+
+    #[test]
+    fn copy_file_success() {
+        let copied_file_location = env::temp_dir().join("dummy_copied_file");
+        let _ = fs::remove_file(&copied_file_location);
+        assert!(!copied_file_location.exists());
+        let nb_bytes_copied = copy_file("LICENSE-APACHE", &copied_file_location).unwrap();
+        assert_eq!(nb_bytes_copied, 10838);
+        assert!(copied_file_location.exists());
+        let _ = fs::remove_file(&copied_file_location);
+    }
+
+    #[test]
+    fn copy_file_overwrite() {
+        copy_file("LICENSE-APACHE", "LICENSE-APACHE").unwrap_err();
+    }
+
+    #[test]
+    fn pycors_home_default() {
+        env::remove_var("PYCORS_HOME");
+        let default_home = pycors_home().unwrap();
+        let expected = home_dir().unwrap().join(".pycors");
+        assert_eq!(default_home, expected);
+    }
+
+    #[test]
+    fn pycors_home_from_env_variable() {
         let tmp_dir = env::temp_dir();
         env::set_var("PYCORS_HOME", &tmp_dir);
-        let ph = pycors_home().unwrap();
-        assert_eq!(ph, Path::new(&tmp_dir));
+        let tmp_home = pycors_home().unwrap();
+        assert_eq!(tmp_home, Path::new(&tmp_dir));
+    }
+
+    #[test]
+    fn dot_dir_sucess() {
+        env::remove_var("PYCORS_HOME");
+        let dir = dot_dir(".dummy").unwrap();
+        let expected = home_dir().unwrap().join(".dummy");
+        assert_eq!(dir, expected);
+    }
+
+    #[test]
+    fn pycors_directories() {
+        env::remove_var("PYCORS_HOME");
+        let dir = pycors_cache().unwrap();
+        let expected = home_dir().unwrap().join(".pycors").join("cache");
+        assert_eq!(dir, expected);
+
+        let dir = pycors_download().unwrap();
+        let expected = home_dir()
+            .unwrap()
+            .join(".pycors")
+            .join("cache")
+            .join("downloads");
+        assert_eq!(dir, expected);
+
+        let dir = pycors_extract().unwrap();
+        let expected = home_dir()
+            .unwrap()
+            .join(".pycors")
+            .join("cache")
+            .join("extracted");
+        assert_eq!(dir, expected);
+
+        let dir = pycors_installed().unwrap();
+        let expected = home_dir().unwrap().join(".pycors").join("installed");
+        assert_eq!(dir, expected);
+    }
+
+    #[test]
+    fn install_dir_version() {
+        env::remove_var("PYCORS_HOME");
+        let version = Version::parse("3.7.2").unwrap();
+        let dir = install_dir(&version).unwrap();
+        let expected = home_dir()
+            .unwrap()
+            .join(".pycors")
+            .join("installed")
+            .join("3.7.2");
+        assert_eq!(dir, expected);
     }
 
     #[test]
@@ -157,4 +240,36 @@ mod tests {
         let filename = build_filename(&version).unwrap();
         assert_eq!(&filename, "Python-3.7.2rc1.tgz");
     }
+
+    #[test]
+    fn create_hard_links_success() {
+        let in_dir = env::temp_dir();
+        let hardlinks_location = &[
+            in_dir
+                .join("dummy_hardlink_1-###")
+                .to_str()
+                .unwrap()
+                .to_string(),
+            in_dir
+                .join("dummy_hardlink_2-###")
+                .to_str()
+                .unwrap()
+                .to_string(),
+        ];
+        for hardlink_location in hardlinks_location {
+            let _ = fs::remove_file(hardlink_location);
+        }
+        for hardlink_location in hardlinks_location {
+            assert!(!Path::new(hardlink_location).exists());
+        }
+        create_hard_links("LICENSE-APACHE", hardlinks_location, &in_dir, "replaced").unwrap();
+        for hardlink_location in hardlinks_location {
+            assert!(Path::new(&hardlink_location.replace("###", "replaced")).exists());
+        }
+        for hardlink_location in hardlinks_location {
+            assert!(Path::new(&hardlink_location.replace("###", "replaced")).exists());
+            let _ = fs::remove_file(&hardlink_location.replace("###", "replaced"));
+        }
+    }
+
 }
