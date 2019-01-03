@@ -77,7 +77,7 @@ pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()
                 if buffer.is_empty() {
                     break;
                 } else {
-                    out.write_all(&mut buffer)?;
+                    out.write_all(&buffer)?;
                     pb.inc(bcount as u64);
                 }
             }
