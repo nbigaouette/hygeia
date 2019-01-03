@@ -2,6 +2,8 @@ use std::{env, fs, io::Write};
 
 use failure::format_err;
 use log::debug;
+#[cfg(target_os = "windows")]
+use log::error;
 use shlex;
 use structopt::{clap::Shell, StructOpt};
 use subprocess::{Exec, Redirection};
