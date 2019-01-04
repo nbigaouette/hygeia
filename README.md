@@ -3,6 +3,30 @@
 [![Build Status](https://travis-ci.org/nbigaouette/pycors.svg?branch=master)](https://travis-ci.org/nbigaouette/pycors)
 [![Build status](https://ci.appveyor.com/api/projects/status/21n6gdcqj4oh68q8?svg=true&passingText=AppVeyor:%20%20passing)](https://ci.appveyor.com/project/nbigaouette/pycors)
 
+`pycors` is a **Py**thon interpreter **co**ntroller built using **R**u**s**t. It's goal is to allow
+individual projects to specify which interpreter to use using a `.python-version` file.
+
+Python packaging situation is painful. macOS comes with Python 2.7 which is coming close to being
+end-of-life. Additionally, it does not include `pip`, the package installer. `pip` was only included
+by default with Python >= 3.4.
+
+The [install instructions](https://pip.pypa.io/en/stable/installing/) for `pip` contains a large warning
+against installing it in the system interpreter.
+
+[`virtualenv`](https://virtualenv.pypa.io/) could be used, but it needs to be installed... using `pip`,
+resulting in a chicken-and-egg situation.
+
+`pycors` will download and compile specified versions of [Python](https://www.python.org/) and allow
+switching between them easily.
+
+The project took a lot of inspiration from [`pyenv`](https://github.com/pyenv/pyenv), which does something
+similar. `pyenv` is written in Bash though, which
+[prevents it from being used easily on Windows](https://github.com/pyenv/pyenv/issues/62).
+`pycors` aims to be portable across Windows, Linux and macOS.
+
+
+[![demo](https://asciinema.org/a/0K3KpPTPczFTdgSWyTJSjtpne.svg)](https://asciinema.org/a/0K3KpPTPczFTdgSWyTJSjtpne?autoplay=1)
+
 ## Requirements
 
 Since Python interpreters are downloaded and compiled,
