@@ -5,6 +5,9 @@
 
 ## Requirements
 
+Since Python interpreters are downloaded and compiled,
+some build tools are required.
+
 ### macOS / OSX
 
 Make sure dependencies are installed:
@@ -21,6 +24,14 @@ Make sure dependencies are installed:
     ```
 
 See the [Python Developer's Guide](https://devguide.python.org/setup/#macos-and-os-x) for more information.
+
+### Linux
+
+TBD
+
+### Windows
+
+TBD
 
 ## Usage
 
