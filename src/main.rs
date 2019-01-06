@@ -65,9 +65,9 @@ enum Command {
     #[structopt(name = "use")]
     Use { version: String },
 
-    /// Install version from `.python-version`
+    /// Install version, either from the provided version or from `.python-version`
     #[structopt(name = "install")]
-    Install,
+    Install { from_version: Option<String> },
 
     /// Run a binary from the installed `.python-version`
     ///

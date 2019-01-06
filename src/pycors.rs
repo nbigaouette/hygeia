@@ -26,8 +26,8 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
             Command::Path => print_active_interpreter_path(cfg, settings)?,
             Command::Version => print_active_interpreter_version(cfg, settings)?,
             Command::Use { version } => use_given_version(&version, settings)?,
-            Command::Install => {
-                install_python(cfg, settings)?;
+            Command::Install { from_version } => {
+                install_python(from_version, cfg, settings)?;
             }
             Command::Run { command } => run_command(cfg, settings, &command)?,
             Command::Setup { shell } => setup_shim(&shell)?,
@@ -66,7 +66,7 @@ fn use_given_version(requested_version: &str, settings: &Settings) -> Result<()>
         Some(python_to_use) => python_to_use.clone(),
         None => {
             let new_cfg = Some(Cfg { version });
-            let version = install_python(&new_cfg, settings)?
+            let version = install_python(None, &new_cfg, settings)?
                 .ok_or_else(|| format_err!("A Python version should have been installed"))?;
             let install_dir = utils::install_dir(&version)?;
 
@@ -156,10 +156,17 @@ fn print_to_stdout_available_python_versions(cfg: &Option<Cfg>, settings: &Setti
     Ok(())
 }
 
-fn install_python(cfg: &Option<Cfg>, settings: &Settings) -> Result<Option<Version>> {
-    let version: VersionReq = match cfg {
-        None => Cfg::from_user_input()?.version,
-        Some(cfg) => cfg.version.clone(),
+fn install_python(
+    from_version: Option<String>,
+    cfg: &Option<Cfg>,
+    settings: &Settings,
+) -> Result<Option<Version>> {
+    let version: VersionReq = match from_version {
+        None => match cfg {
+            None => Cfg::from_user_input()?.version,
+            Some(cfg) => cfg.version.clone(),
+        },
+        Some(version) => VersionReq::parse(&version)?,
     };
     debug!("Installing Python {}", version);
 
