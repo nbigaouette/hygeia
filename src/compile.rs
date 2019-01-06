@@ -14,10 +14,9 @@ use indicatif::{ProgressBar, ProgressStyle};
 use semver::Version;
 use subprocess::{Exec, Redirection};
 use tar::Archive;
+use terminal_size::{terminal_size, Width};
 
 use crate::{utils, Result};
-
-const MAX_LINE_LENGTH: usize = 110;
 
 pub fn extract_source(version: &Version) -> Result<()> {
     let download_dir = utils::pycors_download()?;
@@ -137,6 +136,15 @@ fn run_cmd_template<S: AsRef<std::ffi::OsStr>>(
 
     let br = BufReader::new(stream);
 
+    let message_width = if let Some((Width(width), _)) = terminal_size() {
+        // There is two characters before the message: the spinner and a space
+        let message_width = (width as usize) - 2;
+        Some(message_width)
+    } else {
+        log::warn!("Unable to get terminal size");
+        None
+    };
+
     for line in br.lines() {
         match line {
             Err(e) => {
@@ -147,10 +155,13 @@ fn run_cmd_template<S: AsRef<std::ffi::OsStr>>(
                 tx.send(SpinnerMessage::Stop)?;
                 return Err(format_err!("Error reading stdout: {:?}", e));
             }
-            Ok(mut line) => {
+            Ok(line) => {
                 // FIXME: Save to log file
-                line.truncate(MAX_LINE_LENGTH);
-                let message = format!("{}: {}", line_header, line);
+                let message = format!("{}: {}", line_header, line.replace("\t", " "));
+                let message = match message_width {
+                    None => message,
+                    Some(width) => console::truncate_str(&message, width, "...").to_string(),
+                };
                 tx.send(SpinnerMessage::Message(message))?
             }
         };
