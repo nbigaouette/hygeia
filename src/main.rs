@@ -1,6 +1,7 @@
 use std::env;
 
 use failure::format_err;
+use human_panic::setup_panic;
 use log::{debug, error};
 use structopt::StructOpt;
 
@@ -88,6 +89,8 @@ enum Command {
 }
 
 fn main() -> Result<()> {
+    setup_panic!();
+
     env_logger::init();
 
     let settings = Settings::from_pycors_home()?;
