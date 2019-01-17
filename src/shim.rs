@@ -164,7 +164,11 @@ pub fn setup_shim(shell: Shell) -> Result<()> {
                 Opt::clap().gen_completions_to("pycors", shell, &mut f);
 
                 log::debug!("Adding {:?} to $PATH in {:?}...", bin_dir, bash_profile);
-                let mut file = fs::OpenOptions::new().append(true).open(&bash_profile)?;
+                let bash_profile_existed = bash_profile.exists();
+                let mut file = fs::OpenOptions::new()
+                    .append(true)
+                    .create(true)
+                    .open(&bash_profile)?;
                 let lines = &[
                     String::from(""),
                     "#################################################".to_string(),
