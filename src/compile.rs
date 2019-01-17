@@ -51,6 +51,8 @@ pub fn extract_source(version: &Version) -> Result<()> {
 pub fn compile_source(version: &Version) -> Result<()> {
     // Compilation
 
+    let original_current_dir = env::current_dir()?;
+
     let install_dir = utils::install_dir(version)?;
 
     #[allow(unused_mut)]
@@ -141,6 +143,12 @@ pub fn compile_source(version: &Version) -> Result<()> {
             },
         }
     }
+
+    log::debug!(
+        "Changing back current directory to {:?}",
+        original_current_dir
+    );
+    env::set_current_dir(&original_current_dir)?;
 
     Ok(())
 }
