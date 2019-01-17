@@ -70,6 +70,10 @@ pub fn pycors_installed() -> Result<PathBuf> {
     Ok(pycors_home()?.join("installed"))
 }
 
+pub fn pycors_logs() -> Result<PathBuf> {
+    Ok(pycors_home()?.join("logs"))
+}
+
 pub fn install_dir(version: &Version) -> Result<PathBuf> {
     Ok(pycors_installed()?.join(format!("{}", version)))
 }
