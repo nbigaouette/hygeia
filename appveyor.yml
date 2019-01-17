@@ -17,6 +17,7 @@ environment:
     # MSVC
     # - TARGET: i686-pc-windows-msvc
     - TARGET: x86_64-pc-windows-msvc
+      RUST_VERSION: 1.31.1
 
     # # Testing other channels
     # - TARGET: x86_64-pc-windows-gnu
