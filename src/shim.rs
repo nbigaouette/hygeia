@@ -174,6 +174,11 @@ pub fn setup_shim(shell: Shell) -> Result<()> {
                     "#################################################".to_string(),
                     "# These lines were added by pycors.".to_string(),
                     "# See https://github.com/nbigaouette/pycors".to_string(),
+                    if !bash_profile_existed {
+                        "source ${HOME}/.bashrc".to_string()
+                    } else {
+                        String::from("")
+                    },
                     format!(r#"export PATH="{}:$PATH""#, bin_dir.display()),
                     format!(r#"source "{}""#, autocomplete_file.display()),
                     "#################################################".to_string(),
