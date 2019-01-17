@@ -5,7 +5,8 @@ use std::{
 };
 
 use semver::Version;
-use subprocess::{Exec, NullFile, Redirection};
+use subprocess::{Exec, Redirection};
+use which::which_in;
 
 use crate::{utils, Result};
 
@@ -129,30 +130,24 @@ where
     P2: AsRef<Path> + std::convert::AsRef<std::ffi::OsStr>,
 {
     let skip_dir: &Path = skip_dir.as_ref();
+    let path: &Path = path.as_ref();
 
     let mut other_pythons: HashMap<Version, PathBuf> = HashMap::new();
-
-
-        let python_path = match Exec::cmd("which")
-            .arg(&executable)
-            .stdout(Redirection::Pipe)
-            .stderr(NullFile)
-            .env("PATH", &path)
-            .capture()
-        {
     let versions_suffix = &["", "2", "3"];
+
     for version_suffix in versions_suffix {
         let executable = format!("python{}", version_suffix);
-            Err(e) => {
+
+        let python_path = match which_in(&executable, Some(&path), "/") {
+            Err(_) => {
+                // log::debug!("Executable '{}' not found in {:?}", executable, path);
                 continue;
             }
             Ok(python_path) => python_path,
-        }
-        .stdout_str();
-        let python_path = python_path.trim();
+        };
 
-        if !python_path.is_empty() {
-            let python_path: &Path = path.as_ref();
+        if python_path.exists() {
+            let python_path: &Path = path;
             let python_pathbuf: PathBuf = python_path.to_path_buf();
 
             if python_path == skip_dir {
