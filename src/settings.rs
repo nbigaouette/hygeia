@@ -129,10 +129,7 @@ where
     let skip_dir: &Path = skip_dir.as_ref();
 
     let mut other_pythons: HashMap<Version, PathBuf> = HashMap::new();
-    let versions_sufix = &["", "2", "3"];
 
-    for version_sufix in versions_sufix {
-        let executable = format!("python{}", version_sufix);
 
         let python_path = match Exec::cmd("which")
             .arg(&executable)
@@ -141,6 +138,9 @@ where
             .env("PATH", &path)
             .capture()
         {
+    let versions_suffix = &["", "2", "3"];
+    for version_suffix in versions_suffix {
+        let executable = format!("python{}", version_suffix);
             Err(e) => {
                 error!(
                     "Failed to capture stdout from `which {}`: {:?}",
