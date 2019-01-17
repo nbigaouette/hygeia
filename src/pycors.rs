@@ -20,7 +20,7 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
     if let Some(subcommand) = opt.subcommand {
         match subcommand {
             Command::Autocomplete { shell } => {
-                print_autocomplete_to_stdout(&shell)?;
+                print_autocomplete_to_stdout(shell)?;
             }
             Command::List => print_to_stdout_available_python_versions(cfg, settings)?,
             Command::Path => print_active_interpreter_path(cfg, settings)?,
@@ -30,7 +30,7 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
                 install_python(from_version, cfg, settings)?;
             }
             Command::Run { command } => run_command(cfg, settings, &command)?,
-            Command::Setup { shell } => setup_shim(&shell)?,
+            Command::Setup { shell } => setup_shim(shell)?,
         }
     } else {
     }
@@ -38,8 +38,8 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
     Ok(())
 }
 
-fn print_autocomplete_to_stdout(shell: &Shell) -> Result<()> {
-    Opt::clap().gen_completions_to("pycors", *shell, &mut std::io::stdout());
+fn print_autocomplete_to_stdout(shell: Shell) -> Result<()> {
+    Opt::clap().gen_completions_to("pycors", shell, &mut std::io::stdout());
     Ok(())
 }
 

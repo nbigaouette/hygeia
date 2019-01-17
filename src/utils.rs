@@ -139,7 +139,7 @@ pub fn get_interpreter_to_use(cfg: &Option<Cfg>, settings: &Settings) -> Result<
     let cfg: Cfg = cfg
         .as_ref() // &Option<Cfg> -> Option<&Cfg>
         .cloned() // Option<&Cfg> -> Option<Cfg>
-        .or_else(|| match settings.installed_python.iter().nth(0) {
+        .or_else(|| match settings.installed_python.get(0) {
             None => None,
             Some(latest_interpreter_found) => Some(Cfg {
                 version: VersionReq::exact(&latest_interpreter_found.version),

@@ -61,17 +61,15 @@ where
         }
         #[cfg(not(target_os = "windows"))]
         {
-            let command_string_with_major_version =
-                if last_command_char == "2" || last_command_char == "3" {
-                    command.to_string()
-                } else {
-                    debug!(
-                        "Appending Python interpreter major version {} to command.",
-                        interpreter_to_use.version.major
-                    );
-                    format!("{}{}", command, interpreter_to_use.version.major)
-                };
-            command_string_with_major_version
+            if last_command_char == "2" || last_command_char == "3" {
+                command.to_string()
+            } else {
+                debug!(
+                    "Appending Python interpreter major version {} to command.",
+                    interpreter_to_use.version.major
+                );
+                format!("{}{}", command, interpreter_to_use.version.major)
+            }
         }
     };
 
@@ -96,7 +94,7 @@ where
     Ok(())
 }
 
-pub fn setup_shim(shell: &Shell) -> Result<()> {
+pub fn setup_shim(shell: Shell) -> Result<()> {
     debug!("Setting up the shim...");
 
     // Copy itself into ~/.pycors/bin
@@ -166,7 +164,7 @@ pub fn setup_shim(shell: &Shell) -> Result<()> {
                 // Add the autocomplete too
                 let autocomplete_file = pycors_home_dir.join("pycors.bash-completion");
                 let mut f = fs::File::create(&autocomplete_file)?;
-                Opt::clap().gen_completions_to("pycors", *shell, &mut f);
+                Opt::clap().gen_completions_to("pycors", shell, &mut f);
 
                 debug!("Adding {:?} to $PATH in {:?}...", bin_dir, bash_profile);
                 let mut file = fs::OpenOptions::new().append(true).open(&bash_profile)?;
