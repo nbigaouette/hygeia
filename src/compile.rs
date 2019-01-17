@@ -1,7 +1,7 @@
 use std::{
     env,
     fs::{self, File},
-    io::{BufRead, BufReader},
+    io::{self, BufRead, BufReader},
     path::Path,
     sync::mpsc::channel,
     thread,
@@ -103,7 +103,21 @@ pub fn compile_source(version: &Version) -> Result<()> {
         if Path::new(&basename_dest).exists() {
             fs::remove_file(&basename_dest)?;
         }
-        fs::hard_link(&basename_src, &basename_dest)?;
+        log::debug!(
+            "Creating hard-link from {:?} to {:?}",
+            basename_src,
+            basename_dest
+        );
+        match fs::hard_link(&basename_src, &basename_dest) {
+            Ok(()) => {}
+            Err(e) => match e.kind() {
+                io::ErrorKind::NotFound => log::warn!(
+                    "Source {:?} not found when creating hard link",
+                    basename_src
+                ),
+                _ => Err(e)?,
+            },
+        }
         // Create a hard link to the file containing the major version only
         let basename_dest = basename_to_link
             .replace("-###", &ver_maj)
@@ -111,7 +125,21 @@ pub fn compile_source(version: &Version) -> Result<()> {
         if Path::new(&basename_dest).exists() {
             fs::remove_file(&basename_dest)?;
         }
-        fs::hard_link(&basename_src, &basename_dest)?;
+        log::debug!(
+            "Creating hard-link from {:?} to {:?}",
+            basename_src,
+            basename_dest
+        );
+        match fs::hard_link(&basename_src, &basename_dest) {
+            Ok(()) => {}
+            Err(e) => match e.kind() {
+                io::ErrorKind::NotFound => log::warn!(
+                    "Source {:?} not found when creating hard link",
+                    basename_src
+                ),
+                _ => Err(e)?,
+            },
+        }
     }
 
     Ok(())
