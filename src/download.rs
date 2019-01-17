@@ -6,7 +6,6 @@ use std::{
 
 use failure::format_err;
 use indicatif::{ProgressBar, ProgressStyle};
-use log::{debug, error, info, warn};
 use regex::Regex;
 use semver::Version;
 use url::Url;
@@ -19,7 +18,7 @@ pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()
     let download_to = download_to.as_ref();
 
     if !utils::path_exists(&download_to) {
-        debug!("Directory {:?} does not exists. Creating.", download_to);
+        log::debug!("Directory {:?} does not exists. Creating.", download_to);
         create_dir_all(&download_to)?;
     }
 
@@ -41,7 +40,7 @@ pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()
         );
         Ok(())
     } else {
-        info!("Downloading {}...", url);
+        log::info!("Downloading {}...", url);
 
         let mut resp = reqwest::get(url.as_str())?;
 
@@ -50,11 +49,11 @@ pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()
             let ct_len = match headers.get(reqwest::header::CONTENT_LENGTH).cloned() {
                 Some(ct_len) => {
                     let ct_len: u64 = ct_len.to_str()?.parse()?;
-                    debug!("Downloading {} bytes...", ct_len);
+                    log::debug!("Downloading {} bytes...", ct_len);
                     Some(ct_len)
                 }
                 None => {
-                    warn!("Could not find out file size");
+                    log::warn!("Could not find out file size");
                     None
                 }
             };
@@ -86,7 +85,7 @@ pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()
 
             Ok(())
         } else {
-            error!("Failed to download {}: {:?}", resp.url(), resp.status());
+            log::error!("Failed to download {}: {:?}", resp.url(), resp.status());
             let res = resp.error_for_status();
             res.map(|_| ())
                 .map_err(|e| format_err!("Failed to download file: {:?}", e))

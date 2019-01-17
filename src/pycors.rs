@@ -1,5 +1,4 @@
 use failure::format_err;
-use log::{debug, info};
 use prettytable::{cell, row, Cell, Row, Table};
 use semver::{Version, VersionReq};
 use structopt::{clap::Shell, StructOpt};
@@ -15,7 +14,7 @@ use crate::{Command, Opt};
 
 pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
     let opt = Opt::from_args();
-    debug!("{:?}", opt);
+    log::debug!("{:?}", opt);
 
     if let Some(subcommand) = opt.subcommand {
         match subcommand {
@@ -58,9 +57,9 @@ fn print_active_interpreter_version(cfg: &Option<Cfg>, settings: &Settings) -> R
 fn use_given_version(requested_version: &str, settings: &Settings) -> Result<()> {
     // Convert the requested version string to proper VersionReq
     // FIXME: Should a `~` be explicitly added here if user does not provide it?
-    debug!("Requesting version: {}", requested_version);
+    log::debug!("Requesting version: {}", requested_version);
     let version: VersionReq = requested_version.parse()?;
-    debug!("Semantic version requirement: {}", version);
+    log::debug!("Semantic version requirement: {}", version);
 
     let python_to_use = match utils::active_version(&version, settings) {
         Some(python_to_use) => python_to_use.clone(),
@@ -77,7 +76,7 @@ fn use_given_version(requested_version: &str, settings: &Settings) -> Result<()>
         }
     };
 
-    debug!(
+    log::debug!(
         "Using {} from {}",
         python_to_use.version,
         python_to_use.location.display()
@@ -168,14 +167,14 @@ fn install_python(
         },
         Some(version) => VersionReq::parse(&version)?,
     };
-    debug!("Installing Python {}", version);
+    log::debug!("Installing Python {}", version);
 
     if settings
         .installed_python
         .iter()
         .any(|installed_python| version.matches(&installed_python.version))
     {
-        info!("Python version {} already installed!", version);
+        log::info!("Python version {} already installed!", version);
 
         Ok(None)
     } else {
@@ -185,7 +184,7 @@ fn install_python(
             .into_iter()
             .find(|available_version| version.matches(&available_version))
             .ok_or_else(|| format_err!("Failed to find a compatible version to {}", version))?;
-        info!("Found Python version {}", version_to_install);
+        log::info!("Found Python version {}", version_to_install);
         download_source(&version_to_install)?;
         extract_source(&version_to_install)?;
         compile_source(&version_to_install)?;

@@ -5,7 +5,6 @@ use std::{
 
 use dirs::home_dir;
 use failure::format_err;
-use log::{debug, error};
 use semver::{Version, VersionReq};
 
 use crate::{
@@ -105,7 +104,7 @@ where
         if new_path.exists() {
             fs::remove_file(&new_path)?;
         }
-        debug!(
+        log::debug!(
             "Creating hard link from {:?} to {:?}...",
             copy_from.as_ref(),
             new_path
@@ -128,7 +127,7 @@ pub fn active_version<'a>(
         .collect();
     // Sort to get latest version
     compatible_versions.sort_by_key(|compatible_version| &compatible_version.version);
-    debug!("Compatible versions found: {:?}", compatible_versions);
+    log::debug!("Compatible versions found: {:?}", compatible_versions);
 
     compatible_versions.last().cloned()
 }
@@ -148,17 +147,17 @@ pub fn get_interpreter_to_use(cfg: &Option<Cfg>, settings: &Settings) -> Result<
         .ok_or_else(|| format_err!("No Python runtime configured. Use `pycors use <version>`."))?;
 
     let active_python = active_version(&cfg.version, settings).ok_or_else(|| {
-        error!(
+        log::error!(
             "Could not find Python {} as requested from the file `.python-version`.",
             cfg.version
         );
-        error!("Either:");
-        error!("    1) Remove the file `.python-version` to use (one of) the interpreter(s) available in your $PATH.");
-        error!("    2) Edit the file to use an installed interpreter.");
-        error!("       For example, to list available interpreters:");
-        error!("           pycors list");
-        error!("       Then select a version to use:");
-        error!("           pycors use ~3.7");
+        log::error!("Either:");
+        log::error!("    1) Remove the file `.python-version` to use (one of) the interpreter(s) available in your $PATH.");
+        log::error!("    2) Edit the file to use an installed interpreter.");
+        log::error!("       For example, to list available interpreters:");
+        log::error!("           pycors list");
+        log::error!("       Then select a version to use:");
+        log::error!("           pycors use ~3.7");
         format_err!("No active Python runtime found.")
     })?.clone();
 
@@ -212,7 +211,7 @@ mod tests {
     }
 
     #[test]
-    fn dot_dir_sucess() {
+    fn dot_dir_success() {
         env::remove_var("PYCORS_HOME");
         let dir = dot_dir(".dummy").unwrap();
         let expected = home_dir().unwrap().join(".dummy");

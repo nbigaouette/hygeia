@@ -1,9 +1,6 @@
 use std::{env, fs, io::Write};
 
 use failure::format_err;
-use log::debug;
-#[cfg(target_os = "windows")]
-use log::error;
 use shlex;
 use structopt::{clap::Shell, StructOpt};
 use subprocess::{Exec, Redirection};
@@ -39,7 +36,7 @@ where
 {
     let interpreter_to_use = utils::get_interpreter_to_use(cfg, settings)?;
 
-    debug!("interpreter_to_use: {:?}", interpreter_to_use);
+    log::debug!("interpreter_to_use: {:?}", interpreter_to_use);
 
     // NOTE: Make sure the command given by the user contains the major Python version
     //       appended. This should prevent having a Python 3 interpreter in `.python-version`
@@ -64,7 +61,7 @@ where
             if last_command_char == "2" || last_command_char == "3" {
                 command.to_string()
             } else {
-                debug!(
+                log::debug!(
                     "Appending Python interpreter major version {} to command.",
                     interpreter_to_use.version.major
                 );
@@ -82,8 +79,8 @@ where
         interpreter_to_use.location.join(command)
     };
 
-    debug!("Command:   {:?}", command_full_path);
-    debug!("Arguments: {:?}", arguments);
+    log::debug!("Command:   {:?}", command_full_path);
+    log::debug!("Arguments: {:?}", arguments);
 
     Exec::cmd(&command_full_path)
         .args(arguments)
@@ -95,18 +92,18 @@ where
 }
 
 pub fn setup_shim(shell: Shell) -> Result<()> {
-    debug!("Setting up the shim...");
+    log::debug!("Setting up the shim...");
 
     // Copy itself into ~/.pycors/bin
     let pycors_home_dir = utils::pycors_home()?;
     let bin_dir = pycors_home_dir.join("shims");
     if !utils::path_exists(&bin_dir) {
-        debug!("Directory {:?} does not exists, creating.", bin_dir);
+        log::debug!("Directory {:?} does not exists, creating.", bin_dir);
         fs::create_dir_all(&bin_dir)?;
     }
     let copy_from = env::current_exe()?;
     let copy_to = bin_dir.join("pycors");
-    debug!("Copying {:?} into {:?}...", copy_from, copy_to);
+    log::debug!("Copying {:?} into {:?}...", copy_from, copy_to);
     utils::copy_file(&copy_from, &copy_to)?;
 
     // Once the shim is in place, create hard links to it.
@@ -166,7 +163,7 @@ pub fn setup_shim(shell: Shell) -> Result<()> {
                 let mut f = fs::File::create(&autocomplete_file)?;
                 Opt::clap().gen_completions_to("pycors", shell, &mut f);
 
-                debug!("Adding {:?} to $PATH in {:?}...", bin_dir, bash_profile);
+                log::debug!("Adding {:?} to $PATH in {:?}...", bin_dir, bash_profile);
                 let mut file = fs::OpenOptions::new().append(true).open(&bash_profile)?;
                 let lines = &[
                     String::from(""),

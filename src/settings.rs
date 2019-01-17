@@ -4,7 +4,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use log::{debug, error, warn};
 use semver::Version;
 use subprocess::{Exec, NullFile, Redirection};
 
@@ -26,7 +25,7 @@ impl Settings {
         let install_dir = utils::pycors_installed()?;
 
         let mut installed_python = Vec::new();
-        debug!("install_dir: {}", install_dir.display());
+        log::debug!("install_dir: {}", install_dir.display());
 
         match fs::read_dir(&install_dir) {
             Ok(dirs) => {
@@ -36,7 +35,7 @@ impl Settings {
                             let location = dir.path();
                             let version_str = match location.file_name() {
                                 None => {
-                                    error!(
+                                    log::error!(
                                         "Could not get the version from directory: {:?}",
                                         dir.path().display()
                                     );
@@ -44,7 +43,10 @@ impl Settings {
                                 }
                                 Some(dir) => match dir.to_str() {
                                     None => {
-                                        error!("Could not convert directory to str: {:?}", dir);
+                                        log::error!(
+                                            "Could not convert directory to str: {:?}",
+                                            dir
+                                        );
                                         continue;
                                     }
                                     Some(dir_str) => dir_str,
@@ -53,7 +55,7 @@ impl Settings {
 
                             let version = match Version::parse(version_str.trim()) {
                                 Err(e) => {
-                                    error!(
+                                    log::error!(
                                         "Error parsing version string {:?}: {:?}",
                                         version_str.trim(),
                                         e
@@ -75,13 +77,13 @@ impl Settings {
                             installed_python.push(PythonVersion { location, version });
                         }
                         Err(e) => {
-                            error!("Error listing directory: {:?}", e);
+                            log::error!("Error listing directory: {:?}", e);
                         }
                     }
                 }
             }
             Err(e) => {
-                warn!("Error parsing version string {:?}: {:?}", install_dir, e);
+                log::warn!("Error parsing version string {:?}: {:?}", install_dir, e);
             }
         };
 
@@ -142,10 +144,6 @@ where
     for version_suffix in versions_suffix {
         let executable = format!("python{}", version_suffix);
             Err(e) => {
-                error!(
-                    "Failed to capture stdout from `which {}`: {:?}",
-                    executable, e
-                );
                 continue;
             }
             Ok(python_path) => python_path,
@@ -158,17 +156,17 @@ where
             let python_pathbuf: PathBuf = python_path.to_path_buf();
 
             if python_path == skip_dir {
-                debug!("Skipping pycors' own bin directory.");
+                log::debug!("Skipping pycors' own bin directory.");
                 break;
             }
 
-            debug!("python_path: {}", python_path.display());
+            log::debug!("python_path: {}", python_path.display());
             if python_path.join("pycors_dummy_file").exists() {
-                debug!("Skipping pycors' shim directory.");
+                log::debug!("Skipping pycors' shim directory.");
                 break;
             }
 
-            debug!("Found python executable in {}", python_path.display());
+            log::debug!("Found python executable in {}", python_path.display());
 
             let full_executable_path = python_pathbuf.join(&executable);
             let python_version = match Exec::cmd(&full_executable_path)
@@ -179,8 +177,8 @@ where
                 .capture()
             {
                 Err(e) => {
-                    error!(
-                        "Failed to capture stdout from `which {}`: {:?}",
+                    log::error!(
+                        "Failed to capture stdout from `{}`: {:?}",
                         full_executable_path.display(),
                         e
                     );
@@ -191,7 +189,7 @@ where
             .stdout_str();
             let python_version_str = match python_version.split_whitespace().nth(1) {
                 None => {
-                    error!(
+                    log::error!(
                         "Failed to parse output from `{} -V`: {}",
                         full_executable_path.display(),
                         python_version
@@ -200,18 +198,19 @@ where
                 }
                 Some(python_version_str) => python_version_str,
             };
-            debug!("    {:?}", python_version_str);
+            log::debug!("    {:?}", python_version_str);
             let python_version = match Version::parse(python_version_str) {
                 Err(e) => {
-                    error!(
+                    log::error!(
                         "Failed to parse version string {:?}: {:?}",
-                        python_version_str, e
+                        python_version_str,
+                        e
                     );
                     continue;
                 }
                 Ok(python_version) => python_version,
             };
-            debug!("    {:?}", python_version);
+            log::debug!("    {:?}", python_version);
 
             other_pythons.insert(python_version, python_pathbuf);
         }
