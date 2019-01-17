@@ -53,7 +53,7 @@ where
     let command_string_with_major_version = {
         #[cfg(target_os = "windows")]
         {
-            error!("Adding the major Python version to binary not implemented on Windows");
+            log::error!("Adding the major Python version to binary not implemented on Windows");
             command.to_string()
         }
         #[cfg(not(target_os = "windows"))]
@@ -149,7 +149,7 @@ pub fn setup_shim(shell: Shell) -> Result<()> {
             #[cfg(target_os = "windows")]
             {
                 let message = "Windows support not yet implemented.";
-                error!("{}", message);
+                log::error!("{}", message);
                 Err(format_err!("{}", message))
             }
             #[cfg(not(target_os = "windows"))]
