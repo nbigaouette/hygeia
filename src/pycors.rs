@@ -1,14 +1,14 @@
 use failure::format_err;
 use prettytable::{cell, row, Cell, Row, Table};
 use semver::{Version, VersionReq};
-use structopt::{clap::Shell, StructOpt};
+use structopt::StructOpt;
 
 use crate::commands;
 use crate::compile::{compile_source, extract_source};
 use crate::config::Cfg;
 use crate::download::{download_source, find_all_python_versions};
 use crate::settings::{PythonVersion, Settings};
-use crate::shim::{run_command, setup_shim};
+use crate::shim::run_command;
 use crate::utils;
 use crate::Result;
 use crate::{commands::Command, Opt};
@@ -30,7 +30,7 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
                 install_python(from_version, cfg, settings)?;
             }
             Command::Run { command } => run_command(cfg, settings, &command)?,
-            Command::Setup { shell } => setup_shim(shell)?,
+            Command::Setup { shell } => commands::setup::setup_shim(shell)?,
         }
     } else {
     }
