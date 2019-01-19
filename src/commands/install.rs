@@ -1,16 +1,15 @@
 use failure::format_err;
 use semver::{Version, VersionReq};
 
-use crate::{
-    config::Cfg,
-    download::{download_source, find_all_python_versions},
-    settings::Settings,
-    Result,
-};
+use crate::{config::Cfg, settings::Settings, Result};
 
 mod compile;
+mod download;
 
-use self::compile::{compile_source, extract_source};
+use self::{
+    compile::{compile_source, extract_source},
+    download::{download_source, find_all_python_versions},
+};
 
 pub fn install_python(
     from_version: Option<String>,

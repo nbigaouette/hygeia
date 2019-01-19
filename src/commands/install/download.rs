@@ -197,7 +197,7 @@ mod tests {
 
     #[test]
     fn parse_html() {
-        let index_html = include_str!("../tests/fixtures/index.html");
+        let index_html = include_str!("../../../tests/fixtures/index.html");
 
         let parsed = parse_index_html(index_html).unwrap();
 

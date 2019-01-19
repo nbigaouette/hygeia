@@ -7,7 +7,6 @@ use structopt::StructOpt;
 
 mod commands;
 mod config;
-mod download;
 mod settings;
 mod shim;
 mod utils;
