@@ -4,15 +4,6 @@ use subprocess::{Exec, Redirection};
 
 use crate::{config::Cfg, settings::Settings, utils, Result};
 
-pub fn python_shim(
-    command: &str,
-    cfg: &Option<Cfg>,
-    settings: &Settings,
-    arguments: &[String],
-) -> Result<()> {
-    run(cfg, settings, command, arguments)
-}
-
 pub fn run<S>(cfg: &Option<Cfg>, settings: &Settings, command: &str, arguments: &[S]) -> Result<()>
 where
     S: AsRef<str> + std::convert::AsRef<std::ffi::OsStr> + std::fmt::Debug,

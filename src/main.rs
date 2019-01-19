@@ -15,7 +15,6 @@ use crate::{
     commands::Command,
     config::{load_config_file, Cfg},
     settings::Settings,
-    shim::python_shim,
 };
 
 pub type Result<T> = std::result::Result<T, failure::Error>;
@@ -97,4 +96,13 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
     }
 
     Ok(())
+}
+
+pub fn python_shim(
+    command: &str,
+    cfg: &Option<Cfg>,
+    settings: &Settings,
+    arguments: &[String],
+) -> Result<()> {
+    shim::run(cfg, settings, command, arguments)
 }
