@@ -1,13 +1,13 @@
 use structopt::{self, StructOpt};
 
-mod autocomplete;
-mod install;
-mod list;
-mod path;
-mod run;
-mod setup;
-mod use_command;
-mod version;
+pub mod autocomplete;
+pub mod install;
+pub mod list;
+pub mod path;
+pub mod run;
+pub mod setup;
+pub mod use_command;
+pub mod version;
 
 #[derive(StructOpt, Debug)]
 pub enum Command {
