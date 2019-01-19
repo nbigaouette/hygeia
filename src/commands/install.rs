@@ -11,7 +11,7 @@ use self::{
     download::{download_source, find_all_python_versions},
 };
 
-pub fn install_python(
+pub fn run(
     from_version: Option<String>,
     cfg: &Option<Cfg>,
     settings: &Settings,

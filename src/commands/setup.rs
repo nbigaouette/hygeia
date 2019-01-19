@@ -5,7 +5,7 @@ use structopt::{clap::Shell, StructOpt};
 
 use crate::{utils, Opt, Result};
 
-pub fn setup_shim(shell: Shell) -> Result<()> {
+pub fn run(shell: Shell) -> Result<()> {
     log::debug!("Setting up the shim...");
 
     // Copy itself into ~/.pycors/bin

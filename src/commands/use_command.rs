@@ -8,7 +8,7 @@ use crate::{
     utils, Result,
 };
 
-pub fn use_given_version(requested_version: &str, settings: &Settings) -> Result<()> {
+pub fn run(requested_version: &str, settings: &Settings) -> Result<()> {
     // Convert the requested version string to proper VersionReq
     // FIXME: Should a `~` be explicitly added here if user does not provide it?
     log::debug!("Requesting version: {}", requested_version);
@@ -19,7 +19,7 @@ pub fn use_given_version(requested_version: &str, settings: &Settings) -> Result
         Some(python_to_use) => python_to_use.clone(),
         None => {
             let new_cfg = Some(Cfg { version });
-            let version = commands::install::install_python(None, &new_cfg, settings)?
+            let version = commands::install::run(None, &new_cfg, settings)?
                 .ok_or_else(|| format_err!("A Python version should have been installed"))?;
             let install_dir = utils::install_dir(&version)?;
 

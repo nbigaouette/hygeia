@@ -2,10 +2,7 @@ use prettytable::{cell, row, Cell, Row, Table};
 
 use crate::{config::Cfg, settings::Settings, utils, Result};
 
-pub fn print_to_stdout_available_python_versions(
-    cfg: &Option<Cfg>,
-    settings: &Settings,
-) -> Result<()> {
+pub fn run(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
     let mut table = Table::new();
     // Header
     table.add_row(row!["Active", "Version", "Location"]);
