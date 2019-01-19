@@ -77,6 +77,15 @@ pub fn compile_source(version: &Version) -> Result<()> {
             env::set_var("CPPFLAGS", format!("-I{}/include", openssl_prefix));
             env::set_var("LDFLAGS", format!("-L{}/lib", openssl_prefix));
         };
+
+        // Make sure compilation can find zlib
+        // See https://github.com/pyenv/pyenv/wiki/common-build-problems#build-failed-error-the-python-zlib-extension-was-not-compiled-missing-the-zlib
+        let macos_sdk_path = Exec::cmd("xcrun")
+            .arg("--show-sdk-path")
+            .stdout(Redirection::Pipe)
+            .capture()?
+            .stdout_str();
+        env::set_var("CFLAGS", format!("-I{}/usr/include", macos_sdk_path.trim()));
     }
 
     run_cmd_template(&version, "[3/5] Configure", "./configure", &configure_args)?;
