@@ -2,10 +2,7 @@ use failure::format_err;
 use shlex;
 use subprocess::{Exec, Redirection};
 
-use crate::config::Cfg;
-use crate::settings::Settings;
-use crate::utils;
-use crate::Result;
+use crate::{config::Cfg, settings::Settings, utils, Result};
 
 pub fn python_shim(
     command: &str,

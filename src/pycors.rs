@@ -1,10 +1,12 @@
 use structopt::StructOpt;
 
-use crate::commands;
-use crate::config::Cfg;
-use crate::settings::Settings;
-use crate::Result;
-use crate::{commands::Command, Opt};
+use crate::{
+    commands,
+    config::Cfg,
+    settings::Settings,
+    Result,
+    {commands::Command, Opt},
+};
 
 pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
     let opt = Opt::from_args();

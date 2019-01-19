@@ -14,10 +14,7 @@ mod settings;
 mod shim;
 mod utils;
 
-use crate::config::load_config_file;
-use crate::pycors::pycors;
-use crate::settings::Settings;
-use crate::shim::python_shim;
+use crate::{config::load_config_file, pycors::pycors, settings::Settings, shim::python_shim};
 
 pub type Result<T> = std::result::Result<T, failure::Error>;
 
