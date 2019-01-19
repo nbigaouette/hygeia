@@ -1,12 +1,10 @@
 use failure::format_err;
 use prettytable::{cell, row, Cell, Row, Table};
-use semver::{Version, VersionReq};
+use semver::VersionReq;
 use structopt::StructOpt;
 
 use crate::commands;
-use crate::compile::{compile_source, extract_source};
 use crate::config::Cfg;
-use crate::download::{download_source, find_all_python_versions};
 use crate::settings::{PythonVersion, Settings};
 use crate::utils;
 use crate::Result;
@@ -26,7 +24,7 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
             Command::Version => print_active_interpreter_version(cfg, settings)?,
             Command::Use { version } => use_given_version(&version, settings)?,
             Command::Install { from_version } => {
-                install_python(from_version, cfg, settings)?;
+                commands::install::install_python(from_version, cfg, settings)?;
             }
             Command::Run { command } => commands::run::run_command(cfg, settings, &command)?,
             Command::Setup { shell } => commands::setup::setup_shim(shell)?,
@@ -60,7 +58,7 @@ fn use_given_version(requested_version: &str, settings: &Settings) -> Result<()>
         Some(python_to_use) => python_to_use.clone(),
         None => {
             let new_cfg = Some(Cfg { version });
-            let version = install_python(None, &new_cfg, settings)?
+            let version = commands::install::install_python(None, &new_cfg, settings)?
                 .ok_or_else(|| format_err!("A Python version should have been installed"))?;
             let install_dir = utils::install_dir(&version)?;
 
@@ -148,42 +146,4 @@ fn print_to_stdout_available_python_versions(cfg: &Option<Cfg>, settings: &Setti
     table.printstd();
 
     Ok(())
-}
-
-fn install_python(
-    from_version: Option<String>,
-    cfg: &Option<Cfg>,
-    settings: &Settings,
-) -> Result<Option<Version>> {
-    let version: VersionReq = match from_version {
-        None => match cfg {
-            None => Cfg::from_user_input()?.version,
-            Some(cfg) => cfg.version.clone(),
-        },
-        Some(version) => VersionReq::parse(&version)?,
-    };
-    log::debug!("Installing Python {}", version);
-
-    if settings
-        .installed_python
-        .iter()
-        .any(|installed_python| version.matches(&installed_python.version))
-    {
-        log::info!("Python version {} already installed!", version);
-
-        Ok(None)
-    } else {
-        // Get the last version compatible with the given version
-        let versions = find_all_python_versions()?;
-        let version_to_install = versions
-            .into_iter()
-            .find(|available_version| version.matches(&available_version))
-            .ok_or_else(|| format_err!("Failed to find a compatible version to {}", version))?;
-        log::info!("Found Python version {}", version_to_install);
-        download_source(&version_to_install)?;
-        extract_source(&version_to_install)?;
-        compile_source(&version_to_install)?;
-
-        Ok(Some(version_to_install))
-    }
 }
