@@ -6,7 +6,6 @@ use log::{debug, error};
 use structopt::StructOpt;
 
 mod commands;
-mod compile;
 mod config;
 mod download;
 mod settings;
