@@ -3,6 +3,7 @@ use prettytable::{cell, row, Cell, Row, Table};
 use semver::{Version, VersionReq};
 use structopt::{clap::Shell, StructOpt};
 
+use crate::commands;
 use crate::compile::{compile_source, extract_source};
 use crate::config::Cfg;
 use crate::download::{download_source, find_all_python_versions};
@@ -19,7 +20,7 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
     if let Some(subcommand) = opt.subcommand {
         match subcommand {
             Command::Autocomplete { shell } => {
-                print_autocomplete_to_stdout(shell)?;
+                commands::autocomplete::print_autocomplete_to_stdout(shell)?;
             }
             Command::List => print_to_stdout_available_python_versions(cfg, settings)?,
             Command::Path => print_active_interpreter_path(cfg, settings)?,
@@ -34,11 +35,6 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
     } else {
     }
 
-    Ok(())
-}
-
-fn print_autocomplete_to_stdout(shell: Shell) -> Result<()> {
-    Opt::clap().gen_completions_to("pycors", shell, &mut std::io::stdout());
     Ok(())
 }
 
