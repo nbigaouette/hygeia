@@ -10,7 +10,7 @@ use crate::settings::{PythonVersion, Settings};
 use crate::shim::{run_command, setup_shim};
 use crate::utils;
 use crate::Result;
-use crate::{Command, Opt};
+use crate::{commands::Command, Opt};
 
 pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
     let opt = Opt::from_args();
