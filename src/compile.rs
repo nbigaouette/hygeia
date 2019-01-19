@@ -1,7 +1,7 @@
 use std::{
     env,
     fs::{self, File},
-    io::{self, BufRead, BufReader},
+    io::{self, BufRead, BufReader, BufWriter, Write},
     path::Path,
     sync::mpsc::channel,
     thread,
@@ -161,6 +161,23 @@ fn run_cmd_template<S: AsRef<std::ffi::OsStr>>(
 ) -> Result<()> {
     let basename = utils::build_basename(&version)?;
     let extract_dir = utils::pycors_extract()?.join(&basename);
+    let logs_dir = utils::pycors_logs()?;
+
+    if !logs_dir.exists() {
+        fs::create_dir_all(&logs_dir)?;
+    }
+
+    let log_filename = format!(
+        "Python_v{}_step_{}.log",
+        version,
+        line_header
+            .replace(" ", "_")
+            .replace("[", "")
+            .replace("/", "_of_")
+            .replace("]", "")
+    );
+    let log_filepath = logs_dir.join(&log_filename);
+    let mut log_file = BufWriter::new(File::create(log_filepath)?);
 
     let (tx, child) = spinner_in_thread(line_header.to_string());
 
@@ -192,7 +209,7 @@ fn run_cmd_template<S: AsRef<std::ffi::OsStr>>(
                 return Err(format_err!("Error reading stdout: {:?}", e));
             }
             Ok(line) => {
-                // FIXME: Save to log file
+                log_line(&line, &mut log_file);
                 let message = format!("{}: {}", line_header, line.replace("\t", " "));
                 let message = match message_width {
                     None => message,
@@ -213,6 +230,24 @@ fn run_cmd_template<S: AsRef<std::ffi::OsStr>>(
         .map_err(|e| format_err!("Failed to join threads: {:?}", e))?;
 
     Ok(())
+}
+
+fn log_line<F>(line: &str, log_file: &mut F)
+where
+    F: Write,
+{
+    log_file
+        .write_all(chrono::Local::now().to_rfc3339().as_bytes())
+        .unwrap_or_else(|e| log::error!("Writing to log file failed: {:?}", e));
+    log_file
+        .write_all(b" - ")
+        .unwrap_or_else(|e| log::error!("Writing to log file failed: {:?}", e));
+    log_file
+        .write_all(line.as_bytes())
+        .unwrap_or_else(|e| log::error!("Writing to log file failed: {:?}", e));
+    log_file
+        .write_all(b"\n")
+        .unwrap_or_else(|e| log::error!("Writing to log file failed: {:?}", e));
 }
 
 fn create_spinner(msg: &str) -> ProgressBar {
