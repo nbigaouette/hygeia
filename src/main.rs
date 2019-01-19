@@ -9,12 +9,16 @@ mod commands;
 mod compile;
 mod config;
 mod download;
-mod pycors;
 mod settings;
 mod shim;
 mod utils;
 
-use crate::{config::load_config_file, pycors::pycors, settings::Settings, shim::python_shim};
+use crate::{
+    commands::Command,
+    config::{load_config_file, Cfg},
+    settings::Settings,
+    shim::python_shim,
+};
 
 pub type Result<T> = std::result::Result<T, failure::Error>;
 
@@ -63,6 +67,35 @@ fn main() -> Result<()> {
                 python_shim(exe, &cfg_opt, &settings, remaining_args)?;
             }
         }
+    }
+
+    Ok(())
+}
+
+pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
+    let opt = Opt::from_args();
+    log::debug!("{:?}", opt);
+
+    if let Some(subcommand) = opt.subcommand {
+        match subcommand {
+            Command::Autocomplete { shell } => {
+                commands::autocomplete::print_autocomplete_to_stdout(shell)?;
+            }
+            Command::List => {
+                commands::list::print_to_stdout_available_python_versions(cfg, settings)?
+            }
+            Command::Path => commands::path::print_active_interpreter_path(cfg, settings)?,
+            Command::Version => commands::version::print_active_interpreter_version(cfg, settings)?,
+            Command::Use { version } => {
+                commands::use_command::use_given_version(&version, settings)?
+            }
+            Command::Install { from_version } => {
+                commands::install::install_python(from_version, cfg, settings)?;
+            }
+            Command::Run { command } => commands::run::run_command(cfg, settings, &command)?,
+            Command::Setup { shell } => commands::setup::setup_shim(shell)?,
+        }
+    } else {
     }
 
     Ok(())
