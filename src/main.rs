@@ -5,18 +5,17 @@ use human_panic::setup_panic;
 use log::{debug, error};
 use structopt::StructOpt;
 
-mod compile;
+mod commands;
 mod config;
-mod download;
-mod pycors;
 mod settings;
 mod shim;
 mod utils;
 
-use crate::config::load_config_file;
-use crate::pycors::pycors;
-use crate::settings::Settings;
-use crate::shim::python_shim;
+use crate::{
+    commands::Command,
+    config::{load_config_file, Cfg},
+    settings::Settings,
+};
 
 pub type Result<T> = std::result::Result<T, failure::Error>;
 
@@ -24,68 +23,7 @@ pub type Result<T> = std::result::Result<T, failure::Error>;
 #[derive(StructOpt, Debug)]
 struct Opt {
     #[structopt(subcommand)]
-    subcommand: Option<Command>,
-}
-
-#[derive(StructOpt, Debug)]
-enum Command {
-    /// Print to stdout an autocomplete script for the specified shell
-    ///
-    /// For example:
-    ///     pycors autocomplete bash > /etc/bash_completion.d/pycors.bash-completion
-    #[structopt(name = "autocomplete")]
-    Autocomplete { shell: structopt::clap::Shell },
-
-    /// List installed Python versions
-    #[structopt(name = "list")]
-    List,
-
-    /// Get path to active interpreter
-    ///
-    /// For example:
-    ///     pycors path
-    ///     /usr/local/bin
-    #[structopt(name = "path")]
-    Path,
-
-    /// Get version of active interpreter
-    ///
-    /// For example:
-    ///     pycors version
-    ///     3.7.2
-    #[structopt(name = "version")]
-    Version,
-
-    /// Use specified Python versions
-    ///
-    /// The specified Python version will be installed if not already installed.
-    ///
-    /// For example:
-    ///     pycors use 3.6
-    /// will install ~3.6
-    #[structopt(name = "use")]
-    Use { version: String },
-
-    /// Install version, either from the provided version or from `.python-version`
-    #[structopt(name = "install")]
-    Install { from_version: Option<String> },
-
-    /// Run a binary from the installed `.python-version`
-    ///
-    /// For example:
-    ///     pycors run "python -v"
-    ///     pycors run "python -c \"print('string with spaces')\""
-    #[structopt(name = "run")]
-    Run { command: String },
-
-    /// Setup the shim
-    ///
-    /// This will install pycor's binary to `~/.pycors/bin` and add the
-    /// directory to the `$PATH` environment variable (through `~/.bash_profile`).
-    ///
-    /// Supported shells: Bash, Fish, Zsh, PowerShell and Elvish.
-    #[structopt(name = "setup")]
-    Setup { shell: structopt::clap::Shell },
+    subcommand: Option<commands::Command>,
 }
 
 fn main() -> Result<()> {
@@ -129,4 +67,38 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
+    let opt = Opt::from_args();
+    log::debug!("{:?}", opt);
+
+    if let Some(subcommand) = opt.subcommand {
+        match subcommand {
+            Command::Autocomplete { shell } => {
+                commands::autocomplete::run(shell)?;
+            }
+            Command::List => commands::list::run(cfg, settings)?,
+            Command::Path => commands::path::run(cfg, settings)?,
+            Command::Version => commands::version::run(cfg, settings)?,
+            Command::Use { version } => commands::use_command::run(&version, settings)?,
+            Command::Install { from_version } => {
+                commands::install::run(from_version, cfg, settings)?;
+            }
+            Command::Run { command } => commands::run::run(cfg, settings, &command)?,
+            Command::Setup { shell } => commands::setup::run(shell)?,
+        }
+    } else {
+    }
+
+    Ok(())
+}
+
+pub fn python_shim(
+    command: &str,
+    cfg: &Option<Cfg>,
+    settings: &Settings,
+    arguments: &[String],
+) -> Result<()> {
+    shim::run(cfg, settings, command, arguments)
 }
