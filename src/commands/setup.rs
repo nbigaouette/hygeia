@@ -1,4 +1,7 @@
-use std::{env, fs, io::Write};
+use std::{
+    env, fs,
+    io::{BufRead, BufReader, Write},
+};
 
 use failure::format_err;
 use structopt::{clap::Shell, StructOpt};
@@ -78,28 +81,63 @@ pub fn run(shell: Shell) -> Result<()> {
                 Opt::clap().gen_completions_to("pycors", shell, &mut f);
 
                 log::debug!("Adding {:?} to $PATH in {:?}...", bin_dir, bash_profile);
-                let bash_profile_existed = bash_profile.exists();
-                let mut file = fs::OpenOptions::new()
-                    .append(true)
-                    .create(true)
-                    .open(&bash_profile)?;
-                let lines = &[
-                    String::from(""),
-                    "#################################################".to_string(),
-                    "# These lines were added by pycors.".to_string(),
-                    "# See https://github.com/nbigaouette/pycors".to_string(),
-                    if !bash_profile_existed {
-                        "source ${HOME}/.bashrc".to_string()
-                    } else {
-                        String::from("")
-                    },
-                    format!(r#"export PATH="{}:$PATH""#, bin_dir.display()),
-                    format!(r#"source "{}""#, autocomplete_file.display()),
-                    "#################################################".to_string(),
-                ];
-                for line in lines {
-                    // debug!("    {}", line);
-                    writeln!(file, "{}", line)?;
+                let bash_profile_line = format!(r#"export PATH="{}:$PATH""#, bin_dir.display());
+
+                let do_edit_bash_profile = if !bash_profile.exists() {
+                    true
+                } else {
+                    // Verify that file does not contain a line `export PATH=...`
+
+                    let f = fs::File::open(&bash_profile)?;
+                    let f = BufReader::new(f);
+                    let mut line_found = false;
+                    for line in f.lines() {
+                        match line {
+                            Err(e) => log::error!(
+                                "Failed to read line from file {:?}: {:?}",
+                                bash_profile,
+                                e,
+                            ),
+                            Ok(line) => {
+                                if line == bash_profile_line {
+                                    log::debug!(
+                                        "File {:?} already contains PATH export. Skipping.",
+                                        bash_profile
+                                    );
+                                    line_found = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    !line_found
+                };
+
+                if do_edit_bash_profile {
+                    let bash_profile_existed = bash_profile.exists();
+                    let mut file = fs::OpenOptions::new()
+                        .append(true)
+                        .create(true)
+                        .open(&bash_profile)?;
+                    let lines = &[
+                        String::from(""),
+                        "#################################################".to_string(),
+                        "# These lines were added by pycors.".to_string(),
+                        "# See https://github.com/nbigaouette/pycors".to_string(),
+                        if !bash_profile_existed {
+                            "source ${HOME}/.bashrc".to_string()
+                        } else {
+                            String::from("")
+                        },
+                        bash_profile_line,
+                        format!(r#"source "{}""#, autocomplete_file.display()),
+                        "#################################################".to_string(),
+                    ];
+                    for line in lines {
+                        // debug!("    {}", line);
+                        writeln!(file, "{}", line)?;
+                    }
                 }
 
                 Ok(())
