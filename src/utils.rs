@@ -144,6 +144,8 @@ pub fn get_interpreter_to_use(cfg: &Option<Cfg>, settings: &Settings) -> Result<
         log::warn!("");
         log::warn!("See available versions with:");
         log::warn!("    pycors list");
+        log::warn!("");
+        log::warn!("pycors will select the highest version available.");
     }
 
     // If `cfg` is `None`, check if there is something in `Settings`; pick the first found
