@@ -169,7 +169,7 @@ directory) with the latest [_Semantic Versioning_](https://semver.org/) version
 compatible with `3.7`.
 
 ```sh
-> pycors use ~3.7
+> pycors select ~3.7
 > pycors version
 3.7.2
 ```

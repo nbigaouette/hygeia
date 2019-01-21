@@ -140,7 +140,7 @@ pub fn get_interpreter_to_use(cfg: &Option<Cfg>, settings: &Settings) -> Result<
     if !cfg.is_some() {
         log::warn!("No '.python-version' found.");
         log::warn!("Please select a Python version to use with:");
-        log::warn!("    pycors use");
+        log::warn!("    pycors select <version>");
         log::warn!("");
         log::warn!("See available versions with:");
         log::warn!("    pycors list");
@@ -165,7 +165,9 @@ pub fn get_interpreter_to_use(cfg: &Option<Cfg>, settings: &Settings) -> Result<
                 }),
             }
         })
-        .ok_or_else(|| format_err!("No Python runtime configured. Use `pycors use <version>`."))?;
+        .ok_or_else(|| {
+            format_err!("No Python runtime configured. Use `pycors select <version> <version>`.")
+        })?;
 
     let active_python = active_version(&cfg.version, settings).ok_or_else(|| {
         log::error!(
@@ -178,7 +180,7 @@ pub fn get_interpreter_to_use(cfg: &Option<Cfg>, settings: &Settings) -> Result<
         log::error!("       For example, to list available interpreters:");
         log::error!("           pycors list");
         log::error!("       Then select a version to use:");
-        log::error!("           pycors use ~3.7");
+        log::error!("           pycors select <version> ~3.7");
         format_err!("No active Python runtime found.")
     })?.clone();
 
