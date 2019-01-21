@@ -112,7 +112,13 @@ pub fn compile_source(version: &Version) -> Result<()> {
                 &version,
                 &format!("[{}/15] pip install --upgrade {}", i + 6, to_pip_install),
                 pip,
-                &["install", "--upgrade", to_pip_install],
+                &[
+                    "install",
+                    "--verbose",
+                    "--upgrade",
+                    &format!("--install-option='--prefix={:?}'", install_dir),
+                    to_pip_install,
+                ],
             ) {
                 log::error!("Failed to pip install {}: {:?}", to_pip_install, e);
             }
