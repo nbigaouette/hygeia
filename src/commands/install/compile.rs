@@ -213,6 +213,7 @@ fn run_cmd_template<S: AsRef<std::ffi::OsStr>>(
             .replace("[", "")
             .replace("/", "_of_")
             .replace("]", "")
+            .replace("-", "")
     );
     let log_filepath = logs_dir.join(&log_filename);
     let mut log_file = BufWriter::new(File::create(log_filepath)?);
