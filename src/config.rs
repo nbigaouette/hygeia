@@ -1,4 +1,5 @@
 use std::{
+    env,
     fs::File,
     io::{self, BufRead, BufReader, Write},
     path::Path,
@@ -17,10 +18,28 @@ pub struct Cfg {
 }
 
 pub fn load_config_file() -> Option<Result<Cfg>> {
-    if utils::path_exists(TOOLCHAIN_FILE) {
-        Some(Cfg::from_file(TOOLCHAIN_FILE))
-    } else {
-        None
+    match env::current_dir() {
+        Ok(mut path) => {
+            loop {
+                let toolchain_file = path.join(TOOLCHAIN_FILE);
+                if utils::path_exists(&toolchain_file) {
+                    // We've found the file, stop.
+                    log::debug!("Found file {:?}", toolchain_file);
+                    break Some(Cfg::from_file(toolchain_file));
+                }
+
+                if path.parent().is_none() {
+                    // We are at the root directory, we haven't found anything.
+                    break None;
+                }
+
+                path.pop();
+            }
+        }
+        Err(e) => {
+            log::error!("Failed to get current working directory: {:?}", e);
+            Some(Err(e.into()))
+        }
     }
 }
 
