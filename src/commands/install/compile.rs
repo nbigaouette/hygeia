@@ -91,6 +91,34 @@ pub fn compile_source(version: &Version) -> Result<()> {
     run_cmd_template(&version, "[3/5] Configure", "./configure", &configure_args)?;
     run_cmd_template::<&str>(&version, "[4/5] Make", "make", &[])?;
     run_cmd_template(&version, "[5/5] Make install", "make", &["install"])?;
+    // Install some pip packages
+    let to_pip_installs = &[
+        "pip",
+        "wheel",
+        "pipenv",
+        "poetry",
+        "virtualenv",
+        "neovim",
+        "autopep8",
+        "pylint",
+        "black",
+        "yapf)",
+    ];
+    let pip = install_dir.join("pip");
+    if let Some(pip) = pip.to_str() {
+        for (i, to_pip_install) in to_pip_installs.iter().enumerate() {
+            if let Err(e) = run_cmd_template(
+                &version,
+                &format!("[{}/15] pip install --upgrade {}", i + 6, to_pip_install),
+                pip,
+                &["install", "--upgrade", to_pip_install],
+            ) {
+                log::error!("Failed to pip install {}: {:?}", to_pip_install, e);
+            }
+        }
+    } else {
+        log::error!("Could not get string slice from pip path: {:?}", pip);
+    }
 
     // Create symbolic links from binaries with `3` suffix
     let bin_dir = install_dir.join("bin");
