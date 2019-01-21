@@ -29,6 +29,12 @@ struct Opt {
 fn main() -> Result<()> {
     setup_panic!();
 
+    std::env::var("RUST_LOG").or_else(|_| -> Result<String> {
+        let rust_log = "pycors=warn".to_string();
+        std::env::set_var("RUST_LOG", &rust_log);
+        Ok(rust_log)
+    })?;
+
     env_logger::init();
 
     let settings = Settings::from_pycors_home()?;
