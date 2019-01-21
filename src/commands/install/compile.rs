@@ -24,7 +24,7 @@ pub fn extract_source(version: &Version) -> Result<()> {
     let file_path = download_dir.join(&filename);
     let extract_dir = utils::pycors_extract()?;
 
-    let line_header = "[2/5] Extract";
+    let line_header = "[2/15] Extract";
 
     let message = format!("{}ing {:?}...", line_header, file_path);
 
@@ -88,9 +88,10 @@ pub fn compile_source(version: &Version) -> Result<()> {
         env::set_var("CFLAGS", format!("-I{}/usr/include", macos_sdk_path.trim()));
     }
 
-    run_cmd_template(&version, "[3/5] Configure", "./configure", &configure_args)?;
-    run_cmd_template::<&str>(&version, "[4/5] Make", "make", &[])?;
-    run_cmd_template(&version, "[5/5] Make install", "make", &["install"])?;
+    run_cmd_template(&version, "[3/15] Configure", "./configure", &configure_args)?;
+    run_cmd_template::<&str>(&version, "[4/15] Make", "make", &[])?;
+    run_cmd_template(&version, "[5/15] Make install", "make", &["install"])?;
+
     // Install some pip packages
     let to_pip_installs = &[
         "pip",
