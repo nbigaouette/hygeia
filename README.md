@@ -63,7 +63,7 @@ See `pycors --help` for all commands:
 
 ```sh
 > pycors --help
-pycors 0.0.7
+pycors 0.1.4
 Nicolas Bigaouette <nbigaouette@gmail.com>
 Control which Python toolchain to use on a directory basis.
 
@@ -71,22 +71,18 @@ USAGE:
     pycors [SUBCOMMAND]
 
 FLAGS:
-    -h, --help
-            Prints help information
-
-    -V, --version
-            Prints version information
-
+    -h, --help       Prints help information
+    -V, --version    Prints version information
 
 SUBCOMMANDS:
     autocomplete    Print to stdout an autocomplete script for the specified shell
     help            Prints this message or the help of the given subcommand(s)
-    install         Install version from `.python-version`
+    install         Install version, either from the provided version or from `.python-version`
     list            List installed Python versions
     path            Get path to active interpreter
     run             Run a binary from the installed `.python-version`
+    select          Select specified Python versions to use
     setup           Setup the shim
-    use             Use specified Python versions
     version         Get version of active interpreter
 ```
 
