@@ -5,8 +5,8 @@ pub mod install;
 pub mod list;
 pub mod path;
 pub mod run;
+pub mod select;
 pub mod setup;
-pub mod use_command;
 pub mod version;
 
 #[derive(StructOpt, Debug)]
@@ -38,15 +38,19 @@ pub enum Command {
     #[structopt(name = "version")]
     Version,
 
-    /// Use specified Python versions
+    /// Select specified Python versions to use
     ///
-    /// The specified Python version will be installed if not already installed.
+    /// The specified Python version will _not_ be installed if not already installed.
+    /// Use `pycors install` for this.
     ///
     /// For example:
-    ///     pycors use 3.6
-    /// will install ~3.6
-    #[structopt(name = "use")]
-    Use { version: String },
+    ///     pycors select 3.6
+    /// will select ~3.6 (the most up to date version of the 3.6 series).
+    ///
+    ///     pycors select =3.7.2
+    /// will select an exact version.
+    #[structopt(name = "select")]
+    Select { version: String },
 
     /// Install version, either from the provided version or from `.python-version`
     #[structopt(name = "install")]

@@ -81,7 +81,7 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
             Command::List => commands::list::run(cfg, settings)?,
             Command::Path => commands::path::run(cfg, settings)?,
             Command::Version => commands::version::run(cfg, settings)?,
-            Command::Use { version } => commands::use_command::run(&version, settings)?,
+            Command::Select { version } => commands::select::run(&version, settings)?,
             Command::Install { from_version } => {
                 commands::install::run(from_version, cfg, settings)?;
             }
