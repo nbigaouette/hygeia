@@ -29,6 +29,12 @@ struct Opt {
 fn main() -> Result<()> {
     setup_panic!();
 
+    std::env::var("RUST_LOG").or_else(|_| -> Result<String> {
+        let rust_log = "pycors=warn".to_string();
+        std::env::set_var("RUST_LOG", &rust_log);
+        Ok(rust_log)
+    })?;
+
     env_logger::init();
 
     let settings = Settings::from_pycors_home()?;
@@ -100,5 +106,7 @@ pub fn python_shim(
     settings: &Settings,
     arguments: &[String],
 ) -> Result<()> {
-    shim::run(cfg, settings, command, arguments)
+    let interpreter_to_use = utils::get_interpreter_to_use(cfg, settings)?;
+
+    shim::run(&interpreter_to_use, command, arguments)
 }

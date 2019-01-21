@@ -1,15 +1,12 @@
 use failure::format_err;
-use shlex;
 use subprocess::{Exec, Redirection};
 
-use crate::{config::Cfg, settings::Settings, utils, Result};
+use crate::{settings::PythonVersion, Result};
 
-pub fn run<S>(cfg: &Option<Cfg>, settings: &Settings, command: &str, arguments: &[S]) -> Result<()>
+pub fn run<S>(interpreter_to_use: &PythonVersion, command: &str, arguments: &[S]) -> Result<()>
 where
     S: AsRef<str> + std::convert::AsRef<std::ffi::OsStr> + std::fmt::Debug,
 {
-    let interpreter_to_use = utils::get_interpreter_to_use(cfg, settings)?;
-
     log::debug!("interpreter_to_use: {:?}", interpreter_to_use);
 
     // NOTE: Make sure the command given by the user contains the major Python version
