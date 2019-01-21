@@ -1,13 +1,16 @@
 use failure::format_err;
 use subprocess::{Exec, Redirection};
 
-use crate::{settings::PythonVersion, Result};
+use crate::{settings::PythonVersion, utils, Result};
 
 pub fn run<S>(interpreter_to_use: &PythonVersion, command: &str, arguments: &[S]) -> Result<()>
 where
     S: AsRef<str> + std::convert::AsRef<std::ffi::OsStr> + std::fmt::Debug,
 {
     log::debug!("interpreter_to_use: {:?}", interpreter_to_use);
+
+    let install_dir = utils::install_dir(&interpreter_to_use.version)?;
+    let bin_dir = install_dir.join("bin");
 
     // NOTE: Make sure the command given by the user contains the major Python version
     //       appended. This should prevent having a Python 3 interpreter in `.python-version`
@@ -55,6 +58,7 @@ where
 
     Exec::cmd(&command_full_path)
         .args(arguments)
+        .env("PATH", bin_dir)
         .stdout(Redirection::None)
         .stderr(Redirection::None)
         .join()?;
