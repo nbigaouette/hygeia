@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     env, fs,
+    marker::PhantomData,
     path::{Path, PathBuf},
 };
 
@@ -19,6 +20,9 @@ pub struct PythonVersion {
 #[derive(Debug, Default)]
 pub struct Settings {
     pub installed_python: Vec<PythonVersion>,
+
+    // Prevent manual instantiation
+    hidden: PhantomData<()>,
 }
 
 impl Settings {
@@ -96,7 +100,10 @@ impl Settings {
         let other_pythons = get_python_versions_from_paths(&original_path, &bin_dir);
         installed_python.extend(other_pythons);
 
-        Ok(Settings { installed_python })
+        Ok(Settings {
+            installed_python,
+            hidden: PhantomData,
+        })
     }
 }
 
