@@ -1,5 +1,4 @@
 use failure::format_err;
-use shlex;
 use subprocess::{Exec, Redirection};
 
 use crate::{settings::PythonVersion, Result};
