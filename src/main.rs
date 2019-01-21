@@ -106,14 +106,7 @@ pub fn python_shim(
     settings: &Settings,
     arguments: &[String],
 ) -> Result<()> {
-    if !cfg.is_some() {
-        log::warn!("No '.python-version' found.");
-        log::warn!("Please select a Python version to use with:");
-        log::warn!("    pycors use");
-        log::warn!("");
-        log::warn!("See available versions with:");
-        log::warn!("    pycors list");
-    }
+    let interpreter_to_use = utils::get_interpreter_to_use(cfg, settings)?;
 
-    shim::run(cfg, settings, command, arguments)
+    shim::run(&interpreter_to_use, command, arguments)
 }
