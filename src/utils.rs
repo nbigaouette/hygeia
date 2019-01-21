@@ -142,11 +142,17 @@ pub fn get_interpreter_to_use(cfg: &Option<Cfg>, settings: &Settings) -> Result<
     let cfg: Cfg = cfg
         .as_ref() // &Option<Cfg> -> Option<&Cfg>
         .cloned() // Option<&Cfg> -> Option<Cfg>
-        .or_else(|| match settings.installed_python.get(0) {
-            None => None,
-            Some(latest_interpreter_found) => Some(Cfg {
-                version: VersionReq::exact(&latest_interpreter_found.version),
-            }),
+        .or_else(|| {
+            // Sort available versions
+            let mut installed_python = settings.installed_python.clone();
+            installed_python.sort_by_key(|python| python.version.clone());
+            installed_python.reverse();
+            match installed_python.get(0) {
+                None => None,
+                Some(latest_interpreter_found) => Some(Cfg {
+                    version: VersionReq::exact(&latest_interpreter_found.version),
+                }),
+            }
         })
         .ok_or_else(|| format_err!("No Python runtime configured. Use `pycors use <version>`."))?;
 
