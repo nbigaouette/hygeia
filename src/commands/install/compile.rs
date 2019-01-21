@@ -103,7 +103,7 @@ pub fn compile_source(version: &Version) -> Result<()> {
         "autopep8",
         "pylint",
         "black",
-        "yapf)",
+        "yapf",
     ];
     let pip = install_dir.join("bin").join("pip");
     if let Some(pip) = pip.to_str() {
