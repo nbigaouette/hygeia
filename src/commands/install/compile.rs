@@ -121,7 +121,6 @@ pub fn compile_source(version: &Version) -> Result<()> {
                     "install",
                     "--verbose",
                     "--upgrade",
-                    &format!("--install-option='--prefix={:?}'", install_dir),
                     to_pip_install,
                 ],
             ) {
