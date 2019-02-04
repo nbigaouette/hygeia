@@ -105,7 +105,7 @@ pub fn compile_source(version: &Version) -> Result<()> {
         "black",
         "yapf",
     ];
-    let pip = install_dir.join("bin").join("pip");
+    let pip = install_dir.join("bin").join("python");
     if let Some(pip) = pip.to_str() {
         for (i, to_pip_install) in to_pip_installs.iter().enumerate() {
             if let Err(e) = run_cmd_template(
@@ -113,6 +113,8 @@ pub fn compile_source(version: &Version) -> Result<()> {
                 &format!("[{}/15] pip install --upgrade {}", i + 6, to_pip_install),
                 pip,
                 &[
+                    "-m",
+                    "pip",
                     "install",
                     "--verbose",
                     "--upgrade",
