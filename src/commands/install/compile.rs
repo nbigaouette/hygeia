@@ -96,14 +96,14 @@ pub fn compile_source(version: &Version) -> Result<()> {
     let to_pip_installs = &[
         "pip",
         "wheel",
-        "pipenv",
-        "poetry",
         "virtualenv",
         "neovim",
         "autopep8",
         "pylint",
         "black",
         "yapf",
+        "pipenv",
+        "poetry",
     ];
     let pip = install_dir.join("bin").join("python");
     if let Some(pip) = pip.to_str() {
