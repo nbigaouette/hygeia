@@ -105,7 +105,10 @@ pub fn compile_source(version: &Version) -> Result<()> {
         "pipenv",
         "poetry",
     ];
-    let pip = install_dir.join("bin").join("python");
+    let pip = install_dir
+        .join("bin")
+        .join(format!("python{}", version.major));
+    log::debug!("pip: {:?}", pip);
     if let Some(pip) = pip.to_str() {
         for (i, to_pip_install) in to_pip_installs.iter().enumerate() {
             if let Err(e) = run_cmd_template(
