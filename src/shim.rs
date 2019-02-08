@@ -1,3 +1,5 @@
+use std::{env, ffi::OsString, path::PathBuf};
+
 use failure::format_err;
 use subprocess::{Exec, Redirection};
 
@@ -56,9 +58,22 @@ where
     log::debug!("Command:   {:?}", command_full_path);
     log::debug!("Arguments: {:?}", arguments);
 
+    // Prepend `bin_dir` to `PATH`
+    let new_path = match env::var("PATH") {
+        Ok(path) => {
+            let mut paths = env::split_paths(&path).collect::<Vec<_>>();
+            paths.push(bin_dir);
+            env::join_paths(paths)?
+        }
+        Err(err) => {
+            log::error!("Failed to get environment variable PATH: {:?}", err);
+            OsString::new()
+        }
+    };
+
     Exec::cmd(&command_full_path)
         .args(arguments)
-        .env("PATH", bin_dir)
+        .env("PATH", new_path)
         .stdout(Redirection::None)
         .stderr(Redirection::None)
         .join()?;
