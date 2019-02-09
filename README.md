@@ -204,43 +204,6 @@ Installing a Python package can be done using `pip` (which will call pycors' shi
 > pip install numpy
 ```
 
-[poetry](https://poetry.eustace.io/):
-
-```sh
-> pip install poetry
-```
-
-[pipenv](https://pipenv.readthedocs.io/en/latest/):
-
-```sh
-> pip install poetry
-
-```
-[pytest](https://docs.pytest.org/en/latest/):
-
-```sh
-> pip install pytest
-```
-
-#### Special Cases: Extra Executables
-
-Unfortunately, pycors cannot detect if an executable was installed alongside the Python interpreter.
-For example, installing an executable using `pip install <name>` will install 
-
-Exceptions are:
-
-* `pipenv`
-* `poetry`
-* `pytest`
-
-for which pycors installs a shim automatically.
-
-To execute any other executables, one can try to use `python` directly with the `-m` argument:
-
-```sh
-> python -m pipenv
-```
-
 ## License
 
 This project is licensed under either of

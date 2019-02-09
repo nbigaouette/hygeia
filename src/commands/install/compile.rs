@@ -24,7 +24,7 @@ pub fn extract_source(version: &Version) -> Result<()> {
     let file_path = download_dir.join(&filename);
     let extract_dir = utils::pycors_extract()?;
 
-    let line_header = "[2/5] Extract";
+    let line_header = "[2/15] Extract";
 
     let message = format!("{}ing {:?}...", line_header, file_path);
 
@@ -88,9 +88,48 @@ pub fn compile_source(version: &Version) -> Result<()> {
         env::set_var("CFLAGS", format!("-I{}/usr/include", macos_sdk_path.trim()));
     }
 
-    run_cmd_template(&version, "[3/5] Configure", "./configure", &configure_args)?;
-    run_cmd_template::<&str>(&version, "[4/5] Make", "make", &[])?;
-    run_cmd_template(&version, "[5/5] Make install", "make", &["install"])?;
+    run_cmd_template(&version, "[3/15] Configure", "./configure", &configure_args)?;
+    run_cmd_template::<&str>(&version, "[4/15] Make", "make", &[])?;
+    run_cmd_template(&version, "[5/15] Make install", "make", &["install"])?;
+
+    // Install some pip packages
+    let to_pip_installs = &[
+        "pip",
+        "wheel",
+        "virtualenv",
+        "neovim",
+        "autopep8",
+        "pylint",
+        "black",
+        "yapf",
+        "pipenv",
+        "poetry",
+    ];
+    let pip = install_dir
+        .join("bin")
+        .join(format!("python{}", version.major));
+    log::debug!("pip: {:?}", pip);
+    if let Some(pip) = pip.to_str() {
+        for (i, to_pip_install) in to_pip_installs.iter().enumerate() {
+            if let Err(e) = run_cmd_template(
+                &version,
+                &format!("[{}/15] pip install --upgrade {}", i + 6, to_pip_install),
+                pip,
+                &[
+                    "-m",
+                    "pip",
+                    "install",
+                    "--verbose",
+                    "--upgrade",
+                    to_pip_install,
+                ],
+            ) {
+                log::error!("Failed to pip install {}: {:?}", to_pip_install, e);
+            }
+        }
+    } else {
+        log::error!("Could not get string slice from pip path: {:?}", pip);
+    }
 
     // Create symbolic links from binaries with `3` suffix
     let bin_dir = install_dir.join("bin");
@@ -184,6 +223,7 @@ fn run_cmd_template<S: AsRef<std::ffi::OsStr>>(
             .replace("[", "")
             .replace("/", "_of_")
             .replace("]", "")
+            .replace("-", "")
     );
     let log_filepath = logs_dir.join(&log_filename);
     let mut log_file = BufWriter::new(File::create(log_filepath)?);

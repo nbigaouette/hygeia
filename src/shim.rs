@@ -1,13 +1,18 @@
+use std::{env, ffi::OsString, path::PathBuf};
+
 use failure::format_err;
 use subprocess::{Exec, Redirection};
 
-use crate::{settings::PythonVersion, Result};
+use crate::{settings::PythonVersion, utils, Result};
 
 pub fn run<S>(interpreter_to_use: &PythonVersion, command: &str, arguments: &[S]) -> Result<()>
 where
     S: AsRef<str> + std::convert::AsRef<std::ffi::OsStr> + std::fmt::Debug,
 {
     log::debug!("interpreter_to_use: {:?}", interpreter_to_use);
+
+    let install_dir = utils::install_dir(&interpreter_to_use.version)?;
+    let bin_dir = install_dir.join("bin");
 
     // NOTE: Make sure the command given by the user contains the major Python version
     //       appended. This should prevent having a Python 3 interpreter in `.python-version`
@@ -53,8 +58,22 @@ where
     log::debug!("Command:   {:?}", command_full_path);
     log::debug!("Arguments: {:?}", arguments);
 
+    // Prepend `bin_dir` to `PATH`
+    let new_path = match env::var("PATH") {
+        Ok(path) => {
+            let mut paths = env::split_paths(&path).collect::<Vec<_>>();
+            paths.push(bin_dir);
+            env::join_paths(paths)?
+        }
+        Err(err) => {
+            log::error!("Failed to get environment variable PATH: {:?}", err);
+            OsString::new()
+        }
+    };
+
     Exec::cmd(&command_full_path)
         .args(arguments)
+        .env("PATH", new_path)
         .stdout(Redirection::None)
         .stderr(Redirection::None)
         .join()?;

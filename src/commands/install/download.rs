@@ -13,7 +13,7 @@ use url::Url;
 use crate::{utils, Result};
 
 pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()> {
-    let line_header = "[1/5] Download";
+    let line_header = "[1/15] Download";
 
     let download_to = download_to.as_ref();
 
