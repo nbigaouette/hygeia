@@ -214,3 +214,9 @@ This project is licensed under either of
   http://opensource.org/licenses/MIT)
 
 at your option.
+
+## Conduct
+
+The [Rust Code of Conduct](https://www.rust-lang.org/conduct.html) shall be respected. For
+escalation or moderation issues please contact Nicolas (nbigaouette@gmail.com)
+instead of the Rust moderation team.
