@@ -11,6 +11,7 @@ use std::{
 use failure::format_err;
 use flate2::read::GzDecoder;
 use indicatif::{ProgressBar, ProgressStyle};
+use question::{Answer, Question};
 use semver::Version;
 use subprocess::{Exec, Redirection};
 use tar::Archive;
@@ -170,7 +171,7 @@ where
 {
     let install_dir = install_dir.as_ref();
 
-    let to_pip_installs = &[
+    let default_to_pip_installs = &[
         "pip",
         "wheel",
         "virtualenv",
@@ -183,30 +184,54 @@ where
         "poetry",
     ];
 
-    let pip = install_dir
-        .join("bin")
-        .join(format!("python{}", version.major));
-    log::debug!("pip: {:?}", pip);
-    if let Some(pip) = pip.to_str() {
-        for (i, to_pip_install) in to_pip_installs.iter().enumerate() {
-            if let Err(e) = run_cmd_template(
-                &version,
-                &format!("[{}/15] pip install --upgrade {}", i + 6, to_pip_install),
-                pip,
-                &[
-                    "-m",
-                    "pip",
-                    "install",
-                    "--verbose",
-                    "--upgrade",
-                    to_pip_install,
-                ],
-            ) {
-                log::error!("Failed to pip install {}: {:?}", to_pip_install, e);
+    println!("Install the following Python packages using `pip install --upgrade`?");
+
+    let to_pip_installs: Vec<_> = default_to_pip_installs
+        .iter()
+        .filter(|name| {
+            Answer::YES
+                == Question::new(&format!("    {}", name))
+                    .default(Answer::YES)
+                    .show_defaults()
+                    .confirm()
+        })
+        .cloned()
+        .collect();
+
+    if Answer::YES
+        == Question::new(&format!(
+            "Installing those packages: {}.\nContinue?",
+            to_pip_installs.as_slice().join(", ")
+        ))
+        .default(Answer::YES)
+        .show_defaults()
+        .confirm()
+    {
+        let pip = install_dir
+            .join("bin")
+            .join(format!("python{}", version.major));
+        log::debug!("pip: {:?}", pip);
+        if let Some(pip) = pip.to_str() {
+            for (i, to_pip_install) in to_pip_installs.iter().enumerate() {
+                if let Err(e) = run_cmd_template(
+                    &version,
+                    &format!("[{}/15] pip install --upgrade {}", i + 6, to_pip_install),
+                    pip,
+                    &[
+                        "-m",
+                        "pip",
+                        "install",
+                        "--verbose",
+                        "--upgrade",
+                        to_pip_install,
+                    ],
+                ) {
+                    log::error!("Failed to pip install {}: {:?}", to_pip_install, e);
+                }
             }
+        } else {
+            log::error!("Could not get string slice from pip path: {:?}", pip);
         }
-    } else {
-        log::error!("Could not get string slice from pip path: {:?}", pip);
     }
 
     Ok(())
