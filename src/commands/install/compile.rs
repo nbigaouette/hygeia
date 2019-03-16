@@ -188,14 +188,24 @@ where
 
     let to_pip_installs: Vec<_> = default_to_pip_installs
         .iter()
-        .filter(|name| {
-            Answer::YES
-                == Question::new(&format!("    {}", name))
-                    .default(Answer::YES)
-                    .show_defaults()
-                    .confirm()
+        .enumerate()
+        .filter_map(|(i, &name)| {
+            if Answer::YES
+                == Question::new(&format!(
+                    "    [{:2}/{}] {}",
+                    i + 1,
+                    default_to_pip_installs.len(),
+                    name
+                ))
+                .default(Answer::YES)
+                .show_defaults()
+                .confirm()
+            {
+                Some(name)
+            } else {
+                None
+            }
         })
-        .cloned()
         .collect();
 
     if Answer::YES
