@@ -1,4 +1,4 @@
-use std::{env, ffi::OsString, path::PathBuf};
+use std::{env, ffi::OsString};
 
 use failure::format_err;
 use subprocess::{Exec, Redirection};

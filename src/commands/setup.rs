@@ -1,12 +1,15 @@
-use std::{
-    env, fs,
-    io::{BufRead, BufReader, Write},
-};
+#[cfg(not(target_os = "windows"))]
+use std::io::{BufRead, BufReader};
+use std::{env, fs, io::Write};
 
 use failure::format_err;
-use structopt::{clap::Shell, StructOpt};
+use structopt::clap::Shell;
+#[cfg(not(target_os = "windows"))]
+use structopt::StructOpt;
 
-use crate::{utils, Opt, Result};
+#[cfg(not(target_os = "windows"))]
+use crate::Opt;
+use crate::{utils, Result};
 
 pub fn run(shell: Shell) -> Result<()> {
     log::debug!("Setting up the shim...");
