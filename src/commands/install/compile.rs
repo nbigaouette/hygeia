@@ -93,7 +93,14 @@ pub fn compile_source(version: &Version) -> Result<()> {
     run_cmd_template::<&str>(&version, "[4/15] Make", "make", &[])?;
     run_cmd_template(&version, "[5/15] Make install", "make", &["install"])?;
 
-    install_extra_pip_packages(&install_dir, &version)?;
+    if Answer::YES
+        == Question::new("Install extra Python packages using `pip install --upgrade`?")
+            .default(Answer::YES)
+            .show_defaults()
+            .confirm()
+    {
+        install_extra_pip_packages(&install_dir, &version)?;
+    }
 
     // Create symbolic links from binaries with `3` suffix
     let bin_dir = install_dir.join("bin");
@@ -183,8 +190,6 @@ where
         "pipenv",
         "poetry",
     ];
-
-    println!("Install the following Python packages using `pip install --upgrade`?");
 
     let to_pip_installs: Vec<_> = default_to_pip_installs
         .iter()
