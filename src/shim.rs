@@ -18,6 +18,7 @@ where
     //       appended. This should prevent having a Python 3 interpreter in `.python-version`
     //       but being called `python` by the user, ending up executing, say, /usr/local/bin/python`
     //       which is itself a Python 2 interpreter.
+    #[allow(unused_variables)]
     let last_command_char = format!(
         "{}",
         command
