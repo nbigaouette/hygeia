@@ -11,6 +11,7 @@ use std::{
 use failure::format_err;
 use flate2::read::GzDecoder;
 use indicatif::{ProgressBar, ProgressStyle};
+use question::{Answer, Question};
 use semver::Version;
 use subprocess::{Exec, Redirection};
 use tar::Archive;
@@ -92,43 +93,13 @@ pub fn compile_source(version: &Version) -> Result<()> {
     run_cmd_template::<&str>(&version, "[4/15] Make", "make", &[])?;
     run_cmd_template(&version, "[5/15] Make install", "make", &["install"])?;
 
-    // Install some pip packages
-    let to_pip_installs = &[
-        "pip",
-        "wheel",
-        "virtualenv",
-        "neovim",
-        "autopep8",
-        "pylint",
-        "black",
-        "yapf",
-        "pipenv",
-        "poetry",
-    ];
-    let pip = install_dir
-        .join("bin")
-        .join(format!("python{}", version.major));
-    log::debug!("pip: {:?}", pip);
-    if let Some(pip) = pip.to_str() {
-        for (i, to_pip_install) in to_pip_installs.iter().enumerate() {
-            if let Err(e) = run_cmd_template(
-                &version,
-                &format!("[{}/15] pip install --upgrade {}", i + 6, to_pip_install),
-                pip,
-                &[
-                    "-m",
-                    "pip",
-                    "install",
-                    "--verbose",
-                    "--upgrade",
-                    to_pip_install,
-                ],
-            ) {
-                log::error!("Failed to pip install {}: {:?}", to_pip_install, e);
-            }
-        }
-    } else {
-        log::error!("Could not get string slice from pip path: {:?}", pip);
+    if Answer::YES
+        == Question::new("Install extra Python packages using `pip install --upgrade`?")
+            .default(Answer::YES)
+            .show_defaults()
+            .confirm()
+    {
+        install_extra_pip_packages(&install_dir, &version)?;
     }
 
     // Create symbolic links from binaries with `3` suffix
@@ -197,6 +168,86 @@ pub fn compile_source(version: &Version) -> Result<()> {
         original_current_dir
     );
     env::set_current_dir(&original_current_dir)?;
+
+    Ok(())
+}
+
+fn install_extra_pip_packages<P>(install_dir: P, version: &Version) -> Result<()>
+where
+    P: AsRef<Path>,
+{
+    let install_dir = install_dir.as_ref();
+
+    let default_to_pip_installs = &[
+        "pip",
+        "wheel",
+        "virtualenv",
+        "neovim",
+        "autopep8",
+        "pylint",
+        "black",
+        "yapf",
+        "pipenv",
+        "poetry",
+    ];
+
+    let to_pip_installs: Vec<_> = default_to_pip_installs
+        .iter()
+        .enumerate()
+        .filter_map(|(i, &name)| {
+            if Answer::YES
+                == Question::new(&format!(
+                    "    [{:2}/{}] {}",
+                    i + 1,
+                    default_to_pip_installs.len(),
+                    name
+                ))
+                .default(Answer::YES)
+                .show_defaults()
+                .confirm()
+            {
+                Some(name)
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    if Answer::YES
+        == Question::new(&format!(
+            "Selected packages: {}.\nContinue?",
+            to_pip_installs.as_slice().join(", ")
+        ))
+        .default(Answer::YES)
+        .show_defaults()
+        .confirm()
+    {
+        let pip = install_dir
+            .join("bin")
+            .join(format!("python{}", version.major));
+        log::debug!("pip: {:?}", pip);
+        if let Some(pip) = pip.to_str() {
+            for (i, to_pip_install) in to_pip_installs.iter().enumerate() {
+                if let Err(e) = run_cmd_template(
+                    &version,
+                    &format!("[{}/15] pip install --upgrade {}", i + 6, to_pip_install),
+                    pip,
+                    &[
+                        "-m",
+                        "pip",
+                        "install",
+                        "--verbose",
+                        "--upgrade",
+                        to_pip_install,
+                    ],
+                ) {
+                    log::error!("Failed to pip install {}: {:?}", to_pip_install, e);
+                }
+            }
+        } else {
+            log::error!("Could not get string slice from pip path: {:?}", pip);
+        }
+    }
 
     Ok(())
 }
