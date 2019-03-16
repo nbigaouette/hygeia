@@ -92,44 +92,7 @@ pub fn compile_source(version: &Version) -> Result<()> {
     run_cmd_template::<&str>(&version, "[4/15] Make", "make", &[])?;
     run_cmd_template(&version, "[5/15] Make install", "make", &["install"])?;
 
-    // Install some pip packages
-    let to_pip_installs = &[
-        "pip",
-        "wheel",
-        "virtualenv",
-        "neovim",
-        "autopep8",
-        "pylint",
-        "black",
-        "yapf",
-        "pipenv",
-        "poetry",
-    ];
-    let pip = install_dir
-        .join("bin")
-        .join(format!("python{}", version.major));
-    log::debug!("pip: {:?}", pip);
-    if let Some(pip) = pip.to_str() {
-        for (i, to_pip_install) in to_pip_installs.iter().enumerate() {
-            if let Err(e) = run_cmd_template(
-                &version,
-                &format!("[{}/15] pip install --upgrade {}", i + 6, to_pip_install),
-                pip,
-                &[
-                    "-m",
-                    "pip",
-                    "install",
-                    "--verbose",
-                    "--upgrade",
-                    to_pip_install,
-                ],
-            ) {
-                log::error!("Failed to pip install {}: {:?}", to_pip_install, e);
-            }
-        }
-    } else {
-        log::error!("Could not get string slice from pip path: {:?}", pip);
-    }
+    install_extra_pip_packages(&install_dir, &version)?;
 
     // Create symbolic links from binaries with `3` suffix
     let bin_dir = install_dir.join("bin");
@@ -197,6 +160,54 @@ pub fn compile_source(version: &Version) -> Result<()> {
         original_current_dir
     );
     env::set_current_dir(&original_current_dir)?;
+
+    Ok(())
+}
+
+fn install_extra_pip_packages<P>(install_dir: P, version: &Version) -> Result<()>
+where
+    P: AsRef<Path>,
+{
+    let install_dir = install_dir.as_ref();
+
+    let to_pip_installs = &[
+        "pip",
+        "wheel",
+        "virtualenv",
+        "neovim",
+        "autopep8",
+        "pylint",
+        "black",
+        "yapf",
+        "pipenv",
+        "poetry",
+    ];
+
+    let pip = install_dir
+        .join("bin")
+        .join(format!("python{}", version.major));
+    log::debug!("pip: {:?}", pip);
+    if let Some(pip) = pip.to_str() {
+        for (i, to_pip_install) in to_pip_installs.iter().enumerate() {
+            if let Err(e) = run_cmd_template(
+                &version,
+                &format!("[{}/15] pip install --upgrade {}", i + 6, to_pip_install),
+                pip,
+                &[
+                    "-m",
+                    "pip",
+                    "install",
+                    "--verbose",
+                    "--upgrade",
+                    to_pip_install,
+                ],
+            ) {
+                log::error!("Failed to pip install {}: {:?}", to_pip_install, e);
+            }
+        }
+    } else {
+        log::error!("Could not get string slice from pip path: {:?}", pip);
+    }
 
     Ok(())
 }
