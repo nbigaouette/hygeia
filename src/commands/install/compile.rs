@@ -210,7 +210,7 @@ where
 
     if Answer::YES
         == Question::new(&format!(
-            "Installing those packages: {}.\nContinue?",
+            "Selected packages: {}.\nContinue?",
             to_pip_installs.as_slice().join(", ")
         ))
         .default(Answer::YES)
