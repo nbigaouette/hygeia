@@ -118,6 +118,9 @@ This will:
 * Create a bash completion script in `$PYCORS_HOME/pycors.bash-completion`;
 * Add `$PYCORS_HOME/shims/` to `$PATH` through `~/.bash_profile`;
 * Add line sourcing `$PYCORS_HOME/pycors.bash-completion` in `~/.bash_profile`;
+* Create the file `$PYCORS_HOME/extra-packages-to-install.txt` containing
+  [a list of Python packages to pip-install](extra-packages-to-install.txt)
+  when flag `--extra`/`-e` is used with `install` or `select` command.
 
 ### Listing Interpreters
 
@@ -185,6 +188,12 @@ compatible with `3.7`.
 > pycors version
 3.7.2
 ```
+
+Note that `--extra` can be used with `select` or `install` command to read file
+`$PYCORS_HOME/extra-packages-to-install.txt` and `pip install` all packages specified.
+Additionally, `--extra-from` can also be used to specify a different file. Both flags
+can be used at the same time and the content of both files will be used.
+Lines starting with `#` are ignored (as comments).
 
 The parsing is performed by Rust's [semver crate](https://crates.io/crates/semver). For details
 about the parsing, see the [_Requirements_](https://docs.rs/semver/0.9.0/semver/#requirements)
