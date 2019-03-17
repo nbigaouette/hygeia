@@ -44,7 +44,7 @@ pub fn run(
         log::info!("Found Python version {}", version_to_install);
         download_source(&version_to_install)?;
         extract_source(&version_to_install)?;
-        compile_source(&version_to_install)?;
+        compile_source(&version_to_install, install_extra_packages)?;
 
         Ok(Some(version_to_install))
     }

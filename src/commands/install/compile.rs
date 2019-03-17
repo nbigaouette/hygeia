@@ -17,7 +17,7 @@ use subprocess::{Exec, Redirection};
 use tar::Archive;
 use terminal_size::{terminal_size, Width};
 
-use crate::{utils, Result};
+use crate::{commands, utils, Result};
 
 pub fn extract_source(version: &Version) -> Result<()> {
     let download_dir = utils::pycors_download()?;
@@ -49,7 +49,10 @@ pub fn extract_source(version: &Version) -> Result<()> {
     Ok(())
 }
 
-pub fn compile_source(version: &Version) -> Result<()> {
+pub fn compile_source(
+    version: &Version,
+    install_extra_packages: &commands::InstallExtraPackagesOptions,
+) -> Result<()> {
     // Compilation
 
     let original_current_dir = env::current_dir()?;
@@ -93,14 +96,7 @@ pub fn compile_source(version: &Version) -> Result<()> {
     run_cmd_template::<&str>(&version, "[4/15] Make", "make", &[])?;
     run_cmd_template(&version, "[5/15] Make install", "make", &["install"])?;
 
-    if Answer::YES
-        == Question::new("Install extra Python packages using `pip install --upgrade`?")
-            .default(Answer::YES)
-            .show_defaults()
-            .confirm()
-    {
-        install_extra_pip_packages(&install_dir, &version)?;
-    }
+    install_extra_pip_packages(&install_dir, &version, install_extra_packages)?;
 
     // Create symbolic links from binaries with `3` suffix
     let bin_dir = install_dir.join("bin");
@@ -172,10 +168,22 @@ pub fn compile_source(version: &Version) -> Result<()> {
     Ok(())
 }
 
-fn install_extra_pip_packages<P>(install_dir: P, version: &Version) -> Result<()>
+fn install_extra_pip_packages<P>(
+    install_dir: P,
+    version: &Version,
+    install_extra_packages: &commands::InstallExtraPackagesOptions,
+) -> Result<()>
 where
     P: AsRef<Path>,
 {
+    let mut to_pip_installs: Vec<String> = Vec::new();
+
+    if install_extra_packages.install_extra_packages {
+        to_pip_installs.extend(
+            load_extra_packages_to_install_from_file(utils::default_config_file()?)?.into_iter(),
+        );
+    }
+
     let install_dir = install_dir.as_ref();
 
     let default_to_pip_installs = &[
@@ -250,6 +258,15 @@ where
     }
 
     Ok(())
+}
+
+fn load_extra_packages_to_install_from_file<P>(file: P) -> Result<Vec<String>>
+where
+    P: AsRef<Path>,
+{
+    let file = file.as_ref();
+
+    Ok(Vec::new())
 }
 
 fn run_cmd_template<S: AsRef<std::ffi::OsStr>>(
