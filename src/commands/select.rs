@@ -26,8 +26,14 @@ pub fn run(
         Some(python_to_use) => python_to_use.clone(),
         None => {
             let new_cfg = Some(Cfg { version });
-            let version = commands::install::run(None, &new_cfg, settings)?
-                .ok_or_else(|| format_err!("A Python version should have been installed"))?;
+            let version = commands::install::run(
+                None,
+                &new_cfg,
+                settings,
+                install_extra_packages,
+                install_extra_packages_from,
+            )?
+            .ok_or_else(|| format_err!("A Python version should have been installed"))?;
             let install_dir = utils::install_dir(&version)?;
 
             PythonVersion {
