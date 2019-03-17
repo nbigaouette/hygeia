@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use structopt::{self, StructOpt};
 
 pub mod autocomplete;
@@ -54,7 +56,18 @@ pub enum Command {
 
     /// Install version, either from the provided version or from `.python-version`
     #[structopt(name = "install")]
-    Install { from_version: Option<String> },
+    Install {
+        /// Specified version to install
+        from_version: Option<String>,
+
+        /// Install extra Python packages from file at default location
+        ///
+        /// The default location is ${PYCORS_HOME}/config.toml
+        ///
+        /// Installation will be performed using pip.
+        #[structopt(long = "extra", short = "e")]
+        install_extra_packages: bool,
+    },
 
     /// Run a binary from the installed `.python-version`
     ///
