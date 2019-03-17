@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use failure::format_err;
 use semver::VersionReq;
 
@@ -13,8 +11,7 @@ use crate::{
 pub fn run(
     requested_version: &str,
     settings: &Settings,
-    install_extra_packages: bool,
-    install_extra_packages_from: Option<PathBuf>,
+    install_extra_packages: &commands::InstallExtraPackagesOptions,
 ) -> Result<()> {
     // Convert the requested version string to proper VersionReq
     // FIXME: Should a `~` be explicitly added here if user does not provide it?
@@ -26,14 +23,8 @@ pub fn run(
         Some(python_to_use) => python_to_use.clone(),
         None => {
             let new_cfg = Some(Cfg { version });
-            let version = commands::install::run(
-                None,
-                &new_cfg,
-                settings,
-                install_extra_packages,
-                install_extra_packages_from,
-            )?
-            .ok_or_else(|| format_err!("A Python version should have been installed"))?;
+            let version = commands::install::run(None, &new_cfg, settings, install_extra_packages)?
+                .ok_or_else(|| format_err!("A Python version should have been installed"))?;
             let install_dir = utils::install_dir(&version)?;
 
             PythonVersion {
