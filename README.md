@@ -62,8 +62,11 @@ TBD
 1. Visit the [release page](https://github.com/nbigaouette/pycors/releases) to download the latest precompiled version for your platform (Linux, macOS, Windows).
 2. Extract to a temporary location.
 3. Open a terminal and execute `./pycors setup bash`. This will:
-    1. copy itself to `${HOME}/.pycors`
-    2. setup `~/.bash_profile` to add `${HOME}/.pycors/shims` in the front of your `${PATH}`
+    1. copy itself to `${PYCORS_HOME}` (`${HOME}/.pycors`) as a shim for Python
+    2. create the file `${PYCORS_HOME}/extra-packages-to-install.txt` containing
+    [a list of Python packages to pip-install](extra-packages-to-install.txt)
+    when flag `--extra`/`-e` is used with `install` or `select` commands
+    3. setup `~/.bash_profile` to add `${HOME}/.pycors/shims` in the front of your `${PATH}`
 4. You can delete the downloaded archive and the extracted binary.
 
 ## Compilation
