@@ -21,9 +21,12 @@ use crate::{
 pub type Result<T> = std::result::Result<T, failure::Error>;
 
 pub const EXECUTABLE_NAME: &str = "pycors";
+// This environment variable is set in `build.rs` by the `git-version` crate.
+const GIT_VERSION: &str = env!("VERSION");
 
 /// Control which Python toolchain to use on a directory basis.
 #[derive(StructOpt, Debug)]
+#[structopt(raw(version = "GIT_VERSION"))]
 struct Opt {
     #[structopt(subcommand)]
     subcommand: Option<commands::Command>,
