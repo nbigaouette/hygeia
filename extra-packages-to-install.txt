@@ -2,12 +2,19 @@
 #       to install the others.
 pip
 
-wheel
+# A tool for creating isolated ‘virtual’ python environments.
 virtualenv
+# For better Python packaging
+wheel
+# Required by Neovim plugins
 neovim
+
+# Packages used by VS Code for Python editing
 autopep8
 pylint
 black
 yapf
+
+# Better Python dependency and packaging tools
 pipenv
 poetry
