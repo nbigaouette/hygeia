@@ -1,7 +1,7 @@
 use std::{
     env,
     fs::{self, File},
-    io::{self, BufRead, BufReader, BufWriter, Read, Write},
+    io::{self, BufRead, BufReader, BufWriter, Write},
     path::Path,
     sync::mpsc::channel,
     thread,
