@@ -168,7 +168,7 @@ pub fn compile_source(
     Ok(())
 }
 
-fn install_extra_pip_packages<P>(
+pub fn install_extra_pip_packages<P>(
     install_dir: P,
     version: &Version,
     install_extra_packages: &commands::InstallExtraPackagesOptions,
