@@ -1,7 +1,7 @@
 use std::{
     env,
     fs::{self, File},
-    io::{self, BufRead, BufReader, BufWriter, Write},
+    io::{self, BufRead, BufReader, BufWriter, Read, Write},
     path::Path,
     sync::mpsc::channel,
     thread,
@@ -265,9 +265,31 @@ fn load_extra_packages_to_install_from_file<P>(file: P) -> Result<Vec<String>>
 where
     P: AsRef<Path>,
 {
-    let file = file.as_ref();
+    let input = File::open(file.as_ref())?;
+    let buffered = BufReader::new(input);
 
-    Ok(Vec::new())
+    Ok(buffered
+        .lines()
+        .filter_map(|line_result| match line_result {
+            Ok(line) => Some(line),
+            Err(err) => {
+                log::error!(
+                    "Error reading line from {:?}, ignoring it: {:?}",
+                    file.as_ref(),
+                    err
+                );
+                None
+            }
+        })
+        .filter_map(|line| {
+            let line = line.trim();
+            if line.is_empty() {
+                None
+            } else {
+                Some(line.to_string())
+            }
+        })
+        .collect())
 }
 
 fn run_cmd_template<S: AsRef<std::ffi::OsStr>>(
