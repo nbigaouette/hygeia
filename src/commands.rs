@@ -52,7 +52,23 @@ pub enum Command {
     ///     pycors select =3.7.2
     /// will select an exact version.
     #[structopt(name = "select")]
-    Select { version: String },
+    Select {
+        version: String,
+
+        /// Install extra Python packages from file at default location
+        ///
+        /// The default location is ${PYCORS_HOME}/config.toml
+        ///
+        /// Installation will be performed using pip.
+        #[structopt(long = "extra", short = "e")]
+        install_extra_packages: bool,
+
+        /// Install extra Python packages from specific file
+        ///
+        /// Installation will be performed using pip.
+        #[structopt(long = "extra-from", short = "f")]
+        install_extra_packages_from: Option<PathBuf>,
+    },
 
     /// Install version, either from the provided version or from `.python-version`
     #[structopt(name = "install")]

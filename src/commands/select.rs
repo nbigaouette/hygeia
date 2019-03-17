@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use failure::format_err;
 use semver::VersionReq;
 
@@ -8,7 +10,12 @@ use crate::{
     utils, Result,
 };
 
-pub fn run(requested_version: &str, settings: &Settings) -> Result<()> {
+pub fn run(
+    requested_version: &str,
+    settings: &Settings,
+    install_extra_packages: bool,
+    install_extra_packages_from: Option<PathBuf>,
+) -> Result<()> {
     // Convert the requested version string to proper VersionReq
     // FIXME: Should a `~` be explicitly added here if user does not provide it?
     log::debug!("Requesting version: {}", requested_version);
