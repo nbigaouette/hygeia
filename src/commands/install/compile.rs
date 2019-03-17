@@ -180,7 +180,8 @@ where
 
     if install_extra_packages.install_extra_packages {
         to_pip_installs.extend(
-            load_extra_packages_to_install_from_file(utils::default_config_file()?)?.into_iter(),
+            load_extra_packages_to_install_from_file(utils::default_extra_package_file()?)?
+                .into_iter(),
         );
     }
 
