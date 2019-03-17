@@ -62,8 +62,11 @@ TBD
 1. Visit the [release page](https://github.com/nbigaouette/pycors/releases) to download the latest precompiled version for your platform (Linux, macOS, Windows).
 2. Extract to a temporary location.
 3. Open a terminal and execute `./pycors setup bash`. This will:
-    1. copy itself to `${HOME}/.pycors`
-    2. setup `~/.bash_profile` to add `${HOME}/.pycors/shims` in the front of your `${PATH}`
+    1. copy itself to `$PYCORS_HOME` (`${HOME}/.pycors`) as a shim for Python
+    2. create the file `$PYCORS_HOME/extra-packages-to-install.txt` containing
+    [a list of Python packages to pip-install](extra-packages-to-install.txt)
+    when flag `--extra`/`-e` is used with `install` or `select` commands
+    3. setup `~/.bash_profile` to add `${HOME}/.pycors/shims` in the front of your `${PATH}`
 4. You can delete the downloaded archive and the extracted binary.
 
 ## Compilation
@@ -114,7 +117,10 @@ This will:
 * Create hard-links to it with Python binary names;
 * Create a bash completion script in `$PYCORS_HOME/pycors.bash-completion`;
 * Add `$PYCORS_HOME/shims/` to `$PATH` through `~/.bash_profile`;
-* Add line sourcing $PYCORS_HOME/pycors.bash-completion in `~/.bash_profile`;
+* Add line sourcing `$PYCORS_HOME/pycors.bash-completion` in `~/.bash_profile`;
+* Create the file `$PYCORS_HOME/extra-packages-to-install.txt` containing
+  [a list of Python packages to pip-install](extra-packages-to-install.txt)
+  when flag `--extra`/`-e` is used with `install` or `select` command.
 
 ### Listing Interpreters
 
@@ -182,6 +188,12 @@ compatible with `3.7`.
 > pycors version
 3.7.2
 ```
+
+Note that `--extra` can be used with `select` or `install` command to read file
+`$PYCORS_HOME/extra-packages-to-install.txt` and `pip install` all packages specified.
+Additionally, `--extra-from` can also be used to specify a different file. Both flags
+can be used at the same time and the content of both files will be used.
+Lines starting with `#` are ignored (as comments).
 
 The parsing is performed by Rust's [semver crate](https://crates.io/crates/semver). For details
 about the parsing, see the [_Requirements_](https://docs.rs/semver/0.9.0/semver/#requirements)

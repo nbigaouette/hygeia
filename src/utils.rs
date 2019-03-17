@@ -78,6 +78,10 @@ pub fn install_dir(version: &Version) -> Result<PathBuf> {
     Ok(pycors_installed()?.join(format!("{}", version)))
 }
 
+pub fn default_extra_package_file() -> Result<PathBuf> {
+    Ok(pycors_home()?.join("extra-packages-to-install.txt"))
+}
+
 pub fn build_basename(version: &Version) -> Result<String> {
     let version_file = format!("{}", version).replace("-", "");
 

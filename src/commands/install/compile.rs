@@ -17,7 +17,7 @@ use subprocess::{Exec, Redirection};
 use tar::Archive;
 use terminal_size::{terminal_size, Width};
 
-use crate::{utils, Result};
+use crate::{commands, utils, Result};
 
 pub fn extract_source(version: &Version) -> Result<()> {
     let download_dir = utils::pycors_download()?;
@@ -49,7 +49,10 @@ pub fn extract_source(version: &Version) -> Result<()> {
     Ok(())
 }
 
-pub fn compile_source(version: &Version) -> Result<()> {
+pub fn compile_source(
+    version: &Version,
+    install_extra_packages: &commands::InstallExtraPackagesOptions,
+) -> Result<()> {
     // Compilation
 
     let original_current_dir = env::current_dir()?;
@@ -93,14 +96,7 @@ pub fn compile_source(version: &Version) -> Result<()> {
     run_cmd_template::<&str>(&version, "[4/15] Make", "make", &[])?;
     run_cmd_template(&version, "[5/15] Make install", "make", &["install"])?;
 
-    if Answer::YES
-        == Question::new("Install extra Python packages using `pip install --upgrade`?")
-            .default(Answer::YES)
-            .show_defaults()
-            .confirm()
-    {
-        install_extra_pip_packages(&install_dir, &version)?;
-    }
+    install_extra_pip_packages(&install_dir, &version, install_extra_packages)?;
 
     // Create symbolic links from binaries with `3` suffix
     let bin_dir = install_dir.join("bin");
@@ -172,84 +168,134 @@ pub fn compile_source(version: &Version) -> Result<()> {
     Ok(())
 }
 
-fn install_extra_pip_packages<P>(install_dir: P, version: &Version) -> Result<()>
+fn install_extra_pip_packages<P>(
+    install_dir: P,
+    version: &Version,
+    install_extra_packages: &commands::InstallExtraPackagesOptions,
+) -> Result<()>
 where
     P: AsRef<Path>,
 {
-    let install_dir = install_dir.as_ref();
+    let install_extra_flag_present = install_extra_packages.install_extra_packages
+        || install_extra_packages.install_extra_packages_from.is_some();
 
-    let default_to_pip_installs = &[
-        "pip",
-        "wheel",
-        "virtualenv",
-        "neovim",
-        "autopep8",
-        "pylint",
-        "black",
-        "yapf",
-        "pipenv",
-        "poetry",
-    ];
-
-    let to_pip_installs: Vec<_> = default_to_pip_installs
-        .iter()
-        .enumerate()
-        .filter_map(|(i, &name)| {
-            if Answer::YES
-                == Question::new(&format!(
-                    "    [{:2}/{}] {}",
-                    i + 1,
-                    default_to_pip_installs.len(),
-                    name
-                ))
+    if install_extra_flag_present
+        && Answer::YES
+            == Question::new("Install extra Python packages using `pip install --upgrade`?")
                 .default(Answer::YES)
                 .show_defaults()
                 .confirm()
-            {
-                Some(name)
-            } else {
-                None
-            }
-        })
-        .collect();
-
-    if Answer::YES
-        == Question::new(&format!(
-            "Selected packages: {}.\nContinue?",
-            to_pip_installs.as_slice().join(", ")
-        ))
-        .default(Answer::YES)
-        .show_defaults()
-        .confirm()
     {
-        let pip = install_dir
-            .join("bin")
-            .join(format!("python{}", version.major));
-        log::debug!("pip: {:?}", pip);
-        if let Some(pip) = pip.to_str() {
-            for (i, to_pip_install) in to_pip_installs.iter().enumerate() {
-                if let Err(e) = run_cmd_template(
-                    &version,
-                    &format!("[{}/15] pip install --upgrade {}", i + 6, to_pip_install),
-                    pip,
-                    &[
-                        "-m",
-                        "pip",
-                        "install",
-                        "--verbose",
-                        "--upgrade",
-                        to_pip_install,
-                    ],
-                ) {
-                    log::error!("Failed to pip install {}: {:?}", to_pip_install, e);
+        let mut to_pip_installs: Vec<String> = Vec::new();
+
+        if install_extra_packages.install_extra_packages {
+            to_pip_installs.extend(
+                load_extra_packages_to_install_from_file(utils::default_extra_package_file()?)?
+                    .into_iter(),
+            );
+        }
+
+        if let Some(install_extra_packages_from) =
+            &install_extra_packages.install_extra_packages_from
+        {
+            to_pip_installs.extend(
+                load_extra_packages_to_install_from_file(&install_extra_packages_from)?.into_iter(),
+            );
+        }
+
+        let to_pip_installs: Vec<_> = to_pip_installs
+            .iter()
+            .enumerate()
+            .filter_map(|(i, name)| {
+                if Answer::YES
+                    == Question::new(&format!(
+                        "    [{:2}/{}] {}",
+                        i + 1,
+                        to_pip_installs.len(),
+                        name
+                    ))
+                    .default(Answer::YES)
+                    .show_defaults()
+                    .confirm()
+                {
+                    Some(name.as_str())
+                } else {
+                    None
                 }
+            })
+            .collect();
+
+        if Answer::YES
+            == Question::new(&format!(
+                "Selected packages: {}.\nContinue?",
+                to_pip_installs.as_slice().join(", ")
+            ))
+            .default(Answer::YES)
+            .show_defaults()
+            .confirm()
+        {
+            let pip = install_dir
+                .as_ref()
+                .join("bin")
+                .join(format!("python{}", version.major));
+            log::debug!("pip: {:?}", pip);
+            if let Some(pip) = pip.to_str() {
+                for (i, to_pip_install) in to_pip_installs.iter().enumerate() {
+                    if let Err(e) = run_cmd_template(
+                        &version,
+                        &format!("[{}/15] pip install --upgrade {}", i + 6, to_pip_install),
+                        pip,
+                        &[
+                            "-m",
+                            "pip",
+                            "install",
+                            "--verbose",
+                            "--upgrade",
+                            to_pip_install,
+                        ],
+                    ) {
+                        log::error!("Failed to pip install {}: {:?}", to_pip_install, e);
+                    }
+                }
+            } else {
+                log::error!("Could not get string slice from pip path: {:?}", pip);
             }
-        } else {
-            log::error!("Could not get string slice from pip path: {:?}", pip);
         }
     }
 
     Ok(())
+}
+
+fn load_extra_packages_to_install_from_file<P>(file: P) -> Result<Vec<String>>
+where
+    P: AsRef<Path>,
+{
+    let input = File::open(file.as_ref())?;
+    let buffered = BufReader::new(input);
+
+    Ok(buffered
+        .lines()
+        .filter_map(|line_result| match line_result {
+            Ok(line) => Some(line),
+            Err(err) => {
+                log::error!(
+                    "Error reading line from {:?}, ignoring it: {:?}",
+                    file.as_ref(),
+                    err
+                );
+                None
+            }
+        })
+        .filter_map(|line| {
+            let line = line.trim();
+            if line.is_empty() {
+                None
+            } else {
+                Some(line.to_string())
+            }
+        })
+        .filter(|line| !line.starts_with('#')) // Ignore comments
+        .collect())
 }
 
 fn run_cmd_template<S: AsRef<std::ffi::OsStr>>(

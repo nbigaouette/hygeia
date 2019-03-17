@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use structopt::{self, StructOpt};
 
 pub mod autocomplete;
@@ -50,11 +52,22 @@ pub enum Command {
     ///     pycors select =3.7.2
     /// will select an exact version.
     #[structopt(name = "select")]
-    Select { version: String },
+    Select {
+        version: String,
+
+        #[structopt(flatten)]
+        install_extra_packages: InstallExtraPackagesOptions,
+    },
 
     /// Install version, either from the provided version or from `.python-version`
     #[structopt(name = "install")]
-    Install { from_version: Option<String> },
+    Install {
+        /// Specified version to install
+        from_version: Option<String>,
+
+        #[structopt(flatten)]
+        install_extra_packages: InstallExtraPackagesOptions,
+    },
 
     /// Run a binary from the installed `.python-version`
     ///
@@ -72,4 +85,16 @@ pub enum Command {
     /// Supported shells: Bash, Fish, Zsh, PowerShell and Elvish.
     #[structopt(name = "setup")]
     Setup { shell: structopt::clap::Shell },
+}
+
+#[derive(StructOpt, Debug)]
+pub struct InstallExtraPackagesOptions {
+    /// Install extra Python packages from file at default location
+    /// (`${PYCORS_HOME}/extra-packages-to-install.txt`)
+    #[structopt(long = "extra", short = "e")]
+    install_extra_packages: bool,
+
+    /// Install extra Python packages from specific file
+    #[structopt(long = "extra-from", short = "f")]
+    install_extra_packages_from: Option<PathBuf>,
 }
