@@ -122,3 +122,20 @@ pub fn python_shim(
 
     shim::run(&interpreter_to_use, command, arguments)
 }
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn version() {
+        let crate_version = structopt::clap::crate_version!();
+
+        // GIT_VERSION is of the shape `v0.1.7-1-g095d7f5-modified`
+
+        // Strip out the `v` prefix
+        let (v, git_version_without_v) = crate::GIT_VERSION.split_at(1);
+
+        assert_eq!(v, "v");
+        assert!(git_version_without_v.starts_with(crate_version));
+    }
+}
