@@ -90,16 +90,11 @@ pub enum Command {
 #[derive(StructOpt, Debug)]
 pub struct InstallExtraPackagesOptions {
     /// Install extra Python packages from file at default location
-    ///
-    /// The default location is ${PYCORS_HOME}/config.toml
-    ///
-    /// Installation will be performed using pip.
+    /// (`${PYCORS_HOME}/extra-packages-to-install.txt`)
     #[structopt(long = "extra", short = "e")]
     install_extra_packages: bool,
 
     /// Install extra Python packages from specific file
-    ///
-    /// Installation will be performed using pip.
     #[structopt(long = "extra-from", short = "f")]
     install_extra_packages_from: Option<PathBuf>,
 }
