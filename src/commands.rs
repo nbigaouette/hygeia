@@ -67,6 +67,12 @@ pub enum Command {
         /// Installation will be performed using pip.
         #[structopt(long = "extra", short = "e")]
         install_extra_packages: bool,
+
+        /// Install extra Python packages from specific file
+        ///
+        /// Installation will be performed using pip.
+        #[structopt(long = "extra-from", short = "f")]
+        install_extra_packages_from: Option<PathBuf>,
     },
 
     /// Run a binary from the installed `.python-version`
