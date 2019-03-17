@@ -294,6 +294,7 @@ where
                 Some(line.to_string())
             }
         })
+        .filter(|line| !line.starts_with('#')) // Ignore comments
         .collect())
 }
 

@@ -1,4 +1,7 @@
+# Note: `pip` should probably appear first in the list as it's used
+#       to install the others.
 pip
+
 wheel
 virtualenv
 neovim
