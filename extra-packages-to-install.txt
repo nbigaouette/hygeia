@@ -1,0 +1,10 @@
+pip
+wheel
+virtualenv
+neovim
+autopep8
+pylint
+black
+yapf
+pipenv
+poetry

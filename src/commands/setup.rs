@@ -1,6 +1,6 @@
 #[cfg(not(target_os = "windows"))]
 use std::io::{BufRead, BufReader};
-use std::{env, fs, io::Write};
+use std::{env, fs, fs::File, io::Write};
 
 use failure::format_err;
 use structopt::clap::Shell;
@@ -62,6 +62,15 @@ pub fn run(shell: Shell) -> Result<()> {
     let pycors_dummy_file = bin_dir.join("pycors_dummy_file");
     let mut file = fs::File::create(&pycors_dummy_file)?;
     writeln!(file, "This file's job is to tell pycors the directory contains shim, not real Python interpreters.")?;
+
+    let extra_packages_file_default_content = include_str!("../../extra-packages-to-install.txt");
+    let output_filename = utils::default_extra_package_file()?;
+    log::debug!(
+        "Writing list of default packages to install to {:?}",
+        output_filename
+    );
+    let mut file = File::create(output_filename)?;
+    file.write_all(extra_packages_file_default_content.as_bytes())?;
 
     // Add ~/.pycors/bin to $PATH in ~/.bash_profile and install autocomplete
     match shell {
