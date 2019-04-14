@@ -61,12 +61,13 @@ jobs:
         displayName: Cross check and test
         rust_version: stable # You can specify here beta nightly or even 1.31
         check_targets:
-          - i686-unknown-freebsd
-          # - thumbv7em-none-eabihf # bare metal require no_std! future enabled.
-        test_targets:
-          - mips-unknown-linux-gnu
-          - armv7-unknown-linux-musleabihf
           - x86_64-unknown-linux-gnu
+          - x86_64-unknown-linux-musl
+          - x86_64-apple-darwin
+        test_targets:
+          - x86_64-unknown-linux-gnu
+          - x86_64-unknown-linux-musl
+          - x86_64-apple-darwin
 
 ###################
 #    DEPLOY PART  #
