@@ -1,5 +1,5 @@
 use std::{
-    collections::{hash_set::Difference, HashSet},
+    collections::HashSet,
     path::{Path, PathBuf},
 };
 

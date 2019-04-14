@@ -1,9 +1,8 @@
 use std::{
-    collections::HashSet,
     env,
     fs::{self, File},
     io::{self, BufRead, BufReader, BufWriter, Write},
-    path::{Path, PathBuf},
+    path::Path,
     sync::mpsc::channel,
     thread,
     time::Duration,
