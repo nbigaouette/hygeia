@@ -1,8 +1,9 @@
 use std::{
+    collections::HashSet,
     env,
     fs::{self, File},
     io::{self, BufRead, BufReader, BufWriter, Write},
-    path::Path,
+    path::{Path, PathBuf},
     sync::mpsc::channel,
     thread,
     time::Duration,
@@ -17,7 +18,7 @@ use subprocess::{Exec, Redirection};
 use tar::Archive;
 use terminal_size::{terminal_size, Width};
 
-use crate::{commands, utils, Result};
+use crate::{commands, utils, Result, EXECUTABLE_NAME};
 
 pub fn extract_source(version: &Version) -> Result<()> {
     let download_dir = utils::pycors_download()?;
@@ -171,6 +172,8 @@ where
     {
         let mut to_pip_installs: Vec<String> = Vec::new();
 
+        let bin_files_set_before = utils::dir_files_set(install_dir.as_ref().join("bin"))?;
+
         if install_extra_packages.install_extra_packages {
             to_pip_installs.extend(
                 load_extra_packages_to_install_from_file(utils::default_extra_package_file()?)?
@@ -242,6 +245,27 @@ where
                 }
             } else {
                 log::error!("Could not get string slice from pip path: {:?}", pip);
+            }
+        }
+
+        let bin_files_set_after = utils::dir_files_set(install_dir.as_ref().join("bin"))?;
+
+        let new_bin_files: Vec<_> = bin_files_set_after
+            .difference(&bin_files_set_before)
+            .collect();
+
+        // Create a hard-link for the new bins
+        let shim_dir = utils::pycors_shims()?;
+        let executable_path = shim_dir.join(EXECUTABLE_NAME);
+        for new_bin_file_path in new_bin_files {
+            match new_bin_file_path.file_name() {
+                Some(new_bin_filename) => {
+                    let new_bin_path = shim_dir.join(new_bin_filename);
+                    utils::create_hard_link(&executable_path, new_bin_path)?;
+                }
+                None => {
+                    log::error!("Cannot get path's filename part: {:?}", new_bin_file_path);
+                }
             }
         }
     }
