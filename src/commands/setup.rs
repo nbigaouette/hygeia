@@ -9,20 +9,20 @@ use structopt::StructOpt;
 
 #[cfg(not(target_os = "windows"))]
 use crate::Opt;
-use crate::{utils, Result};
+use crate::{utils, Result, EXECUTABLE_NAME};
 
 pub fn run(shell: Shell) -> Result<()> {
     log::debug!("Setting up the shim...");
 
-    // Copy itself into ~/.pycors/bin
+    // Copy itself into ~/.pycors/shim
     let pycors_home_dir = utils::pycors_home()?;
-    let bin_dir = pycors_home_dir.join("shims");
-    if !utils::path_exists(&bin_dir) {
-        log::debug!("Directory {:?} does not exists, creating.", bin_dir);
-        fs::create_dir_all(&bin_dir)?;
+    let shims_dir = utils::pycors_shims()?;
+    if !utils::path_exists(&shims_dir) {
+        log::debug!("Directory {:?} does not exists, creating.", shims_dir);
+        fs::create_dir_all(&shims_dir)?;
     }
     let copy_from = env::current_exe()?;
-    let copy_to = bin_dir.join("pycors");
+    let copy_to = shims_dir.join(EXECUTABLE_NAME);
     log::debug!("Copying {:?} into {:?}...", copy_from, copy_to);
     utils::copy_file(&copy_from, &copy_to)?;
 
@@ -43,23 +43,23 @@ pub fn run(shell: Shell) -> Result<()> {
     let hardlinks_dash_version_suffix = &["2to3###", "easy_install###", "pyvenv###"];
 
     // Create simple hardlinks: `pycors` --> `bin`
-    utils::create_hard_links(&copy_from, hardlinks_version_suffix, &bin_dir, "")?;
-    utils::create_hard_links(&copy_from, hardlinks_dash_version_suffix, &bin_dir, "")?;
+    utils::create_hard_links(&copy_from, hardlinks_version_suffix, &shims_dir, "")?;
+    utils::create_hard_links(&copy_from, hardlinks_dash_version_suffix, &shims_dir, "")?;
 
     // Create major version hardlinks: `pycors` --> `bin3` and `pycors` --> `bin2`
     for major in &["2", "3"] {
-        utils::create_hard_links(&copy_from, hardlinks_version_suffix, &bin_dir, major)?;
+        utils::create_hard_links(&copy_from, hardlinks_version_suffix, &shims_dir, major)?;
         utils::create_hard_links(
             &copy_from,
             hardlinks_dash_version_suffix,
-            &bin_dir,
+            &shims_dir,
             &format!("-{}", major),
         )?;
     }
 
     // Create an dummy file that will be recognized when searching the PATH for
     // python interpreters. We don't want to "find" the shims we install here.
-    let pycors_dummy_file = bin_dir.join("pycors_dummy_file");
+    let pycors_dummy_file = shims_dir.join("pycors_dummy_file");
     let mut file = fs::File::create(&pycors_dummy_file)?;
     writeln!(file, "This file's job is to tell pycors the directory contains shim, not real Python interpreters.")?;
 
@@ -92,8 +92,8 @@ pub fn run(shell: Shell) -> Result<()> {
                 let mut f = fs::File::create(&autocomplete_file)?;
                 Opt::clap().gen_completions_to("pycors", shell, &mut f);
 
-                log::debug!("Adding {:?} to $PATH in {:?}...", bin_dir, bash_profile);
-                let bash_profile_line = format!(r#"export PATH="{}:$PATH""#, bin_dir.display());
+                log::debug!("Adding {:?} to $PATH in {:?}...", shims_dir, bash_profile);
+                let bash_profile_line = format!(r#"export PATH="{}:$PATH""#, shims_dir.display());
 
                 let do_edit_bash_profile = if !bash_profile.exists() {
                     true

@@ -1,8 +1,9 @@
 use std::{
+    collections::HashSet,
     env,
     fs::{self, File},
     io::{self, BufRead, BufReader, BufWriter, Write},
-    path::Path,
+    path::{Path, PathBuf},
     sync::mpsc::channel,
     thread,
     time::Duration,
@@ -17,7 +18,7 @@ use subprocess::{Exec, Redirection};
 use tar::Archive;
 use terminal_size::{terminal_size, Width};
 
-use crate::{commands, utils, Result};
+use crate::{commands, dir_monitor::DirectoryMonitor, utils, Result, EXECUTABLE_NAME};
 
 pub fn extract_source(version: &Version) -> Result<()> {
     let download_dir = utils::pycors_download()?;
@@ -139,24 +140,7 @@ pub fn compile_source(
         let basename_dest = basename_to_link
             .replace("-###", &ver_maj)
             .replace("###", &ver_maj);
-        if Path::new(&basename_dest).exists() {
-            fs::remove_file(&basename_dest)?;
-        }
-        log::debug!(
-            "Creating hard-link from {:?} to {:?}",
-            basename_src,
-            basename_dest
-        );
-        match fs::hard_link(&basename_src, &basename_dest) {
-            Ok(()) => {}
-            Err(e) => match e.kind() {
-                io::ErrorKind::NotFound => log::warn!(
-                    "Source {:?} not found when creating hard link",
-                    basename_src
-                ),
-                _ => Err(e)?,
-            },
-        }
+        utils::create_hard_link(basename_src, basename_dest)?;
     }
 
     log::debug!(
@@ -187,6 +171,9 @@ where
                 .confirm()
     {
         let mut to_pip_installs: Vec<String> = Vec::new();
+
+        let bin_dir = install_dir.as_ref().join("bin");
+        let mut bin_dir_monitor = DirectoryMonitor::new(&bin_dir)?;
 
         if install_extra_packages.install_extra_packages {
             to_pip_installs.extend(
@@ -259,6 +246,23 @@ where
                 }
             } else {
                 log::error!("Could not get string slice from pip path: {:?}", pip);
+            }
+        }
+
+        let new_bin_files: Vec<_> = bin_dir_monitor.check()?.collect();
+
+        // Create a hard-link for the new bins
+        let shim_dir = utils::pycors_shims()?;
+        let executable_path = shim_dir.join(EXECUTABLE_NAME);
+        for new_bin_file_path in new_bin_files {
+            match new_bin_file_path.file_name() {
+                Some(new_bin_filename) => {
+                    let new_bin_path = shim_dir.join(new_bin_filename);
+                    utils::create_hard_link(&executable_path, new_bin_path)?;
+                }
+                None => {
+                    log::error!("Cannot get path's filename part: {:?}", new_bin_file_path);
+                }
             }
         }
     }

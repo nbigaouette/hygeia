@@ -7,6 +7,7 @@ use structopt::StructOpt;
 
 mod commands;
 mod config;
+mod dir_monitor;
 mod settings;
 mod shim;
 mod utils;
@@ -18,6 +19,8 @@ use crate::{
 };
 
 pub type Result<T> = std::result::Result<T, failure::Error>;
+
+pub const EXECUTABLE_NAME: &str = "pycors";
 
 /// Control which Python toolchain to use on a directory basis.
 #[derive(StructOpt, Debug)]

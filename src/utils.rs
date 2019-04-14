@@ -1,5 +1,6 @@
 use std::{
-    env, fs,
+    collections::HashSet,
+    env, fs, io,
     path::{Path, PathBuf},
 };
 
@@ -70,6 +71,10 @@ pub fn pycors_installed() -> Result<PathBuf> {
     Ok(pycors_home()?.join("installed"))
 }
 
+pub fn pycors_shims() -> Result<PathBuf> {
+    Ok(pycors_home()?.join("shims"))
+}
+
 pub fn pycors_logs() -> Result<PathBuf> {
     Ok(pycors_home()?.join("logs"))
 }
@@ -90,6 +95,30 @@ pub fn build_basename(version: &Version) -> Result<String> {
 
 pub fn build_filename(version: &Version) -> Result<String> {
     Ok(format!("{}.tgz", build_basename(version)?))
+}
+
+pub fn create_hard_link<P1, P2>(from: P1, to: P2) -> Result<()>
+where
+    P1: AsRef<Path>,
+    P2: AsRef<Path>,
+{
+    let from = from.as_ref();
+    let to = to.as_ref();
+    if Path::new(&to).exists() {
+        fs::remove_file(&to)?;
+    }
+    log::debug!("Creating hard-link from {:?} to {:?}", from, to);
+    match fs::hard_link(&from, &to) {
+        Ok(()) => {}
+        Err(e) => match e.kind() {
+            io::ErrorKind::NotFound => {
+                log::warn!("Source {:?} not found when creating hard link", from)
+            }
+            _ => Err(e)?,
+        },
+    }
+
+    Ok(())
 }
 
 pub fn create_hard_links<S, P1, P2>(
@@ -189,6 +218,21 @@ pub fn get_interpreter_to_use(cfg: &Option<Cfg>, settings: &Settings) -> Result<
     })?.clone();
 
     Ok(active_python)
+}
+
+pub fn dir_files_set<P>(dir: P) -> Result<HashSet<PathBuf>>
+where
+    P: AsRef<Path>,
+{
+    Ok(fs::read_dir(dir.as_ref())?
+        .filter_map(|entry| match entry {
+            Ok(dir) => Some(dir.path()),
+            Err(err) => {
+                log::error!("Reading failed: {:?}", err);
+                None
+            }
+        })
+        .collect())
 }
 
 #[cfg(test)]

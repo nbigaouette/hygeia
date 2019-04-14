@@ -3,7 +3,9 @@ use std::{env, ffi::OsString};
 use failure::format_err;
 use subprocess::{Exec, Redirection};
 
-use crate::{settings::PythonVersion, utils, Result};
+use crate::{
+    dir_monitor::DirectoryMonitor, settings::PythonVersion, utils, Result, EXECUTABLE_NAME,
+};
 
 pub fn run<S>(interpreter_to_use: &PythonVersion, command: &str, arguments: &[S]) -> Result<()>
 where
@@ -63,7 +65,7 @@ where
     let new_path = match env::var("PATH") {
         Ok(path) => {
             let mut paths = env::split_paths(&path).collect::<Vec<_>>();
-            paths.push(bin_dir);
+            paths.push(bin_dir.clone());
             env::join_paths(paths)?
         }
         Err(err) => {
@@ -72,12 +74,31 @@ where
         }
     };
 
+    let mut bin_dir_monitor = DirectoryMonitor::new(&bin_dir)?;
+
     Exec::cmd(&command_full_path)
         .args(arguments)
         .env("PATH", new_path)
         .stdout(Redirection::None)
         .stderr(Redirection::None)
         .join()?;
+
+    let new_bin_files: Vec<_> = bin_dir_monitor.check()?.collect();
+
+    // Create a hard-link for the new bins
+    let shim_dir = utils::pycors_shims()?;
+    let executable_path = shim_dir.join(EXECUTABLE_NAME);
+    for new_bin_file_path in new_bin_files {
+        match new_bin_file_path.file_name() {
+            Some(new_bin_filename) => {
+                let new_bin_path = shim_dir.join(new_bin_filename);
+                utils::create_hard_link(&executable_path, new_bin_path)?;
+            }
+            None => {
+                log::error!("Cannot get path's filename part: {:?}", new_bin_file_path);
+            }
+        }
+    }
 
     Ok(())
 }
