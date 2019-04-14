@@ -139,24 +139,7 @@ pub fn compile_source(
         let basename_dest = basename_to_link
             .replace("-###", &ver_maj)
             .replace("###", &ver_maj);
-        if Path::new(&basename_dest).exists() {
-            fs::remove_file(&basename_dest)?;
-        }
-        log::debug!(
-            "Creating hard-link from {:?} to {:?}",
-            basename_src,
-            basename_dest
-        );
-        match fs::hard_link(&basename_src, &basename_dest) {
-            Ok(()) => {}
-            Err(e) => match e.kind() {
-                io::ErrorKind::NotFound => log::warn!(
-                    "Source {:?} not found when creating hard link",
-                    basename_src
-                ),
-                _ => Err(e)?,
-            },
-        }
+        utils::create_hard_link(basename_src, basename_dest)?;
     }
 
     log::debug!(
