@@ -70,6 +70,10 @@ pub fn pycors_installed() -> Result<PathBuf> {
     Ok(pycors_home()?.join("installed"))
 }
 
+pub fn pycors_shims() -> Result<PathBuf> {
+    Ok(pycors_home()?.join("shims"))
+}
+
 pub fn pycors_logs() -> Result<PathBuf> {
     Ok(pycors_home()?.join("logs"))
 }
