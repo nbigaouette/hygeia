@@ -18,7 +18,7 @@ use subprocess::{Exec, Redirection};
 use tar::Archive;
 use terminal_size::{terminal_size, Width};
 
-use crate::{commands, utils, Result, EXECUTABLE_NAME};
+use crate::{commands, dir_monitor::DirectoryMonitor, utils, Result, EXECUTABLE_NAME};
 
 pub fn extract_source(version: &Version) -> Result<()> {
     let download_dir = utils::pycors_download()?;
@@ -172,7 +172,8 @@ where
     {
         let mut to_pip_installs: Vec<String> = Vec::new();
 
-        let bin_files_set_before = utils::dir_files_set(install_dir.as_ref().join("bin"))?;
+        let bin_dir = install_dir.as_ref().join("bin");
+        let mut bin_dir_monitor = DirectoryMonitor::new(&bin_dir)?;
 
         if install_extra_packages.install_extra_packages {
             to_pip_installs.extend(
@@ -248,11 +249,7 @@ where
             }
         }
 
-        let bin_files_set_after = utils::dir_files_set(install_dir.as_ref().join("bin"))?;
-
-        let new_bin_files: Vec<_> = bin_files_set_after
-            .difference(&bin_files_set_before)
-            .collect();
+        let new_bin_files: Vec<_> = bin_dir_monitor.check()?.collect();
 
         // Create a hard-link for the new bins
         let shim_dir = utils::pycors_shims()?;

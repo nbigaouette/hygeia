@@ -3,7 +3,9 @@ use std::{env, ffi::OsString};
 use failure::format_err;
 use subprocess::{Exec, Redirection};
 
-use crate::{settings::PythonVersion, utils, Result, EXECUTABLE_NAME};
+use crate::{
+    dir_monitor::DirectoryMonitor, settings::PythonVersion, utils, Result, EXECUTABLE_NAME,
+};
 
 pub fn run<S>(interpreter_to_use: &PythonVersion, command: &str, arguments: &[S]) -> Result<()>
 where
@@ -72,7 +74,7 @@ where
         }
     };
 
-    let bin_files_set_before = utils::dir_files_set(&bin_dir)?;
+    let mut bin_dir_monitor = DirectoryMonitor::new(&bin_dir)?;
 
     Exec::cmd(&command_full_path)
         .args(arguments)
@@ -81,11 +83,7 @@ where
         .stderr(Redirection::None)
         .join()?;
 
-    let bin_files_set_after = utils::dir_files_set(&bin_dir)?;
-
-    let new_bin_files: Vec<_> = bin_files_set_after
-        .difference(&bin_files_set_before)
-        .collect();
+    let new_bin_files: Vec<_> = bin_dir_monitor.check()?.collect();
 
     // Create a hard-link for the new bins
     let shim_dir = utils::pycors_shims()?;
