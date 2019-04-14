@@ -97,6 +97,30 @@ pub fn build_filename(version: &Version) -> Result<String> {
     Ok(format!("{}.tgz", build_basename(version)?))
 }
 
+pub fn create_hard_link<P1, P2>(from: P1, to: P2) -> Result<()>
+where
+    P1: AsRef<Path>,
+    P2: AsRef<Path>,
+{
+    let from = from.as_ref();
+    let to = to.as_ref();
+    if Path::new(&to).exists() {
+        fs::remove_file(&to)?;
+    }
+    log::debug!("Creating hard-link from {:?} to {:?}", from, to);
+    match fs::hard_link(&from, &to) {
+        Ok(()) => {}
+        Err(e) => match e.kind() {
+            io::ErrorKind::NotFound => {
+                log::warn!("Source {:?} not found when creating hard link", from)
+            }
+            _ => Err(e)?,
+        },
+    }
+
+    Ok(())
+}
+
 pub fn create_hard_links<S, P1, P2>(
     copy_from: P1,
     new_files: &[S],
