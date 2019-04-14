@@ -29,4 +29,5 @@ shlex = "0.1"
 which = "2.0"
 
 [build-dependencies]
-git-version = "0.2"
+# git-version = "0.2"
+git-version = { git = "https://github.com/m-ou-se/rust-git-version.git", rev = "8b80be8ac15e017529a9d6e2195b348ff712617e" }
