@@ -1,7 +1,6 @@
 # pycors
 
-[![Build Status](https://travis-ci.org/nbigaouette/pycors.svg?branch=master)](https://travis-ci.org/nbigaouette/pycors)
-[![Build status](https://ci.appveyor.com/api/projects/status/21n6gdcqj4oh68q8?svg=true&passingText=AppVeyor:%20%20passing)](https://ci.appveyor.com/project/nbigaouette/pycors)
+[![Build Status](https://dev.azure.com/nbigaouette/pycors/_apis/build/status/nbigaouette.pycors?branchName=master)](https://dev.azure.com/nbigaouette/pycors/_build/latest?definitionId=1&branchName=master)
 
 `pycors` is a **Py**thon interpreter **co**ntroller built using **R**u**s**t. It's goal is to allow
 individual projects to specify which interpreter to use using a `.python-version` file.
