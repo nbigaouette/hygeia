@@ -35,6 +35,13 @@ jobs:
     rust_version: 1.31.0 # The 2018 edition
     displayName: Verify minimum Rust version
 
+- template: ci/cargo-clippy.yml@templates
+  parameters:
+    name: clippy
+    dependsOn:
+      - rustfmt
+    displayName: Clippy (linter)
+
 ################
 # Test stage   #
 ###############
