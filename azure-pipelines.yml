@@ -46,12 +46,12 @@ jobs:
     displayName: Cargo test
     cross: true # Test on Windows and macOS
 
-# Test nightly
-- template: ci/test.yml@templates
-  parameters:
-    name: cargo_test_nightly
-    displayName: Cargo test
-    rust_version: nightly
+# # Test nightly
+# - template: ci/test.yml@templates
+#   parameters:
+#     name: cargo_test_nightly
+#     displayName: Cargo test
+#     rust_version: nightly
 
 # # Test cross
 # # List of supported targets is available here: https://github.com/rust-embedded/cross#supported-targets
