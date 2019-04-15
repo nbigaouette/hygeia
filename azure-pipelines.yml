@@ -53,23 +53,23 @@ jobs:
     displayName: Cargo test
     rust_version: nightly
 
-# Test cross
-# List of supported targets is available here: https://github.com/rust-embedded/cross#supported-targets
-- template: ci/cargo-cross.yml@templates
-  parameters:
-        name: cargo_cross
-        displayName: Cross check and test
-        rust_version: stable # You can specify here beta nightly or even 1.31
-        check_targets:
-          - x86_64-unknown-linux-gnu
-          - x86_64-unknown-linux-musl
-          - x86_64-apple-darwin
-          - x86_64-pc-windows-msvc
-        test_targets:
-          - x86_64-unknown-linux-gnu
-          - x86_64-unknown-linux-musl
-          - x86_64-apple-darwin
-          - x86_64-pc-windows-msvc
+# # Test cross
+# # List of supported targets is available here: https://github.com/rust-embedded/cross#supported-targets
+# - template: ci/cargo-cross.yml@templates
+#   parameters:
+#         name: cargo_cross
+#         displayName: Cross check and test
+#         rust_version: stable # You can specify here beta nightly or even 1.31
+#         check_targets:
+#           - x86_64-unknown-linux-gnu
+#           - x86_64-unknown-linux-musl
+#           - x86_64-apple-darwin
+#           - x86_64-pc-windows-msvc
+#         test_targets:
+#           - x86_64-unknown-linux-gnu
+#           - x86_64-unknown-linux-musl
+#           - x86_64-apple-darwin
+#           - x86_64-pc-windows-msvc
 
 ###################
 #    DEPLOY PART  #
