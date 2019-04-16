@@ -66,7 +66,6 @@ pub fn compile_source(
             .to_str()
             .ok_or_else(|| format_err!("Error converting install dir {:?} to `str`", install_dir))?
             .to_string(),
-        "--with-pydebug".to_string(),
     ];
 
     // See https://devguide.python.org/setup/#macos-and-os-x
