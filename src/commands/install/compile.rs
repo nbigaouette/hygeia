@@ -106,8 +106,8 @@ pub fn compile_source(
         "pip###",
         "pydoc###",
         "python###",
-        "python###dm",
-        "python###dm-config",
+        "python###m",
+        "python###m-config",
         "pyvenv-###",
     ];
     let ver_maj_min = format!("{}.{}", version.major, version.minor);
