@@ -66,7 +66,7 @@ pub fn compile_source(
             .to_str()
             .ok_or_else(|| format_err!("Error converting install dir {:?} to `str`", install_dir))?
             .to_string(),
-        "--with-pydebug".to_string(),
+        "--enable-optimizations".to_string(),
     ];
 
     // See https://devguide.python.org/setup/#macos-and-os-x
@@ -106,8 +106,8 @@ pub fn compile_source(
         "pip###",
         "pydoc###",
         "python###",
-        "python###dm",
-        "python###dm-config",
+        "python###m",
+        "python###m-config",
         "pyvenv-###",
     ];
     let ver_maj_min = format!("{}.{}", version.major, version.minor);
