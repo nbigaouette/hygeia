@@ -21,9 +21,12 @@ use crate::{
 pub type Result<T> = std::result::Result<T, failure::Error>;
 
 pub const EXECUTABLE_NAME: &str = "pycors";
+// This environment variable is set in `build.rs` by the `git-version` crate.
+const GIT_VERSION: &str = env!("GIT_VERSION");
 
 /// Control which Python toolchain to use on a directory basis.
 #[derive(StructOpt, Debug)]
+#[structopt(raw(version = "GIT_VERSION"))]
 struct Opt {
     #[structopt(subcommand)]
     subcommand: Option<commands::Command>,
@@ -118,4 +121,21 @@ pub fn python_shim(
     let interpreter_to_use = utils::get_interpreter_to_use(cfg, settings)?;
 
     shim::run(&interpreter_to_use, command, arguments)
+}
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn version() {
+        let crate_version = structopt::clap::crate_version!();
+
+        // GIT_VERSION is of the shape `v0.1.7-1-g095d7f5-modified`
+
+        // Strip out the `v` prefix
+        let (v, git_version_without_v) = crate::GIT_VERSION.split_at(1);
+
+        assert_eq!(v, "v");
+        assert!(git_version_without_v.starts_with(crate_version));
+    }
 }

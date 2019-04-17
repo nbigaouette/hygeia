@@ -2,6 +2,7 @@
 name = "pycors"
 version = "0.1.9"
 authors = ["Nicolas Bigaouette <nbigaouette@gmail.com>"]
+build = "build.rs"
 edition = "2018"
 
 [dependencies]
@@ -26,3 +27,7 @@ terminal_size = "0.1"
 url = "1.7"
 shlex = "0.1"
 which = "2.0"
+
+[build-dependencies]
+# git-version = "0.2"
+git-version = { git = "https://github.com/m-ou-se/rust-git-version.git", rev = "8b80be8ac15e017529a9d6e2195b348ff712617e" }
