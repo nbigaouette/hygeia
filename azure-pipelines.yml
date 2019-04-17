@@ -99,29 +99,104 @@ jobs:
 #      email: sylwesterrapala@outlook.com
 #      repo: https://github.com/xoac/rust-azure-pipelines/
 
-# Release binary
-- template: ci/github-release.yml@templates
-  parameters:
-   name: github_release
-   dependsOn:
-      - minrust
-      - rustfmt
-      - cargo_check
-      - cargo_test_stable
-      # - cargo_cross
-   rust_version: stable
-   condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
-   contents: |
-     *
-     !*.rlib
-     !*.d
-     !.*
-   targets:
-    - x86_64-unknown-linux-gnu
-    - x86_64-unknown-linux-musl
-    # - x86_64-apple-darwin
-    - x86_64-pc-windows-msvc
-   github:
-    gitHubConnection: PipelinesTemplates # TODO githubConnection that allow you write to repo.
-    repositoryName: xoac/rust-azure-pipelines
-    isPreRelease: true
+# # Release binary
+# - template: ci/github-release.yml@templates
+#   parameters:
+#    name: github_release
+#    dependsOn:
+#       - minrust
+#       - rustfmt
+#       - cargo_check
+#       - cargo_test_stable
+#       # - cargo_cross
+#    rust_version: stable
+#    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+#    contents: |
+#      *
+#      !*.rlib
+#      !*.d
+#      !.*
+#    targets:
+#     - x86_64-unknown-linux-gnu
+#     - x86_64-unknown-linux-musl
+#     # - x86_64-apple-darwin
+#     # - x86_64-pc-windows-msvc
+#    github:
+#     gitHubConnection: PipelinesTemplates # TODO githubConnection that allow you write to repo.
+#     repositoryName: xoac/rust-azure-pipelines
+#     isPreRelease: true
+
+
+- job: github_release
+  condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+  displayName: "Release to github"
+  dependsOn:
+    - minrust
+    - rustfmt
+    - cargo_check
+    - cargo_test_stable
+  strategy:
+    matrix:
+      Linux:
+        vmImage: ubuntu-16.04
+      MacOS:
+        vmImage: macOS-10.13
+      Windows:
+        vmImage: vs2017-win2016
+  pool:
+    vmImage: $(vmImage)
+
+  steps:
+  - template: ci/install-rust.yml@templates
+
+  - bash: |
+      MY_TAG="$(Build.SourceBranch)"
+      MY_TAG=${MY_TAG#refs/tags/}
+      echo $MY_TAG
+      echo "##vso[task.setvariable variable=build.my_tag]$MY_TAG"
+      DATE="$(date +%Y-%m-%d)"
+      echo "##vso[task.setvariable variable=build.date]$DATE"
+      CI_CURRENT_TARGET=$(rustup target list | grep '(default)' | awk '{print $1}')
+      echo "##vso[task.setvariable variable=build.ci_current_target]$CI_CURRENT_TARGET"
+    displayName: "Create date and tag variables"
+
+  - script: |
+          cargo build --release
+    env:
+      LOOM_MAX_DURATION: 10
+      CI: 'True'
+    displayName: Relase build
+
+  - task: CopyFiles@2
+    displayName: Copy files
+    inputs:
+      contents: |
+        *
+        !*.rlib
+        !*.d
+        !.*
+      sourceFolder: '$(Build.SourcesDirectory)/target/release'
+      targetFolder: '$(Build.BinariesDirectory)/$(build.ci_current_target)'
+
+  - task: ArchiveFiles@2
+    displayName: Gather assets
+    inputs:
+      rootFolderOrFile: '$(Build.BinariesDirectory)/$(build.ci_current_target)'
+      archiveType: 'tar'
+      tarCompression: 'gz'
+      archiveFile: '$(Build.ArtifactStagingDirectory)/pycors-$(build.my_tag)-$(build.ci_current_target).tar.gz'
+
+  - bash: |
+      find $(Build.ArtifactStagingDirectory)
+    displayName: "Debug: List files"
+
+  - task: GitHubRelease@0
+    displayName: Create release
+    inputs:
+      gitHubConnection: PipelinesTemplates
+      tagSource: manual
+      title: '$(build.my_tag) - $(build.date)'
+      tag: '$(build.my_tag)'
+      action: edit
+      # isPreRelease: false
+      # isDraft: false
