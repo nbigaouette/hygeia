@@ -194,5 +194,6 @@ jobs:
       title: '$(build.my_tag) - $(build.date)'
       tag: '$(build.my_tag)'
       action: edit
+      assetUploadMode: 'replace'
       # isPreRelease: false
       # isDraft: false
