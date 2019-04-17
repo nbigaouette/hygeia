@@ -186,10 +186,6 @@ jobs:
       tarCompression: 'gz'
       archiveFile: '$(Build.ArtifactStagingDirectory)/pycors-$(build.my_tag)-$(build.ci_current_target).tar.gz'
 
-  - bash: |
-      find $(Build.ArtifactStagingDirectory)
-    displayName: "Debug: List files"
-
   - task: GitHubRelease@0
     displayName: Create release
     inputs:
