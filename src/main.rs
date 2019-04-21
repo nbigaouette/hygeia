@@ -21,6 +21,7 @@ use crate::{
 pub type Result<T> = std::result::Result<T, failure::Error>;
 
 pub const EXECUTABLE_NAME: &str = "pycors";
+pub const INFO_FILE: &str = "installed_by.txt";
 // This environment variable is set in `build.rs` by the `git-version` crate.
 const GIT_VERSION: &str = env!("GIT_VERSION");
 
