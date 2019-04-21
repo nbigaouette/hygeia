@@ -25,11 +25,14 @@ pub fn run(
         None => {
             if install_if_not_present {
                 let new_cfg = Some(Cfg { version });
-                let version =
-                    commands::install::run(None, &new_cfg, settings, install_extra_packages)?
-                        .ok_or_else(|| {
-                            format_err!("A Python version should have been installed")
-                        })?;
+                let version = commands::install::run(
+                    None,
+                    &new_cfg,
+                    settings,
+                    install_extra_packages,
+                    false, // Don't 'select' here, will do so as last step.
+                )?
+                .ok_or_else(|| format_err!("A Python version should have been installed"))?;
                 let install_dir = utils::install_dir(&version)?;
 
                 PythonVersion {

@@ -16,6 +16,7 @@ pub fn run(
     cfg: &Option<Cfg>,
     settings: &Settings,
     install_extra_packages: &commands::InstallExtraPackagesOptions,
+    select: bool,
 ) -> Result<Option<Version>> {
     let version: VersionReq = match from_version {
         None => match cfg {
@@ -70,6 +71,14 @@ pub fn run(
         download_source(&version_to_install)?;
         extract_source(&version_to_install)?;
         compile_source(&version_to_install, install_extra_packages)?;
+
+        if select {
+            // Write to `.python-version`
+            Cfg {
+                version: VersionReq::exact(&version_to_install),
+            }
+            .save()?;
+        }
 
         Ok(Some(version_to_install))
     }

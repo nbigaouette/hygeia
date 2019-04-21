@@ -69,6 +69,10 @@ pub enum Command {
         /// Specified version to install
         from_version: Option<String>,
 
+        /// Write installed version to `.python-version`
+        #[structopt(long = "select", short = "s")]
+        select: bool,
+
         #[structopt(flatten)]
         install_extra_packages: InstallExtraPackagesOptions,
     },
