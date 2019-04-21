@@ -55,6 +55,10 @@ pub enum Command {
     Select {
         version: String,
 
+        /// Install specified version if not already present
+        #[structopt(long = "install", short = "i")]
+        install_if_not_present: bool,
+
         #[structopt(flatten)]
         install_extra_packages: InstallExtraPackagesOptions,
     },

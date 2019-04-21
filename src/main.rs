@@ -96,7 +96,13 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
             Command::Select {
                 version,
                 install_extra_packages,
-            } => commands::select::run(&version, settings, &install_extra_packages)?,
+                install_if_not_present,
+            } => commands::select::run(
+                &version,
+                settings,
+                &install_extra_packages,
+                install_if_not_present,
+            )?,
             Command::Install {
                 from_version,
                 install_extra_packages,

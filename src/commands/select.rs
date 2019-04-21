@@ -12,6 +12,7 @@ pub fn run(
     requested_version: &str,
     settings: &Settings,
     install_extra_packages: &commands::InstallExtraPackagesOptions,
+    install_if_not_present: bool,
 ) -> Result<()> {
     // Convert the requested version string to proper VersionReq
     // FIXME: Should a `~` be explicitly added here if user does not provide it?
@@ -22,14 +23,24 @@ pub fn run(
     let python_to_use = match utils::active_version(&version, settings) {
         Some(python_to_use) => python_to_use.clone(),
         None => {
-            let new_cfg = Some(Cfg { version });
-            let version = commands::install::run(None, &new_cfg, settings, install_extra_packages)?
-                .ok_or_else(|| format_err!("A Python version should have been installed"))?;
-            let install_dir = utils::install_dir(&version)?;
+            if install_if_not_present {
+                let new_cfg = Some(Cfg { version });
+                let version =
+                    commands::install::run(None, &new_cfg, settings, install_extra_packages)?
+                        .ok_or_else(|| {
+                            format_err!("A Python version should have been installed")
+                        })?;
+                let install_dir = utils::install_dir(&version)?;
 
-            PythonVersion {
-                version,
-                location: install_dir,
+                PythonVersion {
+                    version,
+                    location: install_dir,
+                }
+            } else {
+                return Err(format_err!(
+                    "Python version {} not found!",
+                    requested_version
+                ));
             }
         }
     };
