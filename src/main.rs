@@ -116,7 +116,9 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
                     select,
                 )?;
             }
-            Command::Run { command } => commands::run::run(cfg, settings, &command)?,
+            Command::Run { version, command } => {
+                commands::run::run(cfg, settings, version, &command)?
+            }
             Command::Setup { shell } => commands::setup::run(shell)?,
         }
     } else {

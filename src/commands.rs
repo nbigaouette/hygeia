@@ -83,7 +83,13 @@ pub enum Command {
     ///     pycors run "python -v"
     ///     pycors run "python -c \"print('string with spaces')\""
     #[structopt(name = "run")]
-    Run { command: String },
+    Run {
+        /// Use specified interpreter version
+        #[structopt(long = "version", short = "v")]
+        version: Option<String>,
+
+        command: String,
+    },
 
     /// Setup the shim
     ///

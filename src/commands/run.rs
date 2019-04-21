@@ -1,8 +1,14 @@
 use failure::format_err;
+use semver::VersionReq;
 
 use crate::{config::Cfg, settings::Settings, shim, utils, Result};
 
-pub fn run(cfg: &Option<Cfg>, settings: &Settings, command_and_args: &str) -> Result<()> {
+pub fn run(
+    cfg: &Option<Cfg>,
+    settings: &Settings,
+    version: Option<String>,
+    command_and_args: &str,
+) -> Result<()> {
     let s = shlex::split(&command_and_args)
         .ok_or_else(|| format_err!("Failed to split command from {:?}", command_and_args))?;
     let (cmd, arguments) = s.split_at(1);
@@ -10,7 +16,15 @@ pub fn run(cfg: &Option<Cfg>, settings: &Settings, command_and_args: &str) -> Re
         .get(0)
         .ok_or_else(|| format_err!("Failed to extract command from {:?}", command_and_args))?;
 
-    let interpreter_to_use = utils::get_interpreter_to_use(cfg, settings)?;
+    let interpreter_to_use = match version {
+        None => utils::get_interpreter_to_use(cfg, settings)?,
+        Some(version) => {
+            let version_req = VersionReq::parse(&version)?;
+            utils::active_version(&version_req, settings)
+                .ok_or_else(|| format_err!("Cannot find compatible version {}.", version))?
+                .clone()
+        }
+    };
 
     shim::run(&interpreter_to_use, cmd, arguments)
 }
