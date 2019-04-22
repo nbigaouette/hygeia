@@ -96,6 +96,9 @@ pub fn compile_source(
     run_cmd_template::<&str>(&version, "[4/15] Make", "make", &[])?;
     run_cmd_template(&version, "[5/15] Make install", "make", &["install"])?;
 
+    // Create a file in install directory to detect if we installed it ourselves
+    create_info_file(&install_dir, version)?;
+
     install_extra_pip_packages(&install_dir, &version, install_extra_packages)?;
 
     // Create symbolic links from binaries with `3` suffix
@@ -439,4 +442,22 @@ fn spinner_in_thread<S: Into<String>>(
 enum SpinnerMessage {
     Stop,
     Message(String),
+}
+
+fn create_info_file<P>(install_dir: P, version: &Version) -> Result<()>
+where
+    P: AsRef<Path>,
+{
+    let filename = utils::get_info_file(install_dir);
+    let mut file = fs::File::create(&filename)?;
+    writeln!(
+        file,
+        "Python {} installed using {} version {} on {}.\n",
+        version,
+        crate::EXECUTABLE_NAME,
+        crate::GIT_VERSION,
+        chrono::Local::now().to_rfc3339()
+    )?;
+
+    Ok(())
 }

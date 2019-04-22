@@ -235,6 +235,13 @@ where
         .collect())
 }
 
+pub fn get_info_file<P>(install_dir: P) -> PathBuf
+where
+    P: AsRef<Path>,
+{
+    install_dir.as_ref().join(crate::INFO_FILE)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

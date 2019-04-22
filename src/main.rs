@@ -21,6 +21,7 @@ use crate::{
 pub type Result<T> = std::result::Result<T, failure::Error>;
 
 pub const EXECUTABLE_NAME: &str = "pycors";
+pub const INFO_FILE: &str = "installed_by.txt";
 // This environment variable is set in `build.rs` by the `git-version` crate.
 const GIT_VERSION: &str = env!("GIT_VERSION");
 
@@ -96,14 +97,29 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
             Command::Select {
                 version,
                 install_extra_packages,
-            } => commands::select::run(&version, settings, &install_extra_packages)?,
+                install_if_not_present,
+            } => commands::select::run(
+                &version,
+                settings,
+                &install_extra_packages,
+                install_if_not_present,
+            )?,
             Command::Install {
                 from_version,
                 install_extra_packages,
+                select,
             } => {
-                commands::install::run(from_version, cfg, settings, &install_extra_packages)?;
+                commands::install::run(
+                    from_version,
+                    cfg,
+                    settings,
+                    &install_extra_packages,
+                    select,
+                )?;
             }
-            Command::Run { command } => commands::run::run(cfg, settings, &command)?,
+            Command::Run { version, command } => {
+                commands::run::run(cfg, settings, version, &command)?
+            }
             Command::Setup { shell } => commands::setup::run(shell)?,
         }
     } else {

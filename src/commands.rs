@@ -55,6 +55,10 @@ pub enum Command {
     Select {
         version: String,
 
+        /// Install specified version if not already present
+        #[structopt(long = "install", short = "i")]
+        install_if_not_present: bool,
+
         #[structopt(flatten)]
         install_extra_packages: InstallExtraPackagesOptions,
     },
@@ -64,6 +68,10 @@ pub enum Command {
     Install {
         /// Specified version to install
         from_version: Option<String>,
+
+        /// Write installed version to `.python-version`
+        #[structopt(long = "select", short = "s")]
+        select: bool,
 
         #[structopt(flatten)]
         install_extra_packages: InstallExtraPackagesOptions,
@@ -75,7 +83,13 @@ pub enum Command {
     ///     pycors run "python -v"
     ///     pycors run "python -c \"print('string with spaces')\""
     #[structopt(name = "run")]
-    Run { command: String },
+    Run {
+        /// Use specified interpreter version
+        #[structopt(long = "version", short = "v")]
+        version: Option<String>,
+
+        command: String,
+    },
 
     /// Setup the shim
     ///
