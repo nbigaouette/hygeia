@@ -177,10 +177,21 @@ mod tests {
 
         let url = build_url(&version).unwrap();
 
-        assert_eq!(
-            url,
-            Url::parse("https://www.python.org/ftp/python/3.7.2/Python-3.7.2.tgz").unwrap()
-        );
+        #[cfg(not(target_os = "windows"))]
+        {
+            assert_eq!(
+                url,
+                Url::parse("https://www.python.org/ftp/python/3.7.2/Python-3.7.2.tgz").unwrap()
+            );
+        }
+        #[cfg(target_os = "windows")]
+        {
+            assert_eq!(
+                url,
+                Url::parse("https://www.python.org/ftp/python/3.7.2/python-3.7.2-amd64.exe")
+                    .unwrap()
+            );
+        }
     }
 
     #[test]
@@ -189,10 +200,21 @@ mod tests {
 
         let url = build_url(&version).unwrap();
 
-        assert_eq!(
-            url,
-            Url::parse("https://www.python.org/ftp/python/3.7.2/Python-3.7.2rc1.tgz").unwrap()
-        );
+        #[cfg(not(target_os = "windows"))]
+        {
+            assert_eq!(
+                url,
+                Url::parse("https://www.python.org/ftp/python/3.7.2/Python-3.7.2rc1.tgz").unwrap()
+            );
+        }
+        #[cfg(target_os = "windows")]
+        {
+            assert_eq!(
+                url,
+                Url::parse("https://www.python.org/ftp/python/3.7.2/python-3.7.2rc1-amd64.exe")
+                    .unwrap()
+            );
+        }
     }
 
     #[test]
