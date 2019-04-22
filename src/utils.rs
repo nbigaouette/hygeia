@@ -1,12 +1,20 @@
 use std::{
     collections::HashSet,
-    env, fs, io,
+    env,
+    fs::{self, File},
+    io::{self, BufRead, BufReader, BufWriter, Write},
     path::{Path, PathBuf},
+    sync::mpsc::channel,
+    thread,
+    time::Duration,
 };
 
 use dirs::home_dir;
 use failure::format_err;
+use indicatif::{ProgressBar, ProgressStyle};
 use semver::{Version, VersionReq};
+use subprocess::{Exec, Redirection};
+use terminal_size::{terminal_size, Width};
 
 use crate::{
     config::Cfg,
@@ -270,6 +278,146 @@ where
     P: AsRef<Path>,
 {
     install_dir.as_ref().join(crate::INFO_FILE)
+}
+
+pub fn run_cmd_template<S: AsRef<std::ffi::OsStr>>(
+    version: &Version,
+    line_header: &str,
+    cmd: &str,
+    args: &[S],
+) -> Result<()> {
+    let basename = build_basename(&version)?;
+    let extract_dir = pycors_extract()?.join(&basename);
+    let logs_dir = pycors_logs()?;
+
+    if !logs_dir.exists() {
+        fs::create_dir_all(&logs_dir)?;
+    }
+
+    let log_filename = format!(
+        "Python_v{}_step_{}.log",
+        version,
+        line_header
+            .replace(" ", "_")
+            .replace("[", "")
+            .replace("/", "_of_")
+            .replace("]", "")
+            .replace("-", "")
+    );
+    let log_filepath = logs_dir.join(&log_filename);
+    let mut log_file = BufWriter::new(File::create(log_filepath)?);
+
+    let (tx, child) = spinner_in_thread(line_header.to_string());
+
+    let stream = Exec::cmd(cmd)
+        .args(args)
+        .cwd(&extract_dir)
+        .stderr(Redirection::Merge)
+        .stream_stdout()?;
+
+    let br = BufReader::new(stream);
+
+    let message_width = if let Some((Width(width), _)) = terminal_size() {
+        // There is two characters before the message: the spinner and a space
+        let message_width = (width as usize) - 2;
+        Some(message_width)
+    } else {
+        log::warn!("Unable to get terminal size");
+        None
+    };
+
+    for line in br.lines() {
+        match line {
+            Err(e) => {
+                tx.send(SpinnerMessage::Message(format!(
+                    "Error reading stdout: {:?}",
+                    e
+                )))?;
+                tx.send(SpinnerMessage::Stop)?;
+                return Err(format_err!("Error reading stdout: {:?}", e));
+            }
+            Ok(line) => {
+                log_line(&line, &mut log_file);
+                let message = format!("{}: {}", line_header, line.replace("\t", " "));
+                let message = match message_width {
+                    None => message,
+                    Some(width) => console::truncate_str(&message, width, "...").to_string(),
+                };
+                tx.send(SpinnerMessage::Message(message))?
+            }
+        };
+    }
+
+    // Send signal to thread to stop
+    let message = format!("{} done.", line_header);
+    tx.send(SpinnerMessage::Message(message))?;
+    tx.send(SpinnerMessage::Stop)?;
+
+    child
+        .join()
+        .map_err(|e| format_err!("Failed to join threads: {:?}", e))?;
+
+    Ok(())
+}
+
+pub fn log_line<F>(line: &str, log_file: &mut F)
+where
+    F: Write,
+{
+    log_file
+        .write_all(chrono::Local::now().to_rfc3339().as_bytes())
+        .unwrap_or_else(|e| log::error!("Writing to log file failed: {:?}", e));
+    log_file
+        .write_all(b" - ")
+        .unwrap_or_else(|e| log::error!("Writing to log file failed: {:?}", e));
+    log_file
+        .write_all(line.as_bytes())
+        .unwrap_or_else(|e| log::error!("Writing to log file failed: {:?}", e));
+    log_file
+        .write_all(b"\n")
+        .unwrap_or_else(|e| log::error!("Writing to log file failed: {:?}", e));
+}
+
+pub fn create_spinner(msg: &str) -> ProgressBar {
+    let pb = ProgressBar::new_spinner();
+
+    pb.set_message(msg);
+    pb.set_style(ProgressStyle::default_spinner().template("{spinner:.green} {msg}"));
+
+    pb
+}
+
+pub fn spinner_in_thread<S: Into<String>>(
+    message: S,
+) -> (
+    std::sync::mpsc::Sender<SpinnerMessage>,
+    std::thread::JoinHandle<()>,
+) {
+    let message = message.into();
+    let (tx, rx) = channel();
+    let child = thread::spawn(move || {
+        let pb = create_spinner(&message);
+        let d = Duration::from_millis(100);
+
+        loop {
+            if let Ok(msg) = rx.recv_timeout(d) {
+                match msg {
+                    SpinnerMessage::Stop => break,
+                    SpinnerMessage::Message(message) => pb.set_message(&message),
+                }
+            }
+            pb.inc(1);
+        }
+
+        pb.finish();
+    });
+
+    (tx, child)
+}
+
+pub enum SpinnerMessage {
+    Stop,
+    Message(String),
 }
 
 #[cfg(test)]

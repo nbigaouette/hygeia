@@ -5,10 +5,12 @@ use crate::{commands, config::Cfg, settings::Settings, Result};
 
 mod compile;
 mod download;
+mod pip;
 
-use self::{
-    compile::{compile_source, extract_source, install_extra_pip_packages},
+use crate::commands::install::{
+    compile::{compile_source, extract_source},
     download::{download_source, find_all_python_versions},
+    pip::install_extra_pip_packages,
 };
 
 pub fn run(
@@ -71,8 +73,15 @@ pub fn run(
             .ok_or_else(|| format_err!("Failed to find a compatible version to {}", version))?;
         log::info!("Found Python version {}", version_to_install);
         download_source(&version_to_install)?;
-        extract_source(&version_to_install)?;
-        compile_source(&version_to_install, install_extra_packages)?;
+        #[cfg(not(target_os = "windows"))]
+        {
+            extract_source(&version_to_install)?;
+            compile_source(&version_to_install, install_extra_packages)?;
+        }
+        #[cfg(target_os = "windows")]
+        {
+            //
+        }
 
         if select {
             // Write to `.python-version`
