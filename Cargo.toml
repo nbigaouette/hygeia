@@ -1,6 +1,6 @@
 [package]
 name = "pycors"
-version = "0.1.10"
+version = "0.1.11"
 authors = ["Nicolas Bigaouette <nbigaouette@gmail.com>"]
 build = "build.rs"
 edition = "2018"
