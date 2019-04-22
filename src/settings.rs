@@ -18,7 +18,7 @@ pub struct PythonVersion {
 }
 
 impl PythonVersion {
-    pub fn custom_install(&self) -> bool {
+    pub fn is_custom_install(&self) -> bool {
         match self.location.parent() {
             None => {
                 log::error!("Cannot get parent directory of {:?}", self.location);
