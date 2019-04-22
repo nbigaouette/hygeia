@@ -162,8 +162,20 @@ pub fn active_version<'a>(
         .iter()
         .filter(|installed_python| version.matches(&installed_python.version))
         .collect();
-    // Sort to get latest version
-    compatible_versions.sort_by_key(|compatible_version| &compatible_version.version);
+    // Sort to get latest version. If two versions are identical, pick the
+    // one that is custom installed (not a system one).
+    compatible_versions.sort_unstable_by(|a, b| {
+        let version_comparison = a.version.cmp(&b.version);
+        if version_comparison == std::cmp::Ordering::Equal {
+            if a.is_custom_install() {
+                std::cmp::Ordering::Greater
+            } else {
+                std::cmp::Ordering::Less
+            }
+        } else {
+            version_comparison
+        }
+    });
     log::debug!("Compatible versions found: {:?}", compatible_versions);
 
     compatible_versions.last().cloned()
