@@ -6,6 +6,7 @@ use crate::{commands, config::Cfg, settings::Settings, Result};
 mod compile;
 mod download;
 mod pip;
+mod windows;
 
 use crate::commands::install::{
     compile::{compile_source, extract_source},
