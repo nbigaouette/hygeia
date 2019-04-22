@@ -84,6 +84,9 @@ where
                 .join(format!("python{}", version.major));
             log::debug!("pip: {:?}", pip);
             if let Some(pip) = pip.to_str() {
+                let basename = utils::build_basename(&version)?;
+                let extract_dir = utils::pycors_extract()?.join(&basename);
+
                 for (i, to_pip_install) in to_pip_installs.iter().enumerate() {
                     if let Err(e) = utils::run_cmd_template(
                         &version,
@@ -97,6 +100,7 @@ where
                             "--upgrade",
                             to_pip_install,
                         ],
+                        &extract_dir,
                     ) {
                         log::error!("Failed to pip install {}: {:?}", to_pip_install, e);
                     }

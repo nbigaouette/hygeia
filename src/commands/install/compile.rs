@@ -1,8 +1,8 @@
 use std::{
     env,
     fs::{self, File},
-    io::{self, Write},
-    path::Path,
+    io,
+    path::{Path, PathBuf},
 };
 
 use failure::format_err;
@@ -90,12 +90,27 @@ pub fn compile_source(
         env::set_var("CFLAGS", format!("-I{}/usr/include", macos_sdk_path.trim()));
     }
 
-    utils::run_cmd_template(&version, "[3/15] Configure", "./configure", &configure_args)?;
-    utils::run_cmd_template::<&str>(&version, "[4/15] Make", "make", &[])?;
-    utils::run_cmd_template(&version, "[5/15] Make install", "make", &["install"])?;
+    let basename = utils::build_basename(&version)?;
+    let extract_dir = utils::pycors_extract()?.join(&basename);
+
+    utils::run_cmd_template(
+        &version,
+        "[3/15] Configure",
+        "./configure",
+        &configure_args,
+        &extract_dir,
+    )?;
+    utils::run_cmd_template::<&str, &PathBuf>(&version, "[4/15] Make", "make", &[], &extract_dir)?;
+    utils::run_cmd_template(
+        &version,
+        "[5/15] Make install",
+        "make",
+        &["install"],
+        &extract_dir,
+    )?;
 
     // Create a file in install directory to detect if we installed it ourselves
-    create_info_file(&install_dir, version)?;
+    utils::create_info_file(&install_dir, version)?;
 
     install_extra_pip_packages(&install_dir, &version, install_extra_packages)?;
 
@@ -148,23 +163,6 @@ pub fn compile_source(
         original_current_dir
     );
     env::set_current_dir(&original_current_dir)?;
-
-    Ok(())
-}
-fn create_info_file<P>(install_dir: P, version: &Version) -> Result<()>
-where
-    P: AsRef<Path>,
-{
-    let filename = utils::get_info_file(install_dir);
-    let mut file = fs::File::create(&filename)?;
-    writeln!(
-        file,
-        "Python {} installed using {} version {} on {}.\n",
-        version,
-        crate::EXECUTABLE_NAME,
-        crate::git_version(),
-        chrono::Local::now().to_rfc3339()
-    )?;
 
     Ok(())
 }

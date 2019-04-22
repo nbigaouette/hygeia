@@ -280,14 +280,35 @@ where
     install_dir.as_ref().join(crate::INFO_FILE)
 }
 
-pub fn run_cmd_template<S: AsRef<std::ffi::OsStr>>(
+pub fn create_info_file<P>(install_dir: P, version: &Version) -> Result<()>
+where
+    P: AsRef<Path>,
+{
+    let filename = get_info_file(install_dir);
+    let mut file = fs::File::create(&filename)?;
+    writeln!(
+        file,
+        "Python {} installed using {} version {} on {}.\n",
+        version,
+        crate::EXECUTABLE_NAME,
+        crate::git_version(),
+        chrono::Local::now().to_rfc3339()
+    )?;
+
+    Ok(())
+}
+
+pub fn run_cmd_template<S, P>(
     version: &Version,
     line_header: &str,
     cmd: &str,
     args: &[S],
-) -> Result<()> {
-    let basename = build_basename(&version)?;
-    let extract_dir = pycors_extract()?.join(&basename);
+    cwd: P,
+) -> Result<()>
+where
+    S: AsRef<std::ffi::OsStr> + std::fmt::Debug,
+    P: AsRef<Path>,
+{
     let logs_dir = pycors_logs()?;
 
     if !logs_dir.exists() {
@@ -307,11 +328,14 @@ pub fn run_cmd_template<S: AsRef<std::ffi::OsStr>>(
     let log_filepath = logs_dir.join(&log_filename);
     let mut log_file = BufWriter::new(File::create(log_filepath)?);
 
+    log_line(&format!("cd {}", cwd.as_ref().display()), &mut log_file);
+    log_line(&format!("{} {:?}", cmd, args), &mut log_file);
+
     let (tx, child) = spinner_in_thread(line_header.to_string());
 
     let stream = Exec::cmd(cmd)
         .args(args)
-        .cwd(&extract_dir)
+        .cwd(cwd)
         .stderr(Redirection::Merge)
         .stream_stdout()?;
 
