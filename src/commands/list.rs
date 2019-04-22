@@ -45,7 +45,7 @@ pub fn run(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
         let mut cell_active = Cell::new_align("", alignment);
         let mut cell_version = Cell::new_align(&format!("{}", installed_python.version), alignment);
         let mut cell_custom_install = Cell::new_align(
-            if installed_python.pycors_installed() {
+            if installed_python.custom_install() {
                 "✓"
             } else {
                 ""

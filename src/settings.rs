@@ -18,7 +18,7 @@ pub struct PythonVersion {
 }
 
 impl PythonVersion {
-    pub fn pycors_installed(&self) -> bool {
+    pub fn custom_install(&self) -> bool {
         match self.location.parent() {
             None => {
                 log::error!("Cannot get parent directory of {:?}", self.location);
