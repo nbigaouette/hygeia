@@ -31,7 +31,7 @@ pub fn run(
         .installed_python
         .iter()
         .filter(|installed_python| {
-            version.matches(&installed_python.version) && installed_python.custom_install()
+            version.matches(&installed_python.version) && installed_python.is_custom_install()
         })
         .collect();
 
