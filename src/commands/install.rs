@@ -14,6 +14,9 @@ use crate::commands::install::{
     pip::install_extra_pip_packages,
 };
 
+#[cfg(target_os = "windows")]
+use crate::commands::install::windows::unattended_windows_install;
+
 pub fn run(
     from_version: Option<String>,
     cfg: &Option<Cfg>,
@@ -81,7 +84,7 @@ pub fn run(
         }
         #[cfg(target_os = "windows")]
         {
-            //
+            unattended_windows_install(&version_to_install, install_extra_packages)?;
         }
 
         if select {
