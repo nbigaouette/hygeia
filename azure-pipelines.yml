@@ -93,6 +93,11 @@ jobs:
     CARGO_TERM_VERBOSE: true
   container: tarpaulin
   steps:
+    - script: |
+        cargo --version
+        rustc --version
+        cargo tarpaulin --version
+      displayName: "Show versions"
     - script: time cargo tarpaulin --verbose --out Xml
       displayName: "Run tarpaulin"
 
