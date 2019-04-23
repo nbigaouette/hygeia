@@ -90,7 +90,7 @@ jobs:
     vmImage: 'ubuntu-16.04'
   container: tarpaulin
   steps:
-    - script: cargo tarpaulin --out Xml
+    - script: time cargo tarpaulin --out Xml
       displayName: "Run tarpaulin"
 
 ###################
