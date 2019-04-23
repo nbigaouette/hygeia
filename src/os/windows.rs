@@ -11,13 +11,17 @@ pub fn build_filename_exe(version: &Version) -> Result<String> {
 
 pub fn command_with_major_version(
     command: &str,
-    _interpreter_to_use: &PythonVersion,
+    interpreter_to_use: &PythonVersion,
 ) -> Result<String> {
-    let command_string_with_major_version = {
-        // Not implemented yet due to Windows using a `.exe` extension
-        log::error!("Adding the major Python version to binary not implemented on Windows");
-        command.to_string()
+    let (command, extension) = if command.ends_with(".exe") {
+        (command.trim_end_matches(".exe"), ".exe")
+    } else {
+        (command, "")
     };
+
+    let mut command_string_with_major_version =
+        super::unix::command_with_major_version(command, interpreter_to_use)?;
+    command_string_with_major_version.push_str(extension);
 
     Ok(command_string_with_major_version)
 }
@@ -44,12 +48,22 @@ mod tests {
     }
 
     #[test]
-    fn append_version_to_command_success() {
+    fn append_version_to_command_no_extension_success() {
         let interpreter = PythonVersion {
             location: Path::new("/usr/bin").into(),
             version: Version::parse("3.7.3").unwrap(),
         };
         let cmd = command_with_major_version("python", &interpreter).unwrap();
         assert_eq!(cmd, "python3");
+    }
+
+    #[test]
+    fn append_version_to_command_exe_success() {
+        let interpreter = PythonVersion {
+            location: Path::new("/usr/bin").into(),
+            version: Version::parse("3.7.3").unwrap(),
+        };
+        let cmd = command_with_major_version("python.exe", &interpreter).unwrap();
+        assert_eq!(cmd, "python3.exe");
     }
 }
