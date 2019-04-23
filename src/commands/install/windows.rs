@@ -4,11 +4,11 @@ use semver::Version;
 
 use crate::{
     commands::{self, install::pip::install_extra_pip_packages},
+    os::windows::build_filename_exe,
     utils, Result,
 };
 
-#[allow(dead_code)]
-pub fn unattended_windows_install(
+pub fn install_package(
     version: &Version,
     install_extra_packages: &commands::InstallExtraPackagesOptions,
 ) -> Result<()> {
@@ -30,7 +30,7 @@ pub fn unattended_windows_install(
     ];
 
     let cwd = utils::pycors_download()?;
-    let exe = format!("./{}", utils::build_filename_exe(version)?);
+    let exe = format!("./{}", build_filename_exe(version)?);
 
     utils::run_cmd_template(
         &version,

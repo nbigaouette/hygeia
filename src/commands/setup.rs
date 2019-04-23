@@ -1,15 +1,13 @@
-#[cfg(not(target_os = "windows"))]
-use std::io::{BufRead, BufReader};
-use std::{env, fs, fs::File, io::Write};
+use std::{
+    env, fs,
+    fs::File,
+    io::{BufRead, BufReader, Write},
+};
 
 use failure::format_err;
-use structopt::clap::Shell;
-#[cfg(not(target_os = "windows"))]
-use structopt::StructOpt;
+use structopt::{clap::Shell, StructOpt};
 
-#[cfg(not(target_os = "windows"))]
-use crate::Opt;
-use crate::{utils, Result, EXECUTABLE_NAME};
+use crate::{utils, Opt, Result, EXECUTABLE_NAME};
 
 pub fn run(shell: Shell) -> Result<()> {
     log::debug!("Setting up the shim...");
@@ -75,85 +73,74 @@ pub fn run(shell: Shell) -> Result<()> {
     // Add ~/.pycors/bin to $PATH in ~/.bash_profile and install autocomplete
     match shell {
         structopt::clap::Shell::Bash => {
-            #[cfg(target_os = "windows")]
-            {
-                let message = "Windows support not yet implemented.";
-                log::error!("{}", message);
-                Err(format_err!("{}", message))
-            }
-            #[cfg(not(target_os = "windows"))]
-            {
-                let home =
-                    dirs::home_dir().ok_or_else(|| format_err!("Error getting home directory"))?;
-                let bash_profile = home.join(".bash_profile");
+            let home =
+                dirs::home_dir().ok_or_else(|| format_err!("Error getting home directory"))?;
+            let bash_profile = home.join(".bash_profile");
 
-                // Add the autocomplete too
-                let autocomplete_file = pycors_home_dir.join("pycors.bash-completion");
-                let mut f = fs::File::create(&autocomplete_file)?;
-                Opt::clap().gen_completions_to("pycors", shell, &mut f);
+            // Add the autocomplete too
+            let autocomplete_file = pycors_home_dir.join("pycors.bash-completion");
+            let mut f = fs::File::create(&autocomplete_file)?;
+            Opt::clap().gen_completions_to("pycors", shell, &mut f);
 
-                log::debug!("Adding {:?} to $PATH in {:?}...", shims_dir, bash_profile);
-                let bash_profile_line = format!(r#"export PATH="{}:$PATH""#, shims_dir.display());
+            log::debug!("Adding {:?} to $PATH in {:?}...", shims_dir, bash_profile);
+            let bash_profile_line = format!(r#"export PATH="{}:$PATH""#, shims_dir.display());
 
-                let do_edit_bash_profile = if !bash_profile.exists() {
-                    true
-                } else {
-                    // Verify that file does not contain a line `export PATH=...`
+            let do_edit_bash_profile = if !bash_profile.exists() {
+                true
+            } else {
+                // Verify that file does not contain a line `export PATH=...`
 
-                    let f = fs::File::open(&bash_profile)?;
-                    let f = BufReader::new(f);
-                    let mut line_found = false;
-                    for line in f.lines() {
-                        match line {
-                            Err(e) => log::error!(
-                                "Failed to read line from file {:?}: {:?}",
-                                bash_profile,
-                                e,
-                            ),
-                            Ok(line) => {
-                                if line == bash_profile_line {
-                                    log::debug!(
-                                        "File {:?} already contains PATH export. Skipping.",
-                                        bash_profile
-                                    );
-                                    line_found = true;
-                                    break;
-                                }
+                let f = fs::File::open(&bash_profile)?;
+                let f = BufReader::new(f);
+                let mut line_found = false;
+                for line in f.lines() {
+                    match line {
+                        Err(e) => {
+                            log::error!("Failed to read line from file {:?}: {:?}", bash_profile, e,)
+                        }
+                        Ok(line) => {
+                            if line == bash_profile_line {
+                                log::debug!(
+                                    "File {:?} already contains PATH export. Skipping.",
+                                    bash_profile
+                                );
+                                line_found = true;
+                                break;
                             }
                         }
                     }
-
-                    !line_found
-                };
-
-                if do_edit_bash_profile {
-                    let bash_profile_existed = bash_profile.exists();
-                    let mut file = fs::OpenOptions::new()
-                        .append(true)
-                        .create(true)
-                        .open(&bash_profile)?;
-                    let lines = &[
-                        String::from(""),
-                        "#################################################".to_string(),
-                        "# These lines were added by pycors.".to_string(),
-                        "# See https://github.com/nbigaouette/pycors".to_string(),
-                        if !bash_profile_existed {
-                            "source ${HOME}/.bashrc".to_string()
-                        } else {
-                            String::from("")
-                        },
-                        bash_profile_line,
-                        format!(r#"source "{}""#, autocomplete_file.display()),
-                        "#################################################".to_string(),
-                    ];
-                    for line in lines {
-                        // debug!("    {}", line);
-                        writeln!(file, "{}", line)?;
-                    }
                 }
 
-                Ok(())
+                !line_found
+            };
+
+            if do_edit_bash_profile {
+                let bash_profile_existed = bash_profile.exists();
+                let mut file = fs::OpenOptions::new()
+                    .append(true)
+                    .create(true)
+                    .open(&bash_profile)?;
+                let lines = &[
+                    String::from(""),
+                    "#################################################".to_string(),
+                    "# These lines were added by pycors.".to_string(),
+                    "# See https://github.com/nbigaouette/pycors".to_string(),
+                    if !bash_profile_existed {
+                        "source ${HOME}/.bashrc".to_string()
+                    } else {
+                        String::from("")
+                    },
+                    bash_profile_line,
+                    format!(r#"source "{}""#, autocomplete_file.display()),
+                    "#################################################".to_string(),
+                ];
+                for line in lines {
+                    // debug!("    {}", line);
+                    writeln!(file, "{}", line)?;
+                }
             }
+
+            Ok(())
         }
         _ => Err(format_err!("Unsupported shell: {}", shell)),
     }

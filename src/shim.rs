@@ -1,10 +1,10 @@
 use std::{env, ffi::OsString};
 
-use failure::format_err;
 use subprocess::{Exec, Redirection};
 
 use crate::{
-    dir_monitor::DirectoryMonitor, settings::PythonVersion, utils, Result, EXECUTABLE_NAME,
+    dir_monitor::DirectoryMonitor, os::command_with_major_version, settings::PythonVersion, utils,
+    Result, EXECUTABLE_NAME,
 };
 
 pub fn run<S>(interpreter_to_use: &PythonVersion, command: &str, arguments: &[S]) -> Result<()>
@@ -13,38 +13,8 @@ where
 {
     log::debug!("interpreter_to_use: {:?}", interpreter_to_use);
 
-    // NOTE: Make sure the command given by the user contains the major Python version
-    //       appended. This should prevent having a Python 3 interpreter in `.python-version`
-    //       but being called `python` by the user, ending up executing, say, /usr/local/bin/python`
-    //       which is itself a Python 2 interpreter.
-    #[allow(unused_variables)]
-    let last_command_char = format!(
-        "{}",
-        command
-            .chars()
-            .last()
-            .ok_or_else(|| format_err!("Cannot get last character from command {:?}", command))?
-    );
-
-    let command_string_with_major_version = {
-        #[cfg(target_os = "windows")]
-        {
-            log::error!("Adding the major Python version to binary not implemented on Windows");
-            command.to_string()
-        }
-        #[cfg(not(target_os = "windows"))]
-        {
-            if last_command_char == "2" || last_command_char == "3" {
-                command.to_string()
-            } else {
-                log::debug!(
-                    "Appending Python interpreter major version {} to command.",
-                    interpreter_to_use.version.major
-                );
-                format!("{}{}", command, interpreter_to_use.version.major)
-            }
-        }
-    };
+    let command_string_with_major_version =
+        command_with_major_version(command, interpreter_to_use)?;
 
     let command_full_path = interpreter_to_use
         .location

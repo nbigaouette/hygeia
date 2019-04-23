@@ -10,7 +10,7 @@ use regex::Regex;
 use semver::Version;
 use url::Url;
 
-use crate::{utils, Result};
+use crate::{os::build_filename, utils, Result};
 
 pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()> {
     let line_header = "[1/15] Download";
@@ -107,7 +107,7 @@ fn build_url(version: &Version) -> Result<Url> {
         format!("{}.{}", main_version, version.patch)
     };
 
-    let filename = utils::build_filename(&version)?;
+    let filename = build_filename(&version)?;
 
     let to_download = Url::parse(&format!(
         "https://www.python.org/ftp/python/{}/{}",

@@ -3,19 +3,15 @@ use semver::{Version, VersionReq};
 
 use crate::{commands, config::Cfg, settings::Settings, Result};
 
-mod compile;
 mod download;
 mod pip;
+mod unix;
 mod windows;
 
 use crate::commands::install::{
-    compile::{compile_source, extract_source},
     download::{download_source, find_all_python_versions},
     pip::install_extra_pip_packages,
 };
-
-#[cfg(target_os = "windows")]
-use crate::commands::install::windows::unattended_windows_install;
 
 pub fn run(
     from_version: Option<String>,
@@ -77,15 +73,7 @@ pub fn run(
             .ok_or_else(|| format_err!("Failed to find a compatible version to {}", version))?;
         log::info!("Found Python version {}", version_to_install);
         download_source(&version_to_install)?;
-        #[cfg(not(target_os = "windows"))]
-        {
-            extract_source(&version_to_install)?;
-            compile_source(&version_to_install, install_extra_packages)?;
-        }
-        #[cfg(target_os = "windows")]
-        {
-            unattended_windows_install(&version_to_install, install_extra_packages)?;
-        }
+        install_package(&version_to_install, install_extra_packages)?;
 
         if select {
             // Write to `.python-version`
@@ -97,4 +85,20 @@ pub fn run(
 
         Ok(Some(version_to_install))
     }
+}
+
+fn install_package(
+    version_to_install: &Version,
+    install_extra_packages: &commands::InstallExtraPackagesOptions,
+) -> Result<()> {
+    #[cfg(not(target_os = "windows"))]
+    {
+        unix::install_package(&version_to_install, install_extra_packages)?;
+    }
+    #[cfg(target_os = "windows")]
+    {
+        windows::install_package(&version_to_install, install_extra_packages)?;
+    }
+
+    Ok(())
 }
