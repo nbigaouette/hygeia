@@ -14,6 +14,7 @@ resources:
   containers:
   - container: tarpaulin
     image: xd009642/tarpaulin@sha256:e94bf79f5d60fd021383cdc011182066999a395223976b071fc9f8b75d10a35c
+    options: --security-opt seccomp=unconfined
 
 jobs:
 # Check formatting
