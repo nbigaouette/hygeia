@@ -455,7 +455,7 @@ where
         "Python {} installed using {} version {} on {}.\n",
         version,
         crate::EXECUTABLE_NAME,
-        crate::GIT_VERSION,
+        crate::git_version(),
         chrono::Local::now().to_rfc3339()
     )?;
 

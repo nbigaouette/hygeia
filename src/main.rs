@@ -1,7 +1,9 @@
 use std::env;
 
 use failure::format_err;
+use git_testament::{git_testament, render_testament};
 use human_panic::setup_panic;
+use lazy_static::lazy_static;
 use log::{debug, error};
 use structopt::StructOpt;
 
@@ -22,12 +24,19 @@ pub type Result<T> = std::result::Result<T, failure::Error>;
 
 pub const EXECUTABLE_NAME: &str = "pycors";
 pub const INFO_FILE: &str = "installed_by.txt";
-// This environment variable is set in `build.rs` by the `git-version` crate.
-const GIT_VERSION: &str = env!("GIT_VERSION");
+
+git_testament!(GIT_TESTAMENT);
+
+fn git_version() -> &'static str {
+    lazy_static! {
+        static ref RENDERED: String = render_testament!(GIT_TESTAMENT);
+    }
+    &RENDERED
+}
 
 /// Control which Python toolchain to use on a directory basis.
 #[derive(StructOpt, Debug)]
-#[structopt(raw(version = "GIT_VERSION"))]
+#[structopt(raw(version = "git_version()"))]
 struct Opt {
     #[structopt(subcommand)]
     subcommand: Option<commands::Command>,
@@ -149,7 +158,7 @@ mod tests {
         // GIT_VERSION is of the shape `v0.1.7-1-g095d7f5-modified`
 
         // Strip out the `v` prefix
-        let (v, git_version_without_v) = crate::GIT_VERSION.split_at(1);
+        let (v, git_version_without_v) = crate::git_version().split_at(1);
 
         assert_eq!(v, "v");
         assert!(git_version_without_v.starts_with(crate_version));
