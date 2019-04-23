@@ -10,6 +10,7 @@ use structopt::StructOpt;
 mod commands;
 mod config;
 mod dir_monitor;
+mod os;
 mod settings;
 mod shim;
 mod utils;

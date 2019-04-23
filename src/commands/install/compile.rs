@@ -13,13 +13,14 @@ use tar::Archive;
 
 use crate::{
     commands::{self, install::pip::install_extra_pip_packages},
+    os::build_filename,
     utils::{self, SpinnerMessage},
     Result,
 };
 
 pub fn extract_source(version: &Version) -> Result<()> {
     let download_dir = utils::pycors_download()?;
-    let filename = utils::build_filename(&version)?;
+    let filename = build_filename(&version)?;
     let file_path = download_dir.join(&filename);
     let extract_dir = utils::pycors_extract()?;
 

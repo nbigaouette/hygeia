@@ -101,28 +101,6 @@ pub fn build_basename(version: &Version) -> Result<String> {
     Ok(format!("Python-{}", version_file))
 }
 
-pub fn build_filename(version: &Version) -> Result<String> {
-    #[cfg(not(target_os = "windows"))]
-    {
-        build_filename_tgz(version)
-    }
-    #[cfg(target_os = "windows")]
-    {
-        build_filename_exe(version)
-    }
-}
-
-pub fn build_filename_tgz(version: &Version) -> Result<String> {
-    Ok(format!("{}.tgz", build_basename(version)?))
-}
-
-pub fn build_filename_exe(version: &Version) -> Result<String> {
-    Ok(format!(
-        "{}-amd64.exe",
-        build_basename(version)?.replace("Python", "python")
-    ))
-}
-
 pub fn create_hard_link<P1, P2>(from: P1, to: P2) -> Result<()>
 where
     P1: AsRef<Path>,
@@ -568,34 +546,6 @@ mod tests {
 
         let filename = build_basename(&version).unwrap();
         assert_eq!(&filename, "Python-3.7.2rc1");
-    }
-
-    #[test]
-    fn build_filename_from_version_372() {
-        let version = Version::parse("3.7.2").unwrap();
-
-        let filename_tgz = build_filename_tgz(&version).unwrap();
-        assert_eq!(&filename_tgz, "Python-3.7.2.tgz");
-
-        let filename_exe = build_filename_exe(&version).unwrap();
-        assert_eq!(&filename_exe, "python-3.7.2-amd64.exe");
-
-        let filename = build_filename(&version).unwrap();
-        assert!(filename == filename_tgz || filename == filename_exe);
-    }
-
-    #[test]
-    fn build_filename_from_version_372rc1() {
-        let version = Version::parse("3.7.2-rc1").unwrap();
-
-        let filename_tgz = build_filename_tgz(&version).unwrap();
-        assert_eq!(&filename_tgz, "Python-3.7.2rc1.tgz");
-
-        let filename_exe = build_filename_exe(&version).unwrap();
-        assert_eq!(&filename_exe, "python-3.7.2rc1-amd64.exe");
-
-        let filename = build_filename(&version).unwrap();
-        assert!(filename == filename_tgz || filename == filename_exe);
     }
 
     #[test]
