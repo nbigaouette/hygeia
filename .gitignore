@@ -5,3 +5,6 @@
 *.tgz
 *.asc
 .pycors
+cobertura.xml
+venv_pycobertura
+coverage/tarpaulin.html
