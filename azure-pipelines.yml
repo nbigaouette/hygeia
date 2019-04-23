@@ -11,6 +11,10 @@ resources:
       name: xoac/rust-azure-pipelines
       ref: refs/heads/master ## TODO you may want to change it to refs/tags/TAG_NAME.
       endpoint: PipelinesTemplates
+  containers:
+  - container: tarpaulin
+    image: xd009642/tarpaulin@sha256:e94bf79f5d60fd021383cdc011182066999a395223976b071fc9f8b75d10a35c
+    options: --security-opt seccomp=unconfined
 
 jobs:
 # Check formatting
@@ -80,6 +84,26 @@ jobs:
 #           - x86_64-unknown-linux-musl
 #           - x86_64-apple-darwin
 #           - x86_64-pc-windows-msvc
+
+- job: code_coverage
+  displayName: "Code coverage (tarpaulin)"
+  pool:
+    vmImage: 'ubuntu-16.04'
+  variables:
+    CARGO_TERM_VERBOSE: true
+  container: tarpaulin
+  steps:
+    - script: |
+        cargo --version
+        rustc --version
+        cargo tarpaulin --version
+      displayName: "Show versions"
+    - script: time cargo tarpaulin --verbose --out Xml
+      displayName: "Run tarpaulin"
+    - script: |
+        bash <(curl -s https://codecov.io/bash)
+      env:
+        CODECOV_TOKEN: $(CODECOV_TOKEN)
 
 ###################
 #    DEPLOY PART  #

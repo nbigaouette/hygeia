@@ -1,6 +1,7 @@
 # pycors
 
 [![Build Status](https://dev.azure.com/nbigaouette/pycors/_apis/build/status/nbigaouette.pycors?branchName=master)](https://dev.azure.com/nbigaouette/pycors/_build/latest?definitionId=1&branchName=master)
+[![Coverage Status](https://codecov.io/gh/nbigaouette/pycors/branch/master/graph/badge.svg)](https://codecov.io/gh/nbigaouette/pycors)
 
 `pycors` is a **Py**thon interpreter **co**ntroller built using **R**u**s**t. It's goal is to allow
 individual projects to specify which interpreter to use using a `.python-version` file.
