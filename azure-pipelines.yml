@@ -100,6 +100,10 @@ jobs:
       displayName: "Show versions"
     - script: time cargo tarpaulin --verbose --out Xml
       displayName: "Run tarpaulin"
+    - script: |
+        bash <(curl -s https://codecov.io/bash)
+      env:
+        CODECOV_TOKEN: $(CODECOV_TOKEN)
 
 ###################
 #    DEPLOY PART  #
