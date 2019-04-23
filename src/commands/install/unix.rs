@@ -18,6 +18,15 @@ use crate::{
     Result,
 };
 
+pub fn install_package(
+    version_to_install: &Version,
+    install_extra_packages: &commands::InstallExtraPackagesOptions,
+) -> Result<()> {
+    extract_source(&version_to_install)?;
+    compile_source(&version_to_install, install_extra_packages)?;
+    Ok(())
+}
+
 pub fn extract_source(version: &Version) -> Result<()> {
     let download_dir = utils::pycors_download()?;
     let filename = build_filename(&version)?;

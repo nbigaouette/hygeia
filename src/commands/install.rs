@@ -93,12 +93,11 @@ fn install_package(
 ) -> Result<()> {
     #[cfg(not(target_os = "windows"))]
     {
-        unix::extract_source(&version_to_install)?;
-        unix::compile_source(&version_to_install, install_extra_packages)?;
+        unix::install_package(&version_to_install, install_extra_packages)?;
     }
     #[cfg(target_os = "windows")]
     {
-        windows::unattended_windows_install(&version_to_install, install_extra_packages)?;
+        windows::install_package(&version_to_install, install_extra_packages)?;
     }
 
     Ok(())

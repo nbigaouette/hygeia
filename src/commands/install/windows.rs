@@ -8,8 +8,7 @@ use crate::{
     utils, Result,
 };
 
-#[allow(dead_code)]
-pub fn unattended_windows_install(
+pub fn install_package(
     version: &Version,
     install_extra_packages: &commands::InstallExtraPackagesOptions,
 ) -> Result<()> {
