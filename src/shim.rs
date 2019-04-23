@@ -13,9 +13,6 @@ where
 {
     log::debug!("interpreter_to_use: {:?}", interpreter_to_use);
 
-    let install_dir = utils::install_dir(&interpreter_to_use.version)?;
-    let bin_dir = install_dir.join("bin");
-
     // NOTE: Make sure the command given by the user contains the major Python version
     //       appended. This should prevent having a Python 3 interpreter in `.python-version`
     //       but being called `python` by the user, ending up executing, say, /usr/local/bin/python`
@@ -60,6 +57,8 @@ where
 
     log::debug!("Command:   {:?}", command_full_path);
     log::debug!("Arguments: {:?}", arguments);
+
+    let bin_dir = interpreter_to_use.location.clone();
 
     // Prepend `bin_dir` to `PATH`
     let new_path = match env::var("PATH") {
