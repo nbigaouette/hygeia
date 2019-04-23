@@ -93,7 +93,7 @@ jobs:
     CARGO_TERM_VERBOSE: true
   container: tarpaulin
   steps:
-    - script: time cargo tarpaulin --out Xml
+    - script: time cargo tarpaulin --verbose --out Xml
       displayName: "Run tarpaulin"
 
 ###################
