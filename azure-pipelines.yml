@@ -200,7 +200,7 @@ jobs:
       targetFolder: '$(Build.BinariesDirectory)/$(build.ci_current_target)'
 
   - task: ArchiveFiles@2
-    displayName: Gather assets
+    displayName: Compress assets
     inputs:
       rootFolderOrFile: '$(Build.BinariesDirectory)/$(build.ci_current_target)'
       archiveType: 'tar'
