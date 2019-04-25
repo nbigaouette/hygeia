@@ -27,8 +27,6 @@ jobs:
 - template: ci/cargo-check.yml@templates
   parameters:
     name: cargo_check
-    dependsOn:
-      - rustfmt
     displayName: Cargo check
 
 # This represents the minimum Rust version supported.
@@ -42,8 +40,6 @@ jobs:
 - template: ci/cargo-clippy.yml@templates
   parameters:
     name: clippy
-    dependsOn:
-      - rustfmt
     rust: stable
     displayName: Clippy (linter)
 
@@ -54,8 +50,6 @@ jobs:
 # Test stable
 - template: ci/test.yml@templates
   parameters:
-    dependsOn:
-      - cargo_check
     name: cargo_test_stable
     displayName: Cargo test
     cross: true # Test on Windows and macOS
