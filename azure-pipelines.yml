@@ -189,7 +189,10 @@ jobs:
     displayName: Copy files
     inputs:
       contents: |
-        pycors
+        *
+        !*.rlib
+        !*.d
+        !.*
       sourceFolder: '$(Build.SourcesDirectory)/target/release'
       targetFolder: '$(Build.BinariesDirectory)/$(build.ci_current_target)'
 
