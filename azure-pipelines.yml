@@ -190,6 +190,7 @@ jobs:
     inputs:
       contents: |
         *
+        !*.pdb
         !*.rlib
         !*.d
         !.*
