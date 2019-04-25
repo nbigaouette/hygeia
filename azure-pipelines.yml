@@ -203,9 +203,8 @@ jobs:
     displayName: Compress assets
     inputs:
       rootFolderOrFile: '$(Build.BinariesDirectory)/$(build.ci_current_target)'
-      archiveType: 'tar'
-      tarCompression: 'gz'
-      archiveFile: '$(Build.ArtifactStagingDirectory)/pycors-$(build.my_tag)-$(build.ci_current_target).tar.gz'
+      archiveType: 'zip'
+      archiveFile: '$(Build.ArtifactStagingDirectory)/pycors-$(build.my_tag)-$(build.ci_current_target).zip'
 
   - task: GitHubRelease@0
     displayName: Create release
