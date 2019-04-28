@@ -19,7 +19,7 @@ use terminal_size::{terminal_size, Width};
 use crate::{
     config::Cfg,
     settings::{PythonVersion, Settings},
-    Result,
+    Result, HOME_VARIABLE,
 };
 
 pub fn path_exists<P: AsRef<Path>>(path: P) -> bool {
@@ -40,7 +40,7 @@ pub fn copy_file<P1: AsRef<Path>, P2: AsRef<Path>>(from: P1, to: P2) -> Result<u
 }
 
 pub fn config_home() -> Result<PathBuf> {
-    let env_var = env::var_os("PYCORS_HOME");
+    let env_var = env::var_os(HOME_VARIABLE);
 
     let pycors_home = if env_var.is_some() {
         let cwd = env::current_dir()?;
