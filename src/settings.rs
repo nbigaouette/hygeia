@@ -38,7 +38,7 @@ pub struct Settings {
 }
 
 impl Settings {
-    pub fn from_pycors_home() -> Result<Settings> {
+    pub fn from_dot_dir() -> Result<Settings> {
         let install_dir = utils::directory::installed()?;
 
         let mut installed_python = Vec::new();
