@@ -42,16 +42,16 @@ pub fn copy_file<P1: AsRef<Path>, P2: AsRef<Path>>(from: P1, to: P2) -> Result<u
 pub fn config_home() -> Result<PathBuf> {
     let env_var = env::var_os(HOME_VARIABLE);
 
-    let pycors_home = if env_var.is_some() {
+    let config_home_from_env = if env_var.is_some() {
         let cwd = env::current_dir()?;
         env_var.clone().map(|home| cwd.join(home))
     } else {
         None
     };
 
-    let user_home = dot_dir(DEFAULT_DOT_DIR);
+    let default_dot_dir = dot_dir(DEFAULT_DOT_DIR);
 
-    let home = match pycors_home.or(user_home) {
+    let home = match config_home_from_env.or(default_dot_dir) {
         None => Err(format_err!("Cannot find pycors' home directory")),
         Some(home) => Ok(home),
     }?;
