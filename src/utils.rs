@@ -490,7 +490,7 @@ mod tests {
     #[test]
     fn home_from_env_variable() {
         let tmp_dir = env::temp_dir();
-        env::set_var("PYCORS_HOME", &tmp_dir);
+        env::set_var(HOME_VARIABLE, &tmp_dir);
         let tmp_home = directory::config_home().unwrap();
         assert_eq!(tmp_home, Path::new(&tmp_dir));
     }
