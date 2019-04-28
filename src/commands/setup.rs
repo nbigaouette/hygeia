@@ -13,7 +13,7 @@ pub fn run(shell: Shell) -> Result<()> {
     log::debug!("Setting up the shim...");
 
     // Copy itself into ~/.pycors/shim
-    let pycors_home_dir = utils::pycors_home()?;
+    let pycors_home_dir = utils::config_home()?;
     let shims_dir = utils::pycors_shims()?;
     if !utils::path_exists(&shims_dir) {
         log::debug!("Directory {:?} does not exists, creating.", shims_dir);

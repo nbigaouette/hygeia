@@ -104,7 +104,7 @@ impl Settings {
             }
         };
 
-        let pycors_home_dir = utils::pycors_home()?;
+        let pycors_home_dir = utils::config_home()?;
         let bin_dir = pycors_home_dir.join("bin");
 
         // Find other Python installed (f.e. in system directories)

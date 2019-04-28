@@ -39,7 +39,7 @@ pub fn copy_file<P1: AsRef<Path>, P2: AsRef<Path>>(from: P1, to: P2) -> Result<u
     }
 }
 
-pub fn pycors_home() -> Result<PathBuf> {
+pub fn config_home() -> Result<PathBuf> {
     let env_var = env::var_os("PYCORS_HOME");
 
     let pycors_home = if env_var.is_some() {
@@ -64,7 +64,7 @@ fn dot_dir(name: &str) -> Option<PathBuf> {
 }
 
 pub fn pycors_cache() -> Result<PathBuf> {
-    Ok(pycors_home()?.join("cache"))
+    Ok(config_home()?.join("cache"))
 }
 
 pub fn pycors_download() -> Result<PathBuf> {
@@ -76,15 +76,15 @@ pub fn pycors_extract() -> Result<PathBuf> {
 }
 
 pub fn pycors_installed() -> Result<PathBuf> {
-    Ok(pycors_home()?.join("installed"))
+    Ok(config_home()?.join("installed"))
 }
 
 pub fn pycors_shims() -> Result<PathBuf> {
-    Ok(pycors_home()?.join("shims"))
+    Ok(config_home()?.join("shims"))
 }
 
 pub fn pycors_logs() -> Result<PathBuf> {
-    Ok(pycors_home()?.join("logs"))
+    Ok(config_home()?.join("logs"))
 }
 
 pub fn install_dir(version: &Version) -> Result<PathBuf> {
@@ -92,7 +92,7 @@ pub fn install_dir(version: &Version) -> Result<PathBuf> {
 }
 
 pub fn default_extra_package_file() -> Result<PathBuf> {
-    Ok(pycors_home()?.join("extra-packages-to-install.txt"))
+    Ok(config_home()?.join("extra-packages-to-install.txt"))
 }
 
 pub fn build_basename(version: &Version) -> Result<String> {
@@ -469,7 +469,7 @@ mod tests {
     #[test]
     fn pycors_home_default() {
         env::remove_var("PYCORS_HOME");
-        let default_home = pycors_home().unwrap();
+        let default_home = config_home().unwrap();
         let expected = home_dir().unwrap().join(".pycors");
         assert_eq!(default_home, expected);
     }
@@ -478,7 +478,7 @@ mod tests {
     fn pycors_home_from_env_variable() {
         let tmp_dir = env::temp_dir();
         env::set_var("PYCORS_HOME", &tmp_dir);
-        let tmp_home = pycors_home().unwrap();
+        let tmp_home = config_home().unwrap();
         assert_eq!(tmp_home, Path::new(&tmp_dir));
     }
 
