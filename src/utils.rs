@@ -19,7 +19,7 @@ use terminal_size::{terminal_size, Width};
 use crate::{
     config::Cfg,
     settings::{PythonVersion, Settings},
-    Result, DEFAULT_DOT_DIR, HOME_VARIABLE,
+    Result, DEFAULT_DOT_DIR, EXECUTABLE_NAME, HOME_VARIABLE,
 };
 
 pub fn path_exists<P: AsRef<Path>>(path: P) -> bool {
@@ -52,7 +52,10 @@ pub fn config_home() -> Result<PathBuf> {
     let default_dot_dir = dot_dir(DEFAULT_DOT_DIR);
 
     let home = match config_home_from_env.or(default_dot_dir) {
-        None => Err(format_err!("Cannot find pycors' home directory")),
+        None => Err(format_err!(
+            "Cannot find {}' home directory",
+            EXECUTABLE_NAME
+        )),
         Some(home) => Ok(home),
     }?;
 
