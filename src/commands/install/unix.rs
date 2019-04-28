@@ -28,7 +28,7 @@ pub fn install_package(
 }
 
 pub fn extract_source(version: &Version) -> Result<()> {
-    let download_dir = utils::directories::download()?;
+    let download_dir = utils::directories::downloaded()?;
     let filename = build_filename(&version)?;
     let file_path = download_dir.join(&filename);
     let extract_dir = utils::directories::extracted()?;

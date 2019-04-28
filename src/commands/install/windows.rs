@@ -29,7 +29,7 @@ pub fn install_package(
         "Include_pip=1",
     ];
 
-    let cwd = utils::directories::download()?;
+    let cwd = utils::directories::downloaded()?;
     let exe = format!("./{}", build_filename_exe(version)?);
 
     utils::run_cmd_template(

@@ -73,7 +73,7 @@ pub mod directories {
         Ok(config_home()?.join("cache"))
     }
 
-    pub fn download() -> Result<PathBuf> {
+    pub fn downloaded() -> Result<PathBuf> {
         Ok(cache()?.join("downloaded"))
     }
 
@@ -504,7 +504,7 @@ mod tests {
         let expected = home_dir().unwrap().join(".pycors").join("cache");
         assert_eq!(dir, expected);
 
-        let dir = directories::download().unwrap();
+        let dir = directories::downloaded().unwrap();
         let expected = home_dir()
             .unwrap()
             .join(".pycors")
