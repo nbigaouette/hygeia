@@ -480,15 +480,15 @@ mod tests {
     }
 
     #[test]
-    fn pycors_home_default() {
-        env::remove_var("PYCORS_HOME");
+    fn home_default() {
+        env::remove_var(HOME_VARIABLE);
         let default_home = directory::config_home().unwrap();
         let expected = home_dir().unwrap().join(".pycors");
         assert_eq!(default_home, expected);
     }
 
     #[test]
-    fn pycors_home_from_env_variable() {
+    fn home_from_env_variable() {
         let tmp_dir = env::temp_dir();
         env::set_var("PYCORS_HOME", &tmp_dir);
         let tmp_home = directory::config_home().unwrap();
@@ -497,15 +497,15 @@ mod tests {
 
     #[test]
     fn dot_dir_success() {
-        env::remove_var("PYCORS_HOME");
+        env::remove_var(HOME_VARIABLE);
         let dir = directory::dot_dir(".dummy").unwrap();
         let expected = home_dir().unwrap().join(".dummy");
         assert_eq!(dir, expected);
     }
 
     #[test]
-    fn pycors_directories() {
-        env::remove_var("PYCORS_HOME");
+    fn directories() {
+        env::remove_var(HOME_VARIABLE);
         let dir = directory::cache().unwrap();
         let expected = home_dir().unwrap().join(".pycors").join("cache");
         assert_eq!(dir, expected);
@@ -533,7 +533,7 @@ mod tests {
 
     #[test]
     fn install_dir_version() {
-        env::remove_var("PYCORS_HOME");
+        env::remove_var(HOME_VARIABLE);
         let version = Version::parse("3.7.2").unwrap();
         let dir = directory::install_dir(&version).unwrap();
         let expected = home_dir()
