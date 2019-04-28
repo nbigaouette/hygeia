@@ -7,7 +7,7 @@ use std::{
 use failure::format_err;
 use structopt::{clap::Shell, StructOpt};
 
-use crate::{utils, Opt, Result, EXECUTABLE_NAME};
+use crate::{utils, Opt, Result, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME_REL};
 
 pub fn run(shell: Shell) -> Result<()> {
     log::debug!("Setting up the shim...");
@@ -61,7 +61,7 @@ pub fn run(shell: Shell) -> Result<()> {
     let mut file = fs::File::create(&pycors_dummy_file)?;
     writeln!(file, "This file's job is to tell pycors the directory contains shim, not real Python interpreters.")?;
 
-    let extra_packages_file_default_content = include_str!("../../extra-packages-to-install.txt");
+    let extra_packages_file_default_content = include_str!(EXTRA_PACKAGES_FILENAME_REL);
     let output_filename = utils::default_extra_package_file()?;
     log::debug!(
         "Writing list of default packages to install to {:?}",

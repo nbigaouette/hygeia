@@ -19,7 +19,7 @@ use terminal_size::{terminal_size, Width};
 use crate::{
     config::Cfg,
     settings::{PythonVersion, Settings},
-    Result, DEFAULT_DOT_DIR, EXECUTABLE_NAME, HOME_VARIABLE,
+    Result, DEFAULT_DOT_DIR, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME, HOME_VARIABLE,
 };
 
 pub fn path_exists<P: AsRef<Path>>(path: P) -> bool {
@@ -99,7 +99,7 @@ pub mod directory {
 }
 
 pub fn default_extra_package_file() -> Result<PathBuf> {
-    Ok(directory::config_home()?.join("extra-packages-to-install.txt"))
+    Ok(directory::config_home()?.join(EXTRA_PACKAGES_FILENAME))
 }
 
 pub fn build_basename(version: &Version) -> Result<String> {
