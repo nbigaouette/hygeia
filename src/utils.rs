@@ -74,7 +74,7 @@ pub mod directories {
     }
 
     pub fn download() -> Result<PathBuf> {
-        Ok(cache()?.join("downloads"))
+        Ok(cache()?.join("downloaded"))
     }
 
     pub fn extracted() -> Result<PathBuf> {
@@ -509,7 +509,7 @@ mod tests {
             .unwrap()
             .join(".pycors")
             .join("cache")
-            .join("downloads");
+            .join("downloaded");
         assert_eq!(dir, expected);
 
         let dir = directories::extracted().unwrap();
