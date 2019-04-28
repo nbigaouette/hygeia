@@ -16,7 +16,7 @@ pub fn install_package(
 
     let original_current_dir = env::current_dir()?;
 
-    let install_dir = utils::install_dir(version)?;
+    let install_dir = utils::directories::install_dir(version)?;
     let target_dir_opt = format!("TargetDir={}", install_dir.display());
 
     let unattended_arguments = vec![
@@ -29,7 +29,7 @@ pub fn install_package(
         "Include_pip=1",
     ];
 
-    let cwd = utils::pycors_download()?;
+    let cwd = utils::directories::download()?;
     let exe = format!("./{}", build_filename_exe(version)?);
 
     utils::run_cmd_template(

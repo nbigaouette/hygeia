@@ -39,63 +39,67 @@ pub fn copy_file<P1: AsRef<Path>, P2: AsRef<Path>>(from: P1, to: P2) -> Result<u
     }
 }
 
-pub fn config_home() -> Result<PathBuf> {
-    let env_var = env::var_os(HOME_VARIABLE);
+pub mod directories {
+    use super::*;
 
-    let config_home_from_env = if env_var.is_some() {
-        let cwd = env::current_dir()?;
-        env_var.clone().map(|home| cwd.join(home))
-    } else {
-        None
-    };
+    pub fn dot_dir(name: &str) -> Option<PathBuf> {
+        home_dir().map(|p| p.join(name))
+    }
 
-    let default_dot_dir = dot_dir(DEFAULT_DOT_DIR);
+    pub fn config_home() -> Result<PathBuf> {
+        let env_var = env::var_os(HOME_VARIABLE);
 
-    let home = match config_home_from_env.or(default_dot_dir) {
-        None => Err(format_err!(
-            "Cannot find {}' home directory",
-            EXECUTABLE_NAME
-        )),
-        Some(home) => Ok(home),
-    }?;
+        let config_home_from_env = if env_var.is_some() {
+            let cwd = env::current_dir()?;
+            env_var.clone().map(|home| cwd.join(home))
+        } else {
+            None
+        };
 
-    Ok(home)
-}
+        let default_dot_dir = dot_dir(DEFAULT_DOT_DIR);
 
-fn dot_dir(name: &str) -> Option<PathBuf> {
-    home_dir().map(|p| p.join(name))
-}
+        let home = match config_home_from_env.or(default_dot_dir) {
+            None => Err(format_err!(
+                "Cannot find {}' home directory",
+                EXECUTABLE_NAME
+            )),
+            Some(home) => Ok(home),
+        }?;
 
-pub fn pycors_cache() -> Result<PathBuf> {
-    Ok(config_home()?.join("cache"))
-}
+        Ok(home)
+    }
 
-pub fn pycors_download() -> Result<PathBuf> {
-    Ok(pycors_cache()?.join("downloads"))
-}
+    pub fn cache() -> Result<PathBuf> {
+        Ok(config_home()?.join("cache"))
+    }
 
-pub fn pycors_extract() -> Result<PathBuf> {
-    Ok(pycors_cache()?.join("extracted"))
-}
+    pub fn download() -> Result<PathBuf> {
+        Ok(cache()?.join("downloads"))
+    }
 
-pub fn pycors_installed() -> Result<PathBuf> {
-    Ok(config_home()?.join("installed"))
-}
+    pub fn extract() -> Result<PathBuf> {
+        Ok(cache()?.join("extracted"))
+    }
 
-pub fn pycors_shims() -> Result<PathBuf> {
-    Ok(config_home()?.join("shims"))
-}
+    pub fn installed() -> Result<PathBuf> {
+        Ok(config_home()?.join("installed"))
+    }
 
-pub fn pycors_logs() -> Result<PathBuf> {
-    Ok(config_home()?.join("logs"))
-}
+    pub fn shims() -> Result<PathBuf> {
+        Ok(config_home()?.join("shims"))
+    }
 
-pub fn install_dir(version: &Version) -> Result<PathBuf> {
-    Ok(pycors_installed()?.join(format!("{}", version)))
+    pub fn logs() -> Result<PathBuf> {
+        Ok(config_home()?.join("logs"))
+    }
+
+    pub fn install_dir(version: &Version) -> Result<PathBuf> {
+        Ok(installed()?.join(format!("{}", version)))
+    }
 }
 
 pub fn default_extra_package_file() -> Result<PathBuf> {
-    Ok(config_home()?.join("extra-packages-to-install.txt"))
+    Ok(directories::config_home()?.join("extra-packages-to-install.txt"))
 }
 
 pub fn build_basename(version: &Version) -> Result<String> {
@@ -290,7 +294,7 @@ where
     S: AsRef<std::ffi::OsStr> + std::fmt::Debug,
     P: AsRef<Path>,
 {
-    let logs_dir = pycors_logs()?;
+    let logs_dir = directories::logs()?;
 
     if !logs_dir.exists() {
         fs::create_dir_all(&logs_dir)?;
@@ -472,7 +476,7 @@ mod tests {
     #[test]
     fn pycors_home_default() {
         env::remove_var("PYCORS_HOME");
-        let default_home = config_home().unwrap();
+        let default_home = directories::config_home().unwrap();
         let expected = home_dir().unwrap().join(".pycors");
         assert_eq!(default_home, expected);
     }
@@ -481,14 +485,14 @@ mod tests {
     fn pycors_home_from_env_variable() {
         let tmp_dir = env::temp_dir();
         env::set_var("PYCORS_HOME", &tmp_dir);
-        let tmp_home = config_home().unwrap();
+        let tmp_home = directories::config_home().unwrap();
         assert_eq!(tmp_home, Path::new(&tmp_dir));
     }
 
     #[test]
     fn dot_dir_success() {
         env::remove_var("PYCORS_HOME");
-        let dir = dot_dir(".dummy").unwrap();
+        let dir = directories::dot_dir(".dummy").unwrap();
         let expected = home_dir().unwrap().join(".dummy");
         assert_eq!(dir, expected);
     }
@@ -496,11 +500,11 @@ mod tests {
     #[test]
     fn pycors_directories() {
         env::remove_var("PYCORS_HOME");
-        let dir = pycors_cache().unwrap();
+        let dir = directories::cache().unwrap();
         let expected = home_dir().unwrap().join(".pycors").join("cache");
         assert_eq!(dir, expected);
 
-        let dir = pycors_download().unwrap();
+        let dir = directories::download().unwrap();
         let expected = home_dir()
             .unwrap()
             .join(".pycors")
@@ -508,7 +512,7 @@ mod tests {
             .join("downloads");
         assert_eq!(dir, expected);
 
-        let dir = pycors_extract().unwrap();
+        let dir = directories::extract().unwrap();
         let expected = home_dir()
             .unwrap()
             .join(".pycors")
@@ -516,7 +520,7 @@ mod tests {
             .join("extracted");
         assert_eq!(dir, expected);
 
-        let dir = pycors_installed().unwrap();
+        let dir = directories::installed().unwrap();
         let expected = home_dir().unwrap().join(".pycors").join("installed");
         assert_eq!(dir, expected);
     }
@@ -525,7 +529,7 @@ mod tests {
     fn install_dir_version() {
         env::remove_var("PYCORS_HOME");
         let version = Version::parse("3.7.2").unwrap();
-        let dir = install_dir(&version).unwrap();
+        let dir = directories::install_dir(&version).unwrap();
         let expected = home_dir()
             .unwrap()
             .join(".pycors")

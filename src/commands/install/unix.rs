@@ -28,10 +28,10 @@ pub fn install_package(
 }
 
 pub fn extract_source(version: &Version) -> Result<()> {
-    let download_dir = utils::pycors_download()?;
+    let download_dir = utils::directories::download()?;
     let filename = build_filename(&version)?;
     let file_path = download_dir.join(&filename);
-    let extract_dir = utils::pycors_extract()?;
+    let extract_dir = utils::directories::extract()?;
 
     let line_header = "[2/15] Extract";
 
@@ -65,7 +65,7 @@ pub fn compile_source(
 
     let original_current_dir = env::current_dir()?;
 
-    let install_dir = utils::install_dir(version)?;
+    let install_dir = utils::directories::install_dir(version)?;
 
     #[allow(unused_mut)]
     let mut configure_args = vec![
@@ -101,7 +101,7 @@ pub fn compile_source(
     }
 
     let basename = utils::build_basename(&version)?;
-    let extract_dir = utils::pycors_extract()?.join(&basename);
+    let extract_dir = utils::directories::extract()?.join(&basename);
 
     utils::run_cmd_template(
         &version,
