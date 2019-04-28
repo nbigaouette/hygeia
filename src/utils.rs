@@ -196,12 +196,15 @@ pub fn get_interpreter_to_use(cfg: &Option<Cfg>, settings: &Settings) -> Result<
     if !cfg.is_some() {
         log::warn!("No '.python-version' found.");
         log::warn!("Please select a Python version to use with:");
-        log::warn!("    pycors select <version>");
+        log::warn!("    {} select <version>", EXECUTABLE_NAME);
         log::warn!("");
         log::warn!("See available versions with:");
-        log::warn!("    pycors list");
+        log::warn!("    {} list", EXECUTABLE_NAME);
         log::warn!("");
-        log::warn!("pycors will select the highest version available.");
+        log::warn!(
+            "{} will select the highest version available.",
+            EXECUTABLE_NAME
+        );
     }
 
     // If `cfg` is `None`, check if there is something in `Settings`; pick the first found
@@ -222,7 +225,10 @@ pub fn get_interpreter_to_use(cfg: &Option<Cfg>, settings: &Settings) -> Result<
             }
         })
         .ok_or_else(|| {
-            format_err!("No Python runtime configured. Use `pycors select <version> <version>`.")
+            format_err!(
+                "No Python runtime configured. Use `{} select <version> <version>`.",
+                EXECUTABLE_NAME
+            )
         })?;
 
     let active_python = active_version(&cfg.version, settings).ok_or_else(|| {
@@ -234,9 +240,9 @@ pub fn get_interpreter_to_use(cfg: &Option<Cfg>, settings: &Settings) -> Result<
         log::error!("    1) Remove the file `.python-version` to use (one of) the interpreter(s) available in your $PATH.");
         log::error!("    2) Edit the file to use an installed interpreter.");
         log::error!("       For example, to list available interpreters:");
-        log::error!("           pycors list");
+        log::error!("           {} list", EXECUTABLE_NAME);
         log::error!("       Then select a version to use:");
-        log::error!("           pycors select <version> ~3.7");
+        log::error!("           {} select <version> ~3.7", EXECUTABLE_NAME);
         format_err!("No active Python runtime found.")
     })?.clone();
 
