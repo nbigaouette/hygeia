@@ -483,7 +483,7 @@ mod tests {
     fn home_default() {
         env::remove_var(HOME_VARIABLE);
         let default_home = directory::config_home().unwrap();
-        let expected = home_dir().unwrap().join(".pycors");
+        let expected = home_dir().unwrap().join(DEFAULT_DOT_DIR);
         assert_eq!(default_home, expected);
     }
 
@@ -507,13 +507,13 @@ mod tests {
     fn directories() {
         env::remove_var(HOME_VARIABLE);
         let dir = directory::cache().unwrap();
-        let expected = home_dir().unwrap().join(".pycors").join("cache");
+        let expected = home_dir().unwrap().join(DEFAULT_DOT_DIR).join("cache");
         assert_eq!(dir, expected);
 
         let dir = directory::downloaded().unwrap();
         let expected = home_dir()
             .unwrap()
-            .join(".pycors")
+            .join(DEFAULT_DOT_DIR)
             .join("cache")
             .join("downloaded");
         assert_eq!(dir, expected);
@@ -521,13 +521,13 @@ mod tests {
         let dir = directory::extracted().unwrap();
         let expected = home_dir()
             .unwrap()
-            .join(".pycors")
+            .join(DEFAULT_DOT_DIR)
             .join("cache")
             .join("extracted");
         assert_eq!(dir, expected);
 
         let dir = directory::installed().unwrap();
-        let expected = home_dir().unwrap().join(".pycors").join("installed");
+        let expected = home_dir().unwrap().join(DEFAULT_DOT_DIR).join("installed");
         assert_eq!(dir, expected);
     }
 
@@ -538,7 +538,7 @@ mod tests {
         let dir = directory::install_dir(&version).unwrap();
         let expected = home_dir()
             .unwrap()
-            .join(".pycors")
+            .join(DEFAULT_DOT_DIR)
             .join("installed")
             .join("3.7.2");
         assert_eq!(dir, expected);
