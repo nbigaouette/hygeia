@@ -85,7 +85,7 @@ where
             log::debug!("pip: {:?}", pip);
             if let Some(pip) = pip.to_str() {
                 let basename = utils::build_basename(&version)?;
-                let extract_dir = utils::directories::extract()?.join(&basename);
+                let extract_dir = utils::directories::extracted()?.join(&basename);
 
                 for (i, to_pip_install) in to_pip_installs.iter().enumerate() {
                     if let Err(e) = utils::run_cmd_template(

@@ -31,7 +31,7 @@ pub fn extract_source(version: &Version) -> Result<()> {
     let download_dir = utils::directories::download()?;
     let filename = build_filename(&version)?;
     let file_path = download_dir.join(&filename);
-    let extract_dir = utils::directories::extract()?;
+    let extract_dir = utils::directories::extracted()?;
 
     let line_header = "[2/15] Extract";
 
@@ -101,7 +101,7 @@ pub fn compile_source(
     }
 
     let basename = utils::build_basename(&version)?;
-    let extract_dir = utils::directories::extract()?.join(&basename);
+    let extract_dir = utils::directories::extracted()?.join(&basename);
 
     utils::run_cmd_template(
         &version,

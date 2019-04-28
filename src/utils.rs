@@ -77,7 +77,7 @@ pub mod directories {
         Ok(cache()?.join("downloads"))
     }
 
-    pub fn extract() -> Result<PathBuf> {
+    pub fn extracted() -> Result<PathBuf> {
         Ok(cache()?.join("extracted"))
     }
 
@@ -512,7 +512,7 @@ mod tests {
             .join("downloads");
         assert_eq!(dir, expected);
 
-        let dir = directories::extract().unwrap();
+        let dir = directories::extracted().unwrap();
         let expected = home_dir()
             .unwrap()
             .join(".pycors")
