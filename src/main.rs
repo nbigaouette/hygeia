@@ -28,7 +28,7 @@ pub const DEFAULT_DOT_DIR: &str = ".pycors";
 pub const HOME_VARIABLE: &str = "PYCORS_HOME";
 pub const INFO_FILE: &str = "installed_by.txt";
 pub const EXTRA_PACKAGES_FILENAME: &str = "extra-packages-to-install.txt";
-pub const EXTRA_PACKAGES_FILENAME_REL: &str = "../../extra-packages-to-install.txt";
+pub const EXTRA_PACKAGES_FILENAME_CONTENT: &str = include_str!("../extra-packages-to-install.txt");
 
 git_testament!(GIT_TESTAMENT);
 
