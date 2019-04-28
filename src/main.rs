@@ -24,6 +24,7 @@ use crate::{
 pub type Result<T> = std::result::Result<T, failure::Error>;
 
 pub const EXECUTABLE_NAME: &str = "pycors";
+pub const DEFAULT_DOT_DIR: &str = ".pycors";
 pub const HOME_VARIABLE: &str = "PYCORS_HOME";
 pub const INFO_FILE: &str = "installed_by.txt";
 
