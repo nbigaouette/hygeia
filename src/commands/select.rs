@@ -33,7 +33,7 @@ pub fn run(
                     false, // Don't 'select' here, will do so as last step.
                 )?
                 .ok_or_else(|| format_err!("A Python version should have been installed"))?;
-                let install_dir = utils::directories::install_dir(&version)?;
+                let install_dir = utils::directory::install_dir(&version)?;
 
                 PythonVersion {
                     version,

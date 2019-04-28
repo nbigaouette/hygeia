@@ -85,7 +85,7 @@ where
             log::debug!("pip: {:?}", pip);
             if let Some(pip) = pip.to_str() {
                 let basename = utils::build_basename(&version)?;
-                let extract_dir = utils::directories::extracted()?.join(&basename);
+                let extract_dir = utils::directory::extracted()?.join(&basename);
 
                 for (i, to_pip_install) in to_pip_installs.iter().enumerate() {
                     if let Err(e) = utils::run_cmd_template(
@@ -113,7 +113,7 @@ where
         let new_bin_files: Vec<_> = bin_dir_monitor.check()?.collect();
 
         // Create a hard-link for the new bins
-        let shim_dir = utils::directories::shims()?;
+        let shim_dir = utils::directory::shims()?;
         let executable_path = shim_dir.join(EXECUTABLE_NAME);
         for new_bin_file_path in new_bin_files {
             match new_bin_file_path.file_name() {

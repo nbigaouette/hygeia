@@ -55,7 +55,7 @@ where
     let new_bin_files: Vec<_> = bin_dir_monitor.check()?.collect();
 
     // Create a hard-link for the new bins
-    let shim_dir = utils::directories::shims()?;
+    let shim_dir = utils::directory::shims()?;
     let executable_path = shim_dir.join(EXECUTABLE_NAME);
     for new_bin_file_path in new_bin_files {
         match new_bin_file_path.file_name() {

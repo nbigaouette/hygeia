@@ -39,7 +39,7 @@ pub struct Settings {
 
 impl Settings {
     pub fn from_pycors_home() -> Result<Settings> {
-        let install_dir = utils::directories::installed()?;
+        let install_dir = utils::directory::installed()?;
 
         let mut installed_python = Vec::new();
         log::debug!("install_dir: {}", install_dir.display());
@@ -104,7 +104,7 @@ impl Settings {
             }
         };
 
-        let pycors_home_dir = utils::directories::config_home()?;
+        let pycors_home_dir = utils::directory::config_home()?;
         let bin_dir = pycors_home_dir.join("bin");
 
         // Find other Python installed (f.e. in system directories)

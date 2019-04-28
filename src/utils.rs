@@ -39,7 +39,7 @@ pub fn copy_file<P1: AsRef<Path>, P2: AsRef<Path>>(from: P1, to: P2) -> Result<u
     }
 }
 
-pub mod directories {
+pub mod directory {
     use super::*;
 
     pub fn dot_dir(name: &str) -> Option<PathBuf> {
@@ -99,7 +99,7 @@ pub mod directories {
 }
 
 pub fn default_extra_package_file() -> Result<PathBuf> {
-    Ok(directories::config_home()?.join("extra-packages-to-install.txt"))
+    Ok(directory::config_home()?.join("extra-packages-to-install.txt"))
 }
 
 pub fn build_basename(version: &Version) -> Result<String> {
@@ -294,7 +294,7 @@ where
     S: AsRef<std::ffi::OsStr> + std::fmt::Debug,
     P: AsRef<Path>,
 {
-    let logs_dir = directories::logs()?;
+    let logs_dir = directory::logs()?;
 
     if !logs_dir.exists() {
         fs::create_dir_all(&logs_dir)?;
@@ -476,7 +476,7 @@ mod tests {
     #[test]
     fn pycors_home_default() {
         env::remove_var("PYCORS_HOME");
-        let default_home = directories::config_home().unwrap();
+        let default_home = directory::config_home().unwrap();
         let expected = home_dir().unwrap().join(".pycors");
         assert_eq!(default_home, expected);
     }
@@ -485,14 +485,14 @@ mod tests {
     fn pycors_home_from_env_variable() {
         let tmp_dir = env::temp_dir();
         env::set_var("PYCORS_HOME", &tmp_dir);
-        let tmp_home = directories::config_home().unwrap();
+        let tmp_home = directory::config_home().unwrap();
         assert_eq!(tmp_home, Path::new(&tmp_dir));
     }
 
     #[test]
     fn dot_dir_success() {
         env::remove_var("PYCORS_HOME");
-        let dir = directories::dot_dir(".dummy").unwrap();
+        let dir = directory::dot_dir(".dummy").unwrap();
         let expected = home_dir().unwrap().join(".dummy");
         assert_eq!(dir, expected);
     }
@@ -500,11 +500,11 @@ mod tests {
     #[test]
     fn pycors_directories() {
         env::remove_var("PYCORS_HOME");
-        let dir = directories::cache().unwrap();
+        let dir = directory::cache().unwrap();
         let expected = home_dir().unwrap().join(".pycors").join("cache");
         assert_eq!(dir, expected);
 
-        let dir = directories::downloaded().unwrap();
+        let dir = directory::downloaded().unwrap();
         let expected = home_dir()
             .unwrap()
             .join(".pycors")
@@ -512,7 +512,7 @@ mod tests {
             .join("downloaded");
         assert_eq!(dir, expected);
 
-        let dir = directories::extracted().unwrap();
+        let dir = directory::extracted().unwrap();
         let expected = home_dir()
             .unwrap()
             .join(".pycors")
@@ -520,7 +520,7 @@ mod tests {
             .join("extracted");
         assert_eq!(dir, expected);
 
-        let dir = directories::installed().unwrap();
+        let dir = directory::installed().unwrap();
         let expected = home_dir().unwrap().join(".pycors").join("installed");
         assert_eq!(dir, expected);
     }
@@ -529,7 +529,7 @@ mod tests {
     fn install_dir_version() {
         env::remove_var("PYCORS_HOME");
         let version = Version::parse("3.7.2").unwrap();
-        let dir = directories::install_dir(&version).unwrap();
+        let dir = directory::install_dir(&version).unwrap();
         let expected = home_dir()
             .unwrap()
             .join(".pycors")
