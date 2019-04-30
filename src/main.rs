@@ -84,9 +84,9 @@ fn main() -> Result<()> {
                 }
             };
 
-                pycors(&cfg_opt, &settings)?;
             if exe.starts_with(EXECUTABLE_NAME) {
                 debug!("Running {}", EXECUTABLE_NAME);
+                no_shim_execution(&cfg_opt, &settings)?;
             } else {
                 debug!("Running a Python shim");
                 python_shim(exe, &cfg_opt, &settings, remaining_args)?;
@@ -97,7 +97,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
+pub fn no_shim_execution(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
     let opt = Opt::from_args();
     log::debug!("{:?}", opt);
 
