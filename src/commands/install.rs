@@ -1,7 +1,7 @@
 use failure::format_err;
 use semver::{Version, VersionReq};
 
-use crate::{commands, selected::SelectedVersion, settings::Settings, Result};
+use crate::{commands, selected::SelectedVersion, settings::InstalledToolchain, Result};
 
 mod download;
 mod pip;
@@ -16,7 +16,7 @@ use crate::commands::install::{
 pub fn run(
     from_version: Option<String>,
     selected_version: &Option<SelectedVersion>,
-    settings: &Settings,
+    installed_toolchains: &[InstalledToolchain],
     install_extra_packages: &commands::InstallExtraPackagesOptions,
     select: bool,
 ) -> Result<Option<Version>> {
@@ -29,8 +29,7 @@ pub fn run(
     };
     log::debug!("Installing Python {}", version);
 
-    let matching_installed_versions: Vec<_> = settings
-        .installed_python
+    let matching_installed_versions: Vec<_> = installed_toolchains
         .iter()
         .filter(|installed_python| {
             version.matches(&installed_python.version) && installed_python.is_custom_install()
@@ -61,6 +60,11 @@ pub fn run(
                 &first_matching_installed_versions.version,
                 install_extra_packages,
             )?;
+        }
+
+        if select {
+            // Write to `.python-version`
+            SelectedVersion { version }.save()?;
         }
 
         Ok(None)

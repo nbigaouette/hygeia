@@ -1,6 +1,6 @@
 use semver::Version;
 
-use crate::{settings::PythonVersion, utils, Result};
+use crate::{settings::InstalledToolchain, utils, Result};
 
 pub fn build_filename_exe(version: &Version) -> Result<String> {
     Ok(format!(
@@ -11,7 +11,7 @@ pub fn build_filename_exe(version: &Version) -> Result<String> {
 
 pub fn command_with_major_version(
     command: &str,
-    interpreter_to_use: &PythonVersion,
+    interpreter_to_use: &InstalledToolchain,
 ) -> Result<String> {
     let (command, extension) = if command.ends_with(".exe") {
         (command.trim_end_matches(".exe"), ".exe")
@@ -49,7 +49,7 @@ mod tests {
 
     #[test]
     fn append_version_to_command_no_extension_success() {
-        let interpreter = PythonVersion {
+        let interpreter = InstalledToolchain {
             location: Path::new("/usr/bin").into(),
             version: Version::parse("3.7.3").unwrap(),
         };
@@ -59,7 +59,7 @@ mod tests {
 
     #[test]
     fn append_version_to_command_exe_success() {
-        let interpreter = PythonVersion {
+        let interpreter = InstalledToolchain {
             location: Path::new("/usr/bin").into(),
             version: Version::parse("3.7.3").unwrap(),
         };

@@ -20,7 +20,7 @@ use crate::{
     commands::Command,
     constants::*,
     selected::{load_config_file, SelectedVersion},
-    settings::Settings,
+    settings::{find_installed_toolchains, InstalledToolchain},
 };
 
 pub type Result<T> = std::result::Result<T, failure::Error>;
@@ -53,7 +53,7 @@ fn main() -> Result<()> {
 
     env_logger::init();
 
-    let settings = Settings::from_dot_dir()?;
+    let installed_toolchains = find_installed_toolchains()?;
     // Invert the Option<Result> to Result<Option> and use ? to unwrap the Result.
     let selected_version_opt = load_config_file().map_or(Ok(None), |v| v.map(Some))?;
 
@@ -80,10 +80,15 @@ fn main() -> Result<()> {
 
             if exe.starts_with(EXECUTABLE_NAME) {
                 debug!("Running {}", EXECUTABLE_NAME);
-                no_shim_execution(&selected_version_opt, &settings)?;
+                no_shim_execution(&selected_version_opt, &installed_toolchains)?;
             } else {
                 debug!("Running a Python shim");
-                python_shim(exe, &selected_version_opt, &settings, remaining_args)?;
+                python_shim(
+                    exe,
+                    &selected_version_opt,
+                    &installed_toolchains,
+                    remaining_args,
+                )?;
             }
         }
     }
@@ -93,7 +98,7 @@ fn main() -> Result<()> {
 
 pub fn no_shim_execution(
     selected_version: &Option<SelectedVersion>,
-    settings: &Settings,
+    installed_toolchains: &[InstalledToolchain],
 ) -> Result<()> {
     let opt = Opt::from_args();
     log::debug!("{:?}", opt);
@@ -103,16 +108,16 @@ pub fn no_shim_execution(
             Command::Autocomplete { shell } => {
                 commands::autocomplete::run(shell, &mut std::io::stdout())?;
             }
-            Command::List => commands::list::run(selected_version, settings)?,
-            Command::Path => commands::path::run(selected_version, settings)?,
-            Command::Version => commands::version::run(selected_version, settings)?,
+            Command::List => commands::list::run(selected_version, installed_toolchains)?,
+            Command::Path => commands::path::run(selected_version, installed_toolchains)?,
+            Command::Version => commands::version::run(selected_version, installed_toolchains)?,
             Command::Select {
                 version,
                 install_extra_packages,
                 install_if_not_present,
             } => commands::select::run(
                 &version,
-                settings,
+                installed_toolchains,
                 &install_extra_packages,
                 install_if_not_present,
             )?,
@@ -124,13 +129,13 @@ pub fn no_shim_execution(
                 commands::install::run(
                     from_version,
                     selected_version,
-                    settings,
+                    installed_toolchains,
                     &install_extra_packages,
                     select,
                 )?;
             }
             Command::Run { version, command } => {
-                commands::run::run(selected_version, settings, version, &command)?
+                commands::run::run(selected_version, installed_toolchains, version, &command)?
             }
             Command::Setup { shell } => commands::setup::run(shell)?,
         }
@@ -143,10 +148,10 @@ pub fn no_shim_execution(
 pub fn python_shim(
     command: &str,
     selected_version: &Option<SelectedVersion>,
-    settings: &Settings,
+    installed_toolchains: &[InstalledToolchain],
     arguments: &[String],
 ) -> Result<()> {
-    let interpreter_to_use = utils::get_interpreter_to_use(selected_version, settings)?;
+    let interpreter_to_use = utils::get_interpreter_to_use(selected_version, installed_toolchains)?;
 
     shim::run(&interpreter_to_use, command, arguments)
 }

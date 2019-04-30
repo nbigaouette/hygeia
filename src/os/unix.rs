@@ -1,7 +1,7 @@
 use failure::format_err;
 use semver::Version;
 
-use crate::{settings::PythonVersion, utils, Result};
+use crate::{settings::InstalledToolchain, utils, Result};
 
 pub fn build_filename_tgz(version: &Version) -> Result<String> {
     Ok(format!("{}.tgz", utils::build_basename(version)?))
@@ -9,7 +9,7 @@ pub fn build_filename_tgz(version: &Version) -> Result<String> {
 
 pub fn command_with_major_version(
     command: &str,
-    interpreter_to_use: &PythonVersion,
+    interpreter_to_use: &InstalledToolchain,
 ) -> Result<String> {
     // NOTE: Make sure the command given by the user contains the major Python version
     //       appended. This should prevent having a Python 3 interpreter in `.python-version`
@@ -61,7 +61,7 @@ mod tests {
 
     #[test]
     fn append_version_to_command_success() {
-        let interpreter = PythonVersion {
+        let interpreter = InstalledToolchain {
             location: Path::new("/usr/bin").into(),
             version: Version::parse("3.7.3").unwrap(),
         };

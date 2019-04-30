@@ -19,7 +19,7 @@ use terminal_size::{terminal_size, Width};
 use crate::{
     constants::{home_env_variable, DEFAULT_DOT_DIR, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME},
     selected::SelectedVersion,
-    settings::{PythonVersion, Settings},
+    settings::InstalledToolchain,
     Result,
 };
 
@@ -166,11 +166,10 @@ where
 
 pub fn active_version<'a>(
     version: &VersionReq,
-    settings: &'a Settings,
-) -> Option<&'a PythonVersion> {
+    installed_toolchain: &'a [InstalledToolchain],
+) -> Option<&'a InstalledToolchain> {
     // Find the compatible versions from the installed list
-    let mut compatible_versions: Vec<&'a PythonVersion> = settings
-        .installed_python
+    let mut compatible_versions: Vec<&'a InstalledToolchain> = installed_toolchain
         .iter()
         .filter(|installed_python| version.matches(&installed_python.version))
         .collect();
@@ -195,8 +194,8 @@ pub fn active_version<'a>(
 
 pub fn get_interpreter_to_use(
     selected_version: &Option<SelectedVersion>,
-    settings: &Settings,
-) -> Result<PythonVersion> {
+    installed_toolchains: &[InstalledToolchain],
+) -> Result<InstalledToolchain> {
     if !selected_version.is_some() {
         log::warn!("No '.python-version' found.");
         log::warn!("Please select a Python version to use with:");
@@ -218,10 +217,10 @@ pub fn get_interpreter_to_use(
         .cloned() // Option<&SelectedVersion> -> Option<SelectedVersion>
         .or_else(|| {
             // Sort available versions
-            let mut installed_python = settings.installed_python.clone();
-            installed_python.sort_by_key(|python| python.version.clone());
-            installed_python.reverse();
-            match installed_python.get(0) {
+            let mut installed_toolchains_cloned = installed_toolchains.to_vec();
+            installed_toolchains_cloned.sort_by_key(|python| python.version.clone());
+            installed_toolchains_cloned.reverse();
+            match installed_toolchains_cloned.get(0) {
                 None => None,
                 Some(latest_interpreter_found) => Some(SelectedVersion {
                     version: VersionReq::exact(&latest_interpreter_found.version),
@@ -235,7 +234,7 @@ pub fn get_interpreter_to_use(
             )
         })?;
 
-    let active_python = active_version(&selected_version.version, settings).ok_or_else(|| {
+    let active_python = active_version(&selected_version.version, installed_toolchains).ok_or_else(|| {
         log::error!(
             "Could not find Python {} as requested from the file `.python-version`.",
             selected_version.version

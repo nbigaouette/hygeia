@@ -1,16 +1,11 @@
 use failure::format_err;
 use semver::VersionReq;
 
-use crate::{
-    commands,
-    selected::SelectedVersion,
-    settings::{PythonVersion, Settings},
-    utils, Result,
-};
+use crate::{commands, selected::SelectedVersion, settings::InstalledToolchain, utils, Result};
 
 pub fn run(
     requested_version: &str,
-    settings: &Settings,
+    installed_toolchains: &[InstalledToolchain],
     install_extra_packages: &commands::InstallExtraPackagesOptions,
     install_if_not_present: bool,
 ) -> Result<()> {
@@ -20,7 +15,7 @@ pub fn run(
     let version: VersionReq = requested_version.parse()?;
     log::debug!("Semantic version requirement: {}", version);
 
-    let python_to_use = match utils::active_version(&version, settings) {
+    let python_to_use = match utils::active_version(&version, installed_toolchains) {
         Some(python_to_use) => python_to_use.clone(),
         None => {
             if install_if_not_present {
@@ -28,14 +23,14 @@ pub fn run(
                 let version = commands::install::run(
                     None,
                     &new_selected_version,
-                    settings,
+                    installed_toolchains,
                     install_extra_packages,
                     false, // Don't 'select' here, will do so as last step.
                 )?
                 .ok_or_else(|| format_err!("A Python version should have been installed"))?;
                 let install_dir = utils::directory::install_dir(&version)?;
 
-                PythonVersion {
+                InstalledToolchain {
                     version,
                     location: install_dir,
                 }
