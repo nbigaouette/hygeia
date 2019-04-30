@@ -20,7 +20,7 @@ use crate::{
     commands::Command,
     constants::*,
     installed::{find_installed_toolchains, InstalledToolchain},
-    selected::{load_config_file, SelectedVersion},
+    selected::{load_selected_toolchain_file, SelectedVersion},
 };
 
 pub type Result<T> = std::result::Result<T, failure::Error>;
@@ -55,7 +55,7 @@ fn main() -> Result<()> {
 
     let installed_toolchains = find_installed_toolchains()?;
     // Invert the Option<Result> to Result<Option> and use ? to unwrap the Result.
-    let selected_version_opt = load_config_file().map_or(Ok(None), |v| v.map(Some))?;
+    let selected_version_opt = load_selected_toolchain_file().map_or(Ok(None), |v| v.map(Some))?;
 
     let arguments: Vec<_> = env::args().collect();
     let (_, remaining_args) = arguments.split_at(1);

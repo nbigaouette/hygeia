@@ -15,7 +15,7 @@ pub struct SelectedVersion {
     pub version: VersionReq,
 }
 
-pub fn load_config_file() -> Option<Result<SelectedVersion>> {
+pub fn load_selected_toolchain_file() -> Option<Result<SelectedVersion>> {
     match env::current_dir() {
         Ok(mut path) => {
             loop {
