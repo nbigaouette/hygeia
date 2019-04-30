@@ -9,6 +9,7 @@ use structopt::StructOpt;
 
 mod commands;
 mod config;
+mod constants;
 mod dir_monitor;
 mod os;
 mod settings;
@@ -18,18 +19,11 @@ mod utils;
 use crate::{
     commands::Command,
     config::{load_config_file, Cfg},
+    constants::*,
     settings::Settings,
 };
 
 pub type Result<T> = std::result::Result<T, failure::Error>;
-
-pub const EXECUTABLE_NAME: &str = "pycors";
-pub const DEFAULT_DOT_DIR: &str = ".pycors";
-pub const HOME_VARIABLE: &str = "PYCORS_HOME";
-pub const INFO_FILE: &str = "installed_by.txt";
-pub const EXTRA_PACKAGES_FILENAME: &str = "extra-packages-to-install.txt";
-pub const EXTRA_PACKAGES_FILENAME_CONTENT: &str = include_str!("../extra-packages-to-install.txt");
-pub const INSTALL_DUMMY_FILE: &str = "installed_dummy_file";
 
 git_testament!(GIT_TESTAMENT);
 
