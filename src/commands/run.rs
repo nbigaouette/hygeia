@@ -1,7 +1,7 @@
 use failure::format_err;
 use semver::VersionReq;
 
-use crate::{selected::SelectedVersion, settings::InstalledToolchain, shim, utils, Result};
+use crate::{installed::InstalledToolchain, selected::SelectedVersion, shim, utils, Result};
 
 pub fn run(
     selected_version: &Option<SelectedVersion>,

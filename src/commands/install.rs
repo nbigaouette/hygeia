@@ -1,7 +1,7 @@
 use failure::format_err;
 use semver::{Version, VersionReq};
 
-use crate::{commands, selected::SelectedVersion, settings::InstalledToolchain, Result};
+use crate::{commands, installed::InstalledToolchain, selected::SelectedVersion, Result};
 
 mod download;
 mod pip;

@@ -1,4 +1,4 @@
-use crate::{selected::SelectedVersion, settings::InstalledToolchain, utils, Result};
+use crate::{installed::InstalledToolchain, selected::SelectedVersion, utils, Result};
 
 pub fn run(
     selected_version: &Option<SelectedVersion>,

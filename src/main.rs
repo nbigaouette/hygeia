@@ -10,17 +10,17 @@ use structopt::StructOpt;
 mod commands;
 mod constants;
 mod dir_monitor;
+mod installed;
 mod os;
 mod selected;
-mod settings;
 mod shim;
 mod utils;
 
 use crate::{
     commands::Command,
     constants::*,
+    installed::{find_installed_toolchains, InstalledToolchain},
     selected::{load_config_file, SelectedVersion},
-    settings::{find_installed_toolchains, InstalledToolchain},
 };
 
 pub type Result<T> = std::result::Result<T, failure::Error>;

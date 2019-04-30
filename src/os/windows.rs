@@ -1,6 +1,6 @@
 use semver::Version;
 
-use crate::{settings::InstalledToolchain, utils, Result};
+use crate::{installed::InstalledToolchain, utils, Result};
 
 pub fn build_filename_exe(version: &Version) -> Result<String> {
     Ok(format!(

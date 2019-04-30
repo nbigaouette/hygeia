@@ -1,7 +1,7 @@
 use failure::format_err;
 use semver::Version;
 
-use crate::{settings::InstalledToolchain, utils, Result};
+use crate::{installed::InstalledToolchain, utils, Result};
 
 pub fn build_filename_tgz(version: &Version) -> Result<String> {
     Ok(format!("{}.tgz", utils::build_basename(version)?))
