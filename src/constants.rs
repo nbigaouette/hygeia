@@ -26,5 +26,3 @@ pub const INFO_FILE: &str = concat!("installed_by_", executable_name_from_env!()
 pub const EXTRA_PACKAGES_FILENAME: &str = "extra-packages-to-install.txt";
 
 pub const EXTRA_PACKAGES_FILENAME_CONTENT: &str = include_str!("../extra-packages-to-install.txt");
-
-pub const INSTALL_DUMMY_FILE: &str = "installed_dummy_file";

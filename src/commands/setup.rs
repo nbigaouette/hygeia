@@ -55,15 +55,6 @@ pub fn run(shell: Shell) -> Result<()> {
         )?;
     }
 
-    // Create an dummy file that will be recognized when searching the PATH for
-    // python interpreters. We don't want to "find" the shims we install here.
-    let mut file = fs::File::create(utils::file::install_dummy_file()?)?;
-    writeln!(
-        file,
-        "This file's job is to tell {} the directory contains shim, not real Python interpreters.",
-        EXECUTABLE_NAME
-    )?;
-
     let extra_packages_file_default_content = EXTRA_PACKAGES_FILENAME_CONTENT;
     let output_filename = utils::default_extra_package_file()?;
     log::debug!(
