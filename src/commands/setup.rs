@@ -128,7 +128,7 @@ pub fn run(shell: Shell) -> Result<()> {
                     String::from(""),
                     "#################################################".to_string(),
                     format!("# These lines were added by {}.", EXECUTABLE_NAME),
-                    "# See https://github.com/nbigaouette/pycors".to_string(),
+                    format!("# See {}", env!("CARGO_PKG_HOMEPAGE")),
                     if !bash_profile_existed {
                         "source ${HOME}/.bashrc".to_string()
                     } else {
