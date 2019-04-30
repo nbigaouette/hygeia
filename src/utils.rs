@@ -19,7 +19,7 @@ use terminal_size::{terminal_size, Width};
 use crate::{
     config::Cfg,
     settings::{PythonVersion, Settings},
-    Result, DEFAULT_DOT_DIR, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME, HOME_VARIABLE,
+    Result, DEFAULT_DOT_DIR, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME, HOME_ENV_VARIABLE,
 };
 
 pub fn path_exists<P: AsRef<Path>>(path: P) -> bool {
@@ -47,7 +47,7 @@ pub mod directory {
     }
 
     pub fn config_home() -> Result<PathBuf> {
-        let env_var = env::var_os(HOME_VARIABLE);
+        let env_var = env::var_os(HOME_ENV_VARIABLE);
 
         let config_home_from_env = if env_var.is_some() {
             let cwd = env::current_dir()?;
