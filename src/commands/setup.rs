@@ -7,7 +7,7 @@ use std::{
 use failure::format_err;
 use structopt::{clap::Shell, StructOpt};
 
-use crate::{utils, Opt, Result, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME_CONTENT};
+use crate::{commands, utils, Opt, Result, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME_CONTENT};
 
 pub fn run(shell: Shell) -> Result<()> {
     log::debug!("Setting up the shim...");
@@ -84,7 +84,7 @@ pub fn run(shell: Shell) -> Result<()> {
             let autocomplete_file =
                 config_home_dir.join(&format!("{}.bash-completion", EXECUTABLE_NAME));
             let mut f = fs::File::create(&autocomplete_file)?;
-            Opt::clap().gen_completions_to(EXECUTABLE_NAME, shell, &mut f);
+            commands::autocomplete::run(shell, &mut f)?;
 
             log::debug!("Adding {:?} to $PATH in {:?}...", shims_dir, bash_profile);
             let bash_profile_line = format!(r#"export PATH="{}:$PATH""#, shims_dir.display());

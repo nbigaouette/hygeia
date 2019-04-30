@@ -104,7 +104,7 @@ pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
     if let Some(subcommand) = opt.subcommand {
         match subcommand {
             Command::Autocomplete { shell } => {
-                commands::autocomplete::run(shell)?;
+                commands::autocomplete::run(shell, &mut std::io::stdout())?;
             }
             Command::List => commands::list::run(cfg, settings)?,
             Command::Path => commands::path::run(cfg, settings)?,
