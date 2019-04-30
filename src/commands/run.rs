@@ -1,10 +1,10 @@
 use failure::format_err;
 use semver::VersionReq;
 
-use crate::{config::Cfg, settings::Settings, shim, utils, Result};
+use crate::{selected::SelectedVersion, settings::Settings, shim, utils, Result};
 
 pub fn run(
-    cfg: &Option<Cfg>,
+    selected_version: &Option<SelectedVersion>,
     settings: &Settings,
     version: Option<String>,
     command_and_args: &str,
@@ -17,7 +17,7 @@ pub fn run(
         .ok_or_else(|| format_err!("Failed to extract command from {:?}", command_and_args))?;
 
     let interpreter_to_use = match version {
-        None => utils::get_interpreter_to_use(cfg, settings)?,
+        None => utils::get_interpreter_to_use(selected_version, settings)?,
         Some(version) => {
             let version_req = VersionReq::parse(&version)?;
             utils::active_version(&version_req, settings)

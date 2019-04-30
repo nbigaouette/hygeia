@@ -3,7 +3,7 @@ use semver::VersionReq;
 
 use crate::{
     commands,
-    config::Cfg,
+    selected::SelectedVersion,
     settings::{PythonVersion, Settings},
     utils, Result,
 };
@@ -24,10 +24,10 @@ pub fn run(
         Some(python_to_use) => python_to_use.clone(),
         None => {
             if install_if_not_present {
-                let new_cfg = Some(Cfg { version });
+                let new_selected_version = Some(SelectedVersion { version });
                 let version = commands::install::run(
                     None,
-                    &new_cfg,
+                    &new_selected_version,
                     settings,
                     install_extra_packages,
                     false, // Don't 'select' here, will do so as last step.
@@ -55,7 +55,7 @@ pub fn run(
     );
 
     // Write to `.python-version`
-    Cfg {
+    SelectedVersion {
         version: VersionReq::exact(&python_to_use.version),
     }
     .save()?;

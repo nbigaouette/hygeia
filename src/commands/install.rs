@@ -1,7 +1,7 @@
 use failure::format_err;
 use semver::{Version, VersionReq};
 
-use crate::{commands, config::Cfg, settings::Settings, Result};
+use crate::{commands, selected::SelectedVersion, settings::Settings, Result};
 
 mod download;
 mod pip;
@@ -15,15 +15,15 @@ use crate::commands::install::{
 
 pub fn run(
     from_version: Option<String>,
-    cfg: &Option<Cfg>,
+    selected_version: &Option<SelectedVersion>,
     settings: &Settings,
     install_extra_packages: &commands::InstallExtraPackagesOptions,
     select: bool,
 ) -> Result<Option<Version>> {
     let version: VersionReq = match from_version {
-        None => match cfg {
-            None => Cfg::from_user_input()?.version,
-            Some(cfg) => cfg.version.clone(),
+        None => match selected_version {
+            None => SelectedVersion::from_user_input()?.version,
+            Some(selected_version) => selected_version.version.clone(),
         },
         Some(version) => VersionReq::parse(&version)?,
     };
@@ -77,7 +77,7 @@ pub fn run(
 
         if select {
             // Write to `.python-version`
-            Cfg {
+            SelectedVersion {
                 version: VersionReq::exact(&version_to_install),
             }
             .save()?;

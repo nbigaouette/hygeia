@@ -17,8 +17,8 @@ use subprocess::{Exec, Redirection};
 use terminal_size::{terminal_size, Width};
 
 use crate::{
-    config::Cfg,
     constants::{home_env_variable, DEFAULT_DOT_DIR, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME},
+    selected::SelectedVersion,
     settings::{PythonVersion, Settings},
     Result,
 };
@@ -193,8 +193,11 @@ pub fn active_version<'a>(
     compatible_versions.last().cloned()
 }
 
-pub fn get_interpreter_to_use(cfg: &Option<Cfg>, settings: &Settings) -> Result<PythonVersion> {
-    if !cfg.is_some() {
+pub fn get_interpreter_to_use(
+    selected_version: &Option<SelectedVersion>,
+    settings: &Settings,
+) -> Result<PythonVersion> {
+    if !selected_version.is_some() {
         log::warn!("No '.python-version' found.");
         log::warn!("Please select a Python version to use with:");
         log::warn!("    {} select <version>", EXECUTABLE_NAME);
@@ -208,11 +211,11 @@ pub fn get_interpreter_to_use(cfg: &Option<Cfg>, settings: &Settings) -> Result<
         );
     }
 
-    // If `cfg` is `None`, check if there is something in `Settings`; pick the first found
-    // interpreter to construct a `cfg`.
-    let cfg: Cfg = cfg
-        .as_ref() // &Option<Cfg> -> Option<&Cfg>
-        .cloned() // Option<&Cfg> -> Option<Cfg>
+    // If `selected_version` is `None`, check if there is something in `Settings`; pick the first found
+    // interpreter to construct a `selected_version`.
+    let selected_version: SelectedVersion = selected_version
+        .as_ref() // &Option<SelectedVersion> -> Option<&SelectedVersion>
+        .cloned() // Option<&SelectedVersion> -> Option<SelectedVersion>
         .or_else(|| {
             // Sort available versions
             let mut installed_python = settings.installed_python.clone();
@@ -220,7 +223,7 @@ pub fn get_interpreter_to_use(cfg: &Option<Cfg>, settings: &Settings) -> Result<
             installed_python.reverse();
             match installed_python.get(0) {
                 None => None,
-                Some(latest_interpreter_found) => Some(Cfg {
+                Some(latest_interpreter_found) => Some(SelectedVersion {
                     version: VersionReq::exact(&latest_interpreter_found.version),
                 }),
             }
@@ -232,10 +235,10 @@ pub fn get_interpreter_to_use(cfg: &Option<Cfg>, settings: &Settings) -> Result<
             )
         })?;
 
-    let active_python = active_version(&cfg.version, settings).ok_or_else(|| {
+    let active_python = active_version(&selected_version.version, settings).ok_or_else(|| {
         log::error!(
             "Could not find Python {} as requested from the file `.python-version`.",
-            cfg.version
+            selected_version.version
         );
         log::error!("Either:");
         log::error!("    1) Remove the file `.python-version` to use (one of) the interpreter(s) available in your $PATH.");

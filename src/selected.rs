@@ -13,11 +13,11 @@ use crate::{utils, Result};
 static TOOLCHAIN_FILE: &str = ".python-version";
 
 #[derive(Debug, Clone)]
-pub struct Cfg {
+pub struct SelectedVersion {
     pub version: VersionReq,
 }
 
-pub fn load_config_file() -> Option<Result<Cfg>> {
+pub fn load_config_file() -> Option<Result<SelectedVersion>> {
     match env::current_dir() {
         Ok(mut path) => {
             loop {
@@ -25,7 +25,7 @@ pub fn load_config_file() -> Option<Result<Cfg>> {
                 if utils::path_exists(&toolchain_file) {
                     // We've found the file, stop.
                     log::debug!("Found file {:?}", toolchain_file);
-                    break Some(Cfg::from_file(toolchain_file));
+                    break Some(SelectedVersion::from_file(toolchain_file));
                 }
 
                 if path.parent().is_none() {
@@ -43,8 +43,8 @@ pub fn load_config_file() -> Option<Result<Cfg>> {
     }
 }
 
-impl Cfg {
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Cfg> {
+impl SelectedVersion {
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<SelectedVersion> {
         log::debug!("Reading configuration from file {:?}", path.as_ref());
 
         let input = File::open(path)?;
@@ -58,7 +58,7 @@ impl Cfg {
         let version: VersionReq = line.parse()?;
         log::debug!("Found version \"{}\"", version);
 
-        Ok(Cfg { version })
+        Ok(SelectedVersion { version })
     }
 
     pub fn save(&self) -> Result<usize> {
@@ -75,7 +75,7 @@ impl Cfg {
         Ok(l1 + l2)
     }
 
-    pub fn from_user_input() -> Result<Cfg> {
+    pub fn from_user_input() -> Result<SelectedVersion> {
         log::debug!("Reading configuration from stdin");
 
         let stdin = io::stdin();
@@ -93,7 +93,7 @@ impl Cfg {
             Err(format_err!("Empty line provided"))?
         } else {
             log::debug!("Parsed version: {}", version);
-            Ok(Cfg { version })
+            Ok(SelectedVersion { version })
         }
     }
 }
