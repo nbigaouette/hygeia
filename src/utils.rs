@@ -18,8 +18,9 @@ use terminal_size::{terminal_size, Width};
 
 use crate::{
     config::Cfg,
+    constants::{home_env_variable, DEFAULT_DOT_DIR, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME},
     settings::{PythonVersion, Settings},
-    Result, DEFAULT_DOT_DIR, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME, HOME_ENV_VARIABLE,
+    Result,
 };
 
 pub fn path_exists<P: AsRef<Path>>(path: P) -> bool {
@@ -47,7 +48,7 @@ pub mod directory {
     }
 
     pub fn config_home() -> Result<PathBuf> {
-        let env_var = env::var_os(HOME_ENV_VARIABLE);
+        let env_var = env::var_os(home_env_variable());
 
         let config_home_from_env = if env_var.is_some() {
             let cwd = env::current_dir()?;
@@ -56,7 +57,7 @@ pub mod directory {
             None
         };
 
-        let default_dot_dir = dot_dir(DEFAULT_DOT_DIR);
+        let default_dot_dir = dot_dir(&DEFAULT_DOT_DIR);
 
         let home = match config_home_from_env.or(default_dot_dir) {
             None => Err(format_err!(
@@ -490,7 +491,7 @@ mod tests {
 
     #[test]
     fn home_default() {
-        env::remove_var(HOME_VARIABLE);
+        env::remove_var(home_env_variable());
         let default_home = directory::config_home().unwrap();
         let expected = home_dir().unwrap().join(DEFAULT_DOT_DIR);
         assert_eq!(default_home, expected);
@@ -499,14 +500,14 @@ mod tests {
     #[test]
     fn home_from_env_variable() {
         let tmp_dir = env::temp_dir();
-        env::set_var(HOME_VARIABLE, &tmp_dir);
+        env::set_var(home_env_variable(), &tmp_dir);
         let tmp_home = directory::config_home().unwrap();
         assert_eq!(tmp_home, Path::new(&tmp_dir));
     }
 
     #[test]
     fn dot_dir_success() {
-        env::remove_var(HOME_VARIABLE);
+        env::remove_var(home_env_variable());
         let dir = directory::dot_dir(".dummy").unwrap();
         let expected = home_dir().unwrap().join(".dummy");
         assert_eq!(dir, expected);
@@ -514,7 +515,7 @@ mod tests {
 
     #[test]
     fn directories() {
-        env::remove_var(HOME_VARIABLE);
+        env::remove_var(home_env_variable());
         let dir = directory::cache().unwrap();
         let expected = home_dir().unwrap().join(DEFAULT_DOT_DIR).join("cache");
         assert_eq!(dir, expected);
@@ -542,7 +543,7 @@ mod tests {
 
     #[test]
     fn install_dir_version() {
-        env::remove_var(HOME_VARIABLE);
+        env::remove_var(home_env_variable());
         let version = Version::parse("3.7.2").unwrap();
         let dir = directory::install_dir(&version).unwrap();
         let expected = home_dir()
