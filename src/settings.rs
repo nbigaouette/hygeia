@@ -9,7 +9,7 @@ use semver::Version;
 use subprocess::{Exec, Redirection};
 use which::which_in;
 
-use crate::{utils, Result};
+use crate::{utils, Result, EXECUTABLE_NAME};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PythonVersion {
@@ -38,8 +38,8 @@ pub struct Settings {
 }
 
 impl Settings {
-    pub fn from_pycors_home() -> Result<Settings> {
-        let install_dir = utils::pycors_installed()?;
+    pub fn from_dot_dir() -> Result<Settings> {
+        let install_dir = utils::directory::installed()?;
 
         let mut installed_python = Vec::new();
         log::debug!("install_dir: {}", install_dir.display());
@@ -104,12 +104,9 @@ impl Settings {
             }
         };
 
-        let pycors_home_dir = utils::pycors_home()?;
-        let bin_dir = pycors_home_dir.join("bin");
-
         // Find other Python installed (f.e. in system directories)
         let original_path = env::var("PATH")?;
-        let other_pythons = get_python_versions_from_paths(&original_path, &bin_dir);
+        let other_pythons = get_python_versions_from_paths(&original_path);
         installed_python.extend(other_pythons);
 
         Ok(Settings {
@@ -119,16 +116,13 @@ impl Settings {
     }
 }
 
-fn get_python_versions_from_paths<P>(original_path: &str, skip_dir: P) -> Vec<PythonVersion>
-where
-    P: AsRef<Path> + std::convert::AsRef<std::ffi::OsStr>,
-{
+fn get_python_versions_from_paths(original_path: &str) -> Vec<PythonVersion> {
     let mut other_pythons: HashMap<Version, PathBuf> = HashMap::new();
 
     if !original_path.is_empty() {
         let paths = original_path.split(':');
         for path in paths {
-            other_pythons.extend(get_python_versions_from_path(&path, &skip_dir));
+            other_pythons.extend(get_python_versions_from_path(&path));
         }
     }
 
@@ -143,12 +137,10 @@ where
     other_pythons
 }
 
-fn get_python_versions_from_path<P1, P2>(path: P1, skip_dir: P2) -> HashMap<Version, PathBuf>
+fn get_python_versions_from_path<P>(path: P) -> HashMap<Version, PathBuf>
 where
-    P1: AsRef<Path> + std::convert::AsRef<std::ffi::OsStr>,
-    P2: AsRef<Path> + std::convert::AsRef<std::ffi::OsStr>,
+    P: AsRef<Path> + std::convert::AsRef<std::ffi::OsStr>,
 {
-    let skip_dir: &Path = skip_dir.as_ref();
     let path: &Path = path.as_ref();
 
     let mut other_pythons: HashMap<Version, PathBuf> = HashMap::new();
@@ -169,14 +161,9 @@ where
             let python_path: &Path = path;
             let python_pathbuf: PathBuf = python_path.to_path_buf();
 
-            if python_path == skip_dir {
-                log::debug!("Skipping pycors' own bin directory.");
-                break;
-            }
-
             log::debug!("python_path: {}", python_path.display());
-            if python_path.join("pycors_dummy_file").exists() {
-                log::debug!("Skipping pycors' shim directory.");
+            if python_path.join(EXECUTABLE_NAME).exists() {
+                log::debug!("Skipping {}' shim directory.", EXECUTABLE_NAME);
                 break;
             }
 

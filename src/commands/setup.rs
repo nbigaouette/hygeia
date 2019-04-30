@@ -5,16 +5,16 @@ use std::{
 };
 
 use failure::format_err;
-use structopt::{clap::Shell, StructOpt};
+use structopt::clap::Shell;
 
-use crate::{utils, Opt, Result, EXECUTABLE_NAME};
+use crate::{commands, utils, Result, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME_CONTENT};
 
 pub fn run(shell: Shell) -> Result<()> {
     log::debug!("Setting up the shim...");
 
-    // Copy itself into ~/.pycors/shim
-    let pycors_home_dir = utils::pycors_home()?;
-    let shims_dir = utils::pycors_shims()?;
+    // Copy itself into ~/.EXECUTABLE_NAME/shim
+    let config_home_dir = utils::directory::config_home()?;
+    let shims_dir = utils::directory::shims()?;
     if !utils::path_exists(&shims_dir) {
         log::debug!("Directory {:?} does not exists, creating.", shims_dir);
         fs::create_dir_all(&shims_dir)?;
@@ -40,11 +40,11 @@ pub fn run(shell: Shell) -> Result<()> {
     ];
     let hardlinks_dash_version_suffix = &["2to3###", "easy_install###", "pyvenv###"];
 
-    // Create simple hardlinks: `pycors` --> `bin`
+    // Create simple hardlinks: `EXECUTABLE_NAME` --> `bin`
     utils::create_hard_links(&copy_from, hardlinks_version_suffix, &shims_dir, "")?;
     utils::create_hard_links(&copy_from, hardlinks_dash_version_suffix, &shims_dir, "")?;
 
-    // Create major version hardlinks: `pycors` --> `bin3` and `pycors` --> `bin2`
+    // Create major version hardlinks: `EXECUTABLE_NAME` --> `bin3` and `EXECUTABLE_NAME` --> `bin2`
     for major in &["2", "3"] {
         utils::create_hard_links(&copy_from, hardlinks_version_suffix, &shims_dir, major)?;
         utils::create_hard_links(
@@ -55,13 +55,7 @@ pub fn run(shell: Shell) -> Result<()> {
         )?;
     }
 
-    // Create an dummy file that will be recognized when searching the PATH for
-    // python interpreters. We don't want to "find" the shims we install here.
-    let pycors_dummy_file = shims_dir.join("pycors_dummy_file");
-    let mut file = fs::File::create(&pycors_dummy_file)?;
-    writeln!(file, "This file's job is to tell pycors the directory contains shim, not real Python interpreters.")?;
-
-    let extra_packages_file_default_content = include_str!("../../extra-packages-to-install.txt");
+    let extra_packages_file_default_content = EXTRA_PACKAGES_FILENAME_CONTENT;
     let output_filename = utils::default_extra_package_file()?;
     log::debug!(
         "Writing list of default packages to install to {:?}",
@@ -70,7 +64,7 @@ pub fn run(shell: Shell) -> Result<()> {
     let mut file = File::create(output_filename)?;
     file.write_all(extra_packages_file_default_content.as_bytes())?;
 
-    // Add ~/.pycors/bin to $PATH in ~/.bash_profile and install autocomplete
+    // Add ~/.EXECUTABLE_NAME/bin to $PATH in ~/.bash_profile and install autocomplete
     match shell {
         structopt::clap::Shell::Bash => {
             let home =
@@ -78,9 +72,10 @@ pub fn run(shell: Shell) -> Result<()> {
             let bash_profile = home.join(".bash_profile");
 
             // Add the autocomplete too
-            let autocomplete_file = pycors_home_dir.join("pycors.bash-completion");
+            let autocomplete_file =
+                config_home_dir.join(&format!("{}.bash-completion", EXECUTABLE_NAME));
             let mut f = fs::File::create(&autocomplete_file)?;
-            Opt::clap().gen_completions_to("pycors", shell, &mut f);
+            commands::autocomplete::run(shell, &mut f)?;
 
             log::debug!("Adding {:?} to $PATH in {:?}...", shims_dir, bash_profile);
             let bash_profile_line = format!(r#"export PATH="{}:$PATH""#, shims_dir.display());
@@ -123,8 +118,8 @@ pub fn run(shell: Shell) -> Result<()> {
                 let lines = &[
                     String::from(""),
                     "#################################################".to_string(),
-                    "# These lines were added by pycors.".to_string(),
-                    "# See https://github.com/nbigaouette/pycors".to_string(),
+                    format!("# These lines were added by {}.", EXECUTABLE_NAME),
+                    format!("# See {}", env!("CARGO_PKG_HOMEPAGE")),
                     if !bash_profile_existed {
                         "source ${HOME}/.bashrc".to_string()
                     } else {

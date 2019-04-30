@@ -95,7 +95,7 @@ pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()
 
 pub fn download_source(version: &Version) -> Result<()> {
     let url = build_url(&version)?;
-    let download_dir = utils::pycors_download()?;
+    let download_dir = utils::directory::downloaded()?;
     download_from_url(&url, download_dir)
 }
 

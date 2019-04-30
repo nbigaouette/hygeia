@@ -9,6 +9,7 @@ use structopt::StructOpt;
 
 mod commands;
 mod config;
+mod constants;
 mod dir_monitor;
 mod os;
 mod settings;
@@ -18,13 +19,11 @@ mod utils;
 use crate::{
     commands::Command,
     config::{load_config_file, Cfg},
+    constants::*,
     settings::Settings,
 };
 
 pub type Result<T> = std::result::Result<T, failure::Error>;
-
-pub const EXECUTABLE_NAME: &str = "pycors";
-pub const INFO_FILE: &str = "installed_by.txt";
 
 git_testament!(GIT_TESTAMENT);
 
@@ -47,14 +46,14 @@ fn main() -> Result<()> {
     setup_panic!();
 
     std::env::var("RUST_LOG").or_else(|_| -> Result<String> {
-        let rust_log = "pycors=warn".to_string();
+        let rust_log = format!("{}=warn", EXECUTABLE_NAME);
         std::env::set_var("RUST_LOG", &rust_log);
         Ok(rust_log)
     })?;
 
     env_logger::init();
 
-    let settings = Settings::from_pycors_home()?;
+    let settings = Settings::from_dot_dir()?;
     // Invert the Option<Result> to Result<Option> and use ? to unwrap the Result.
     let cfg_opt = load_config_file().map_or(Ok(None), |v| v.map(Some))?;
 
@@ -79,9 +78,9 @@ fn main() -> Result<()> {
                 }
             };
 
-            if exe.starts_with("pycors") {
-                debug!("Running pycors");
-                pycors(&cfg_opt, &settings)?;
+            if exe.starts_with(EXECUTABLE_NAME) {
+                debug!("Running {}", EXECUTABLE_NAME);
+                no_shim_execution(&cfg_opt, &settings)?;
             } else {
                 debug!("Running a Python shim");
                 python_shim(exe, &cfg_opt, &settings, remaining_args)?;
@@ -92,14 +91,14 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-pub fn pycors(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
+pub fn no_shim_execution(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
     let opt = Opt::from_args();
     log::debug!("{:?}", opt);
 
     if let Some(subcommand) = opt.subcommand {
         match subcommand {
             Command::Autocomplete { shell } => {
-                commands::autocomplete::run(shell)?;
+                commands::autocomplete::run(shell, &mut std::io::stdout())?;
             }
             Command::List => commands::list::run(cfg, settings)?,
             Command::Path => commands::path::run(cfg, settings)?,

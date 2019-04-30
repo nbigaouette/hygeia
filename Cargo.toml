@@ -2,6 +2,8 @@
 name = "pycors"
 version = "0.1.14"
 authors = ["Nicolas Bigaouette <nbigaouette@gmail.com>"]
+homepage = "https://github.com/nbigaouette/pycors"
+repository = "https://github.com/nbigaouette/pycors"
 edition = "2018"
 
 [dependencies]
