@@ -13,7 +13,7 @@ pub fn run(shell: Shell) -> Result<()> {
     log::debug!("Setting up the shim...");
 
     // Copy itself into ~/.pycors/shim
-    let pycors_home_dir = utils::directory::config_home()?;
+    let config_home_dir = utils::directory::config_home()?;
     let shims_dir = utils::directory::shims()?;
     if !utils::path_exists(&shims_dir) {
         log::debug!("Directory {:?} does not exists, creating.", shims_dir);
@@ -57,9 +57,12 @@ pub fn run(shell: Shell) -> Result<()> {
 
     // Create an dummy file that will be recognized when searching the PATH for
     // python interpreters. We don't want to "find" the shims we install here.
-    let pycors_dummy_file = utils::file::install_dummy_file()?;
-    let mut file = fs::File::create(&pycors_dummy_file)?;
-    writeln!(file, "This file's job is to tell pycors the directory contains shim, not real Python interpreters.")?;
+    let mut file = fs::File::create(utils::file::install_dummy_file()?)?;
+    writeln!(
+        file,
+        "This file's job is to tell {} the directory contains shim, not real Python interpreters.",
+        EXECUTABLE_NAME
+    )?;
 
     let extra_packages_file_default_content = EXTRA_PACKAGES_FILENAME_CONTENT;
     let output_filename = utils::default_extra_package_file()?;
@@ -78,9 +81,10 @@ pub fn run(shell: Shell) -> Result<()> {
             let bash_profile = home.join(".bash_profile");
 
             // Add the autocomplete too
-            let autocomplete_file = pycors_home_dir.join("pycors.bash-completion");
+            let autocomplete_file =
+                config_home_dir.join(&format!("{}.bash-completion", EXECUTABLE_NAME));
             let mut f = fs::File::create(&autocomplete_file)?;
-            Opt::clap().gen_completions_to("pycors", shell, &mut f);
+            Opt::clap().gen_completions_to(EXECUTABLE_NAME, shell, &mut f);
 
             log::debug!("Adding {:?} to $PATH in {:?}...", shims_dir, bash_profile);
             let bash_profile_line = format!(r#"export PATH="{}:$PATH""#, shims_dir.display());
@@ -123,7 +127,7 @@ pub fn run(shell: Shell) -> Result<()> {
                 let lines = &[
                     String::from(""),
                     "#################################################".to_string(),
-                    "# These lines were added by pycors.".to_string(),
+                    format!("# These lines were added by {}.", EXECUTABLE_NAME),
                     "# See https://github.com/nbigaouette/pycors".to_string(),
                     if !bash_profile_existed {
                         "source ${HOME}/.bashrc".to_string()
