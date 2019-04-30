@@ -12,7 +12,7 @@ use crate::{commands, utils, Result, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME_CO
 pub fn run(shell: Shell) -> Result<()> {
     log::debug!("Setting up the shim...");
 
-    // Copy itself into ~/.pycors/shim
+    // Copy itself into ~/.EXECUTABLE_NAME/shim
     let config_home_dir = utils::directory::config_home()?;
     let shims_dir = utils::directory::shims()?;
     if !utils::path_exists(&shims_dir) {
@@ -40,11 +40,11 @@ pub fn run(shell: Shell) -> Result<()> {
     ];
     let hardlinks_dash_version_suffix = &["2to3###", "easy_install###", "pyvenv###"];
 
-    // Create simple hardlinks: `pycors` --> `bin`
+    // Create simple hardlinks: `EXECUTABLE_NAME` --> `bin`
     utils::create_hard_links(&copy_from, hardlinks_version_suffix, &shims_dir, "")?;
     utils::create_hard_links(&copy_from, hardlinks_dash_version_suffix, &shims_dir, "")?;
 
-    // Create major version hardlinks: `pycors` --> `bin3` and `pycors` --> `bin2`
+    // Create major version hardlinks: `EXECUTABLE_NAME` --> `bin3` and `EXECUTABLE_NAME` --> `bin2`
     for major in &["2", "3"] {
         utils::create_hard_links(&copy_from, hardlinks_version_suffix, &shims_dir, major)?;
         utils::create_hard_links(
@@ -73,7 +73,7 @@ pub fn run(shell: Shell) -> Result<()> {
     let mut file = File::create(output_filename)?;
     file.write_all(extra_packages_file_default_content.as_bytes())?;
 
-    // Add ~/.pycors/bin to $PATH in ~/.bash_profile and install autocomplete
+    // Add ~/.EXECUTABLE_NAME/bin to $PATH in ~/.bash_profile and install autocomplete
     match shell {
         structopt::clap::Shell::Bash => {
             let home =
