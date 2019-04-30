@@ -8,9 +8,7 @@ use std::{
 use failure::format_err;
 use semver::VersionReq;
 
-use crate::{utils, Result};
-
-static TOOLCHAIN_FILE: &str = ".python-version";
+use crate::{constants::TOOLCHAIN_FILE, utils, Result};
 
 #[derive(Debug, Clone)]
 pub struct SelectedVersion {
