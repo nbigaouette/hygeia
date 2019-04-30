@@ -9,7 +9,7 @@ use semver::Version;
 use subprocess::{Exec, Redirection};
 use which::which_in;
 
-use crate::{utils, Result};
+use crate::{utils, Result, EXECUTABLE_NAME, INSTALL_DUMMY_FILE};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PythonVersion {
@@ -162,8 +162,8 @@ where
             let python_pathbuf: PathBuf = python_path.to_path_buf();
 
             log::debug!("python_path: {}", python_path.display());
-            if python_path.join("pycors_dummy_file").exists() {
-                log::debug!("Skipping pycors' shim directory.");
+            if python_path.join(INSTALL_DUMMY_FILE).exists() {
+                log::debug!("Skipping {}' shim directory.", EXECUTABLE_NAME);
                 break;
             }
 

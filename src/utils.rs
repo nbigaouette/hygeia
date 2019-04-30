@@ -98,6 +98,15 @@ pub mod directory {
     }
 }
 
+pub mod file {
+    use super::*;
+    use crate::INSTALL_DUMMY_FILE;
+
+    pub fn install_dummy_file() -> Result<PathBuf> {
+        Ok(directory::shims()?.join(INSTALL_DUMMY_FILE))
+    }
+}
+
 pub fn default_extra_package_file() -> Result<PathBuf> {
     Ok(directory::config_home()?.join(EXTRA_PACKAGES_FILENAME))
 }

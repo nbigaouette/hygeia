@@ -57,7 +57,7 @@ pub fn run(shell: Shell) -> Result<()> {
 
     // Create an dummy file that will be recognized when searching the PATH for
     // python interpreters. We don't want to "find" the shims we install here.
-    let pycors_dummy_file = shims_dir.join("pycors_dummy_file");
+    let pycors_dummy_file = utils::file::install_dummy_file()?;
     let mut file = fs::File::create(&pycors_dummy_file)?;
     writeln!(file, "This file's job is to tell pycors the directory contains shim, not real Python interpreters.")?;
 

@@ -29,6 +29,7 @@ pub const HOME_VARIABLE: &str = "PYCORS_HOME";
 pub const INFO_FILE: &str = "installed_by.txt";
 pub const EXTRA_PACKAGES_FILENAME: &str = "extra-packages-to-install.txt";
 pub const EXTRA_PACKAGES_FILENAME_CONTENT: &str = include_str!("../extra-packages-to-install.txt");
+pub const INSTALL_DUMMY_FILE: &str = "installed_dummy_file";
 
 git_testament!(GIT_TESTAMENT);
 
