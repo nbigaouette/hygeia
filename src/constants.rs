@@ -29,3 +29,5 @@ pub const EXTRA_PACKAGES_FILENAME: &str = "extra-packages-to-install.txt";
 
 /// Content of file listing extra `pip` packages to install, copied when setting-up shim.
 pub const EXTRA_PACKAGES_FILENAME_CONTENT: &str = include_str!("../extra-packages-to-install.txt");
+
+pub const TOOLCHAIN_FILE: &str = ".python-version";

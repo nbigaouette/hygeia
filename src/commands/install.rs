@@ -1,7 +1,7 @@
 use failure::format_err;
 use semver::{Version, VersionReq};
 
-use crate::{commands, config::Cfg, settings::Settings, Result};
+use crate::{commands, installed::InstalledToolchain, selected::SelectedVersion, Result};
 
 mod download;
 mod pip;
@@ -15,22 +15,21 @@ use crate::commands::install::{
 
 pub fn run(
     from_version: Option<String>,
-    cfg: &Option<Cfg>,
-    settings: &Settings,
+    selected_version: &Option<SelectedVersion>,
+    installed_toolchains: &[InstalledToolchain],
     install_extra_packages: &commands::InstallExtraPackagesOptions,
     select: bool,
 ) -> Result<Option<Version>> {
     let version: VersionReq = match from_version {
-        None => match cfg {
-            None => Cfg::from_user_input()?.version,
-            Some(cfg) => cfg.version.clone(),
+        None => match selected_version {
+            None => SelectedVersion::from_user_input()?.version,
+            Some(selected_version) => selected_version.version.clone(),
         },
         Some(version) => VersionReq::parse(&version)?,
     };
     log::debug!("Installing Python {}", version);
 
-    let matching_installed_versions: Vec<_> = settings
-        .installed_python
+    let matching_installed_versions: Vec<_> = installed_toolchains
         .iter()
         .filter(|installed_python| {
             version.matches(&installed_python.version) && installed_python.is_custom_install()
@@ -63,6 +62,11 @@ pub fn run(
             )?;
         }
 
+        if select {
+            // Write to `.python-version`
+            SelectedVersion { version }.save()?;
+        }
+
         Ok(None)
     } else {
         // Get the last version compatible with the given version
@@ -77,7 +81,7 @@ pub fn run(
 
         if select {
             // Write to `.python-version`
-            Cfg {
+            SelectedVersion {
                 version: VersionReq::exact(&version_to_install),
             }
             .save()?;

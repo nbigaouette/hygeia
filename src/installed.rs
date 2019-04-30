@@ -1,7 +1,6 @@
 use std::{
     collections::HashMap,
     env, fs,
-    marker::PhantomData,
     path::{Path, PathBuf},
 };
 
@@ -12,12 +11,12 @@ use which::which_in;
 use crate::{utils, Result, EXECUTABLE_NAME};
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct PythonVersion {
+pub struct InstalledToolchain {
     pub location: PathBuf,
     pub version: Version,
 }
 
-impl PythonVersion {
+impl InstalledToolchain {
     pub fn is_custom_install(&self) -> bool {
         match self.location.parent() {
             None => {
@@ -29,94 +28,78 @@ impl PythonVersion {
     }
 }
 
-#[derive(Debug, Default)]
-pub struct Settings {
-    pub installed_python: Vec<PythonVersion>,
+pub fn find_installed_toolchains() -> Result<Vec<InstalledToolchain>> {
+    let install_dir = utils::directory::installed()?;
 
-    // Prevent manual instantiation
-    hidden: PhantomData<()>,
-}
+    let mut installed_python = Vec::new();
+    log::debug!("install_dir: {}", install_dir.display());
 
-impl Settings {
-    pub fn from_dot_dir() -> Result<Settings> {
-        let install_dir = utils::directory::installed()?;
-
-        let mut installed_python = Vec::new();
-        log::debug!("install_dir: {}", install_dir.display());
-
-        match fs::read_dir(&install_dir) {
-            Ok(dirs) => {
-                for dir in dirs {
-                    match dir {
-                        Ok(dir) => {
-                            let location = dir.path();
-                            let version_str = match location.file_name() {
+    match fs::read_dir(&install_dir) {
+        Ok(dirs) => {
+            for dir in dirs {
+                match dir {
+                    Ok(dir) => {
+                        let location = dir.path();
+                        let version_str = match location.file_name() {
+                            None => {
+                                log::error!(
+                                    "Could not get the version from directory: {:?}",
+                                    dir.path().display()
+                                );
+                                continue;
+                            }
+                            Some(dir) => match dir.to_str() {
                                 None => {
-                                    log::error!(
-                                        "Could not get the version from directory: {:?}",
-                                        dir.path().display()
-                                    );
+                                    log::error!("Could not convert directory to str: {:?}", dir);
                                     continue;
                                 }
-                                Some(dir) => match dir.to_str() {
-                                    None => {
-                                        log::error!(
-                                            "Could not convert directory to str: {:?}",
-                                            dir
-                                        );
-                                        continue;
-                                    }
-                                    Some(dir_str) => dir_str,
-                                },
-                            };
+                                Some(dir_str) => dir_str,
+                            },
+                        };
 
-                            let version = match Version::parse(version_str.trim()) {
-                                Err(e) => {
-                                    log::error!(
-                                        "Error parsing version string {:?}: {:?}",
-                                        version_str.trim(),
-                                        e
-                                    );
-                                    continue;
-                                }
-                                Ok(version) => version,
-                            };
+                        let version = match Version::parse(version_str.trim()) {
+                            Err(e) => {
+                                log::error!(
+                                    "Error parsing version string {:?}: {:?}",
+                                    version_str.trim(),
+                                    e
+                                );
+                                continue;
+                            }
+                            Ok(version) => version,
+                        };
 
-                            // Append `bin` to the path (if it exists) since this location
-                            // will be used to call binaries directly.
-                            let location_bin = location.join("bin");
-                            let location = if location_bin.exists() {
-                                location_bin
-                            } else {
-                                location
-                            };
+                        // Append `bin` to the path (if it exists) since this location
+                        // will be used to call biInstalledToolchainly.
+                        let location_bin = location.join("bin");
+                        let location = if location_bin.exists() {
+                            location_bin
+                        } else {
+                            location
+                        };
 
-                            installed_python.push(PythonVersion { location, version });
-                        }
-                        Err(e) => {
-                            log::error!("Error listing directory: {:?}", e);
-                        }
+                        installed_python.push(InstalledToolchain { location, version });
+                    }
+                    Err(e) => {
+                        log::error!("Error listing directory: {:?}", e);
                     }
                 }
             }
-            Err(e) => {
-                log::warn!("Error parsing version string {:?}: {:?}", install_dir, e);
-            }
-        };
+        }
+        Err(e) => {
+            log::warn!("Error parsing version string {:?}: {:?}", install_dir, e);
+        }
+    };
 
-        // Find other Python installed (f.e. in system directories)
-        let original_path = env::var("PATH")?;
-        let other_pythons = get_python_versions_from_paths(&original_path);
-        installed_python.extend(other_pythons);
+    // Find other Python installed (f.e. in system directories)
+    let original_path = env::var("PATH")?;
+    let other_pythons = get_python_versions_from_paths(&original_path);
+    installed_python.extend(other_pythons);
 
-        Ok(Settings {
-            installed_python,
-            hidden: PhantomData,
-        })
-    }
+    Ok(installed_python)
 }
 
-fn get_python_versions_from_paths(original_path: &str) -> Vec<PythonVersion> {
+fn get_python_versions_from_paths(original_path: &str) -> Vec<InstalledToolchain> {
     let mut other_pythons: HashMap<Version, PathBuf> = HashMap::new();
 
     if !original_path.is_empty() {
@@ -126,12 +109,12 @@ fn get_python_versions_from_paths(original_path: &str) -> Vec<PythonVersion> {
         }
     }
 
-    let mut other_pythons: Vec<PythonVersion> = other_pythons
+    let mut other_pythons: Vec<InstalledToolchain> = other_pythons
         .into_iter()
-        .map(|(version, location)| PythonVersion { location, version })
+        .map(|(version, location)| InstalledToolchain { location, version })
         .collect();
     other_pythons.sort_unstable_by(|p1, p2| p1.version.cmp(&p2.version));
-    let other_pythons: Vec<PythonVersion> = other_pythons.into_iter().rev().collect();
+    let other_pythons: Vec<InstalledToolchain> = other_pythons.into_iter().rev().collect();
     // debug!("Found extra versions:\n{:#?}", other_pythons);
 
     other_pythons

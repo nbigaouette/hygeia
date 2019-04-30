@@ -1,6 +1,6 @@
 use semver::Version;
 
-use crate::{settings::PythonVersion, Result};
+use crate::{installed::InstalledToolchain, Result};
 
 pub mod unix;
 pub mod windows;
@@ -18,7 +18,7 @@ pub fn build_filename(version: &Version) -> Result<String> {
 
 pub fn command_with_major_version(
     command: &str,
-    interpreter_to_use: &PythonVersion,
+    interpreter_to_use: &InstalledToolchain,
 ) -> Result<String> {
     #[cfg(not(target_os = "windows"))]
     {
@@ -51,7 +51,7 @@ mod tests {
 
     #[test]
     fn append_version_to_command_success() {
-        let interpreter = PythonVersion {
+        let interpreter = InstalledToolchain {
             location: Path::new("/usr/bin").into(),
             version: Version::parse("3.7.3").unwrap(),
         };

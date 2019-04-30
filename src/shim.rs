@@ -3,11 +3,11 @@ use std::{env, ffi::OsString};
 use subprocess::{Exec, Redirection};
 
 use crate::{
-    dir_monitor::DirectoryMonitor, os::command_with_major_version, settings::PythonVersion, utils,
-    Result, EXECUTABLE_NAME,
+    dir_monitor::DirectoryMonitor, installed::InstalledToolchain, os::command_with_major_version,
+    utils, Result, EXECUTABLE_NAME,
 };
 
-pub fn run<S>(interpreter_to_use: &PythonVersion, command: &str, arguments: &[S]) -> Result<()>
+pub fn run<S>(interpreter_to_use: &InstalledToolchain, command: &str, arguments: &[S]) -> Result<()>
 where
     S: AsRef<str> + std::convert::AsRef<std::ffi::OsStr> + std::fmt::Debug,
 {

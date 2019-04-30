@@ -1,8 +1,11 @@
 use prettytable::{cell, row, Cell, Row, Table};
 
-use crate::{config::Cfg, settings::Settings, utils, Result};
+use crate::{installed::InstalledToolchain, selected::SelectedVersion, utils, Result};
 
-pub fn run(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
+pub fn run(
+    selected_version: &Option<SelectedVersion>,
+    installed_toolchains: &[InstalledToolchain],
+) -> Result<()> {
     let mut table = Table::new();
     // Header
     table.add_row(row![
@@ -12,19 +15,21 @@ pub fn run(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
         "Location"
     ]);
 
-    let active_python = match cfg {
+    let active_python = match selected_version {
         None => None,
-        Some(cfg) => utils::active_version(&cfg.version, settings),
+        Some(selected_version) => {
+            utils::active_version(&selected_version.version, installed_toolchains)
+        }
     };
 
     if active_python.is_none() {
-        if let Some(cfg) = cfg {
+        if let Some(selected_version) = selected_version {
             table.add_row(Row::new(vec![
                 Cell::new_align("✗", prettytable::format::Alignment::CENTER)
                     .with_style(prettytable::Attr::Bold)
                     .with_style(prettytable::Attr::ForegroundColor(prettytable::color::RED)),
                 Cell::new_align(
-                    &format!("{}", cfg.version),
+                    &format!("{}", selected_version.version),
                     prettytable::format::Alignment::CENTER,
                 )
                 .with_style(prettytable::Attr::Bold)
@@ -37,7 +42,7 @@ pub fn run(cfg: &Option<Cfg>, settings: &Settings) -> Result<()> {
         }
     }
 
-    for installed_python in &settings.installed_python {
+    for installed_python in installed_toolchains {
         let alignment = prettytable::format::Alignment::CENTER;
 
         let green = prettytable::Attr::ForegroundColor(prettytable::color::GREEN);
