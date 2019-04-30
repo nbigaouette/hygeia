@@ -52,7 +52,7 @@ fn main() -> Result<()> {
     setup_panic!();
 
     std::env::var("RUST_LOG").or_else(|_| -> Result<String> {
-        let rust_log = "pycors=warn".to_string();
+        let rust_log = format!("{}=warn", EXECUTABLE_NAME);
         std::env::set_var("RUST_LOG", &rust_log);
         Ok(rust_log)
     })?;
@@ -84,9 +84,9 @@ fn main() -> Result<()> {
                 }
             };
 
-            if exe.starts_with("pycors") {
-                debug!("Running pycors");
                 pycors(&cfg_opt, &settings)?;
+            if exe.starts_with(EXECUTABLE_NAME) {
+                debug!("Running {}", EXECUTABLE_NAME);
             } else {
                 debug!("Running a Python shim");
                 python_shim(exe, &cfg_opt, &settings, remaining_args)?;
