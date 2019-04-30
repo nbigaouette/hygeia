@@ -21,8 +21,11 @@ pub fn home_env_variable() -> &'static str {
     &HOME_ENV_VARIABLE
 }
 
+/// Filename describing which version of this project installed a toolchain.
 pub const INFO_FILE: &str = concat!("installed_by_", executable_name_from_env!(), ".txt");
 
+/// Filename containing the list of extra packages to install using `pip`.
 pub const EXTRA_PACKAGES_FILENAME: &str = "extra-packages-to-install.txt";
 
+/// Content of file listing extra `pip` packages to install, copied when setting-up shim.
 pub const EXTRA_PACKAGES_FILENAME_CONTENT: &str = include_str!("../extra-packages-to-install.txt");
