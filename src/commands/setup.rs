@@ -5,9 +5,9 @@ use std::{
 };
 
 use failure::format_err;
-use structopt::{clap::Shell, StructOpt};
+use structopt::clap::Shell;
 
-use crate::{commands, utils, Opt, Result, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME_CONTENT};
+use crate::{commands, utils, Result, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME_CONTENT};
 
 pub fn run(shell: Shell) -> Result<()> {
     log::debug!("Setting up the shim...");
