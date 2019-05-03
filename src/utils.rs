@@ -320,20 +320,25 @@ where
             .replace("-", "")
     );
     let log_filepath = logs_dir.join(&log_filename);
-    let mut log_file = BufWriter::new(File::create(log_filepath)?);
+    let mut log_file = BufWriter::new(File::create(&log_filepath)?);
 
     log_line(&format!("cd {}", cwd.as_ref().display()), &mut log_file);
     log_line(&format!("{} {:?}", cmd, args), &mut log_file);
 
     let (tx, child) = spinner_in_thread(line_header.to_string());
 
-    let stream = Exec::cmd(cmd)
+    let mut process = Exec::cmd(cmd)
         .args(args)
         .cwd(cwd)
         .stderr(Redirection::Merge)
-        .stream_stdout()?;
+        .stdout(Redirection::Pipe)
+        .popen()?;
 
-    let br = BufReader::new(stream);
+    // Extract the stdout std::fs::File from `p`, replacing it with a None.
+    let mut stdout: Option<File> = None;
+    std::mem::swap(&mut process.stdout, &mut stdout);
+
+    let br = BufReader::new(stdout.ok_or_else(|| format_err!("Got none"))?);
 
     let message_width = if let Some((Width(width), _)) = terminal_size() {
         // There is two characters before the message: the spinner and a space
@@ -366,6 +371,10 @@ where
         };
     }
 
+    // We've read all process output. Wait for the process to finish and
+    // get exit code.
+    let exit_status = process.wait()?;
+
     // Send signal to thread to stop
     let message = format!("{} done.", line_header);
     tx.send(SpinnerMessage::Message(message))?;
@@ -375,7 +384,36 @@ where
         .join()
         .map_err(|e| format_err!("Failed to join threads: {:?}", e))?;
 
-    Ok(())
+    match exit_status {
+        subprocess::ExitStatus::Exited(code) => match code {
+            0 => Ok(()),
+            _ => Err(format_err!(
+                "Command {} with arguments {:?} failed! Exit status: {} (see log file {})",
+                cmd,
+                args,
+                code,
+                log_filepath.display()
+            ))?,
+        },
+        subprocess::ExitStatus::Signaled(signal) => Err(format_err!(
+            "Command {} with arguments {:?} failed due to it being sent signal {} (see log file {})",
+            cmd,
+            args,
+            signal,
+                log_filepath.display()
+        ))?,
+        subprocess::ExitStatus::Other(unknown_code) => Err(format_err!(
+            "Command {} with arguments {:?} failed with an unknown exit status {} (see log file {})",
+            cmd,
+            args,
+            unknown_code,
+                log_filepath.display()
+        ))?,
+        subprocess::ExitStatus::Undetermined => {
+            log::error!("Could not get process exit status code.");
+            Err(format_err!("Could not get process exit status code."))?
+        }
+    }
 }
 
 pub fn log_line<F>(line: &str, log_file: &mut F)
