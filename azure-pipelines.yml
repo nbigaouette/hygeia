@@ -142,5 +142,5 @@ jobs:
     - x86_64-apple-darwin
    github:
     gitHubConnection: PipelinesTemplates
-    repositoryName: xoac/rust-azure-pipelines
+    repositoryName: nbigaouette/pycors
     isPreRelease: true
