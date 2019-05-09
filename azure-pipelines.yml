@@ -143,4 +143,4 @@ jobs:
    github:
     gitHubConnection: PipelinesTemplates
     repositoryName: xoac/rust-azure-pipelines
-    isPreRelease: true
+    # isPreRelease: true
