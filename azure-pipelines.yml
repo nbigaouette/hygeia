@@ -142,4 +142,5 @@ jobs:
     - x86_64-apple-darwin
    github:
     gitHubConnection: PipelinesTemplates
+    repositoryName: nbigaouette/pycors
     # isPreRelease: true
