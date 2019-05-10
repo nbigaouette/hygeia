@@ -162,7 +162,7 @@ jobs:
   steps:
     - template: azure-pipelines-github-release.yml
       parameters:
-        ciCurrentTarget: 'x86_64-unknown-linux-musl'
+        target: 'x86_64-unknown-linux-musl'
 
 - job: github_release_macos_windows
   condition: startsWith(variables['Build.SourceBranch'], 'refs/tags/v')
@@ -187,4 +187,4 @@ jobs:
     - template: ci/install-rust.yml@templates
     - template: azure-pipelines-github-release.yml
       parameters:
-        ciCurrentTarget: $(target)
+        target: $(target)

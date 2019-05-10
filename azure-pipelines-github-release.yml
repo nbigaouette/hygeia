@@ -1,7 +1,7 @@
 parameters:
   isPreRelease: false
   isDraft: false
-  ciCurrentTarget: ''
+  target: ''
 
 
 steps:
@@ -30,7 +30,7 @@ steps:
     echo "pwd" && pwd
     echo "find ." && find .
     echo "find /home" && find /home
-    cargo build --release --target ${{ parameters.ciCurrentTarget }}
+    cargo build --release --target ${{ parameters.target }}
   env:
     LOOM_MAX_DURATION: 10
     CI: 'True'
@@ -46,14 +46,14 @@ steps:
       !*.d
       !.*
     sourceFolder: '$(Build.SourcesDirectory)/target/release'
-    targetFolder: '$(Build.BinariesDirectory)/${{ parameters.ciCurrentTarget }}'
+    targetFolder: '$(Build.BinariesDirectory)/${{ parameters.target }}'
 
 - task: ArchiveFiles@2
   displayName: Compress assets
   inputs:
-    rootFolderOrFile: '$(Build.BinariesDirectory)/${{ parameters.ciCurrentTarget }}'
+    rootFolderOrFile: '$(Build.BinariesDirectory)/${{ parameters.target }}'
     archiveType: 'zip'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/pycors-$(build.my_tag)-${{ parameters.ciCurrentTarget }}.zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/pycors-$(build.my_tag)-${{ parameters.target }}.zip'
 
 - task: GitHubRelease@0
   displayName: Create release
