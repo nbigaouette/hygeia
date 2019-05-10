@@ -77,6 +77,10 @@ pub fn compile_source(
         "--enable-optimizations".to_string(),
     ];
 
+    let mut cflags: Vec<String> = Vec::new();
+    let mut cppflags: Vec<String> = Vec::new();
+    let mut ldflags: Vec<String> = Vec::new();
+
     // See https://devguide.python.org/setup/#macos-and-os-x
     #[cfg(target_os = "macos")]
     {
@@ -86,8 +90,8 @@ pub fn compile_source(
             let ssl_arg = format!("--with-openssl={}", openssl_prefix);
             configure_args.push(ssl_arg);
         } else {
-            env::set_var("CPPFLAGS", format!("-I{}/include", openssl_prefix));
-            env::set_var("LDFLAGS", format!("-L{}/lib", openssl_prefix));
+            cppflags.push(format!("-I{}/include", openssl_prefix));
+            ldflags.push(format!("-L{}/lib", openssl_prefix));
         };
 
         // Make sure compilation can find zlib
@@ -97,8 +101,14 @@ pub fn compile_source(
             .stdout(Redirection::Pipe)
             .capture()?
             .stdout_str();
-        env::set_var("CFLAGS", format!("-I{}/usr/include", macos_sdk_path.trim()));
+        cflags.push(format!("-I{}/usr/include", macos_sdk_path.trim()));
+
+        cppflags.push("-I/opt/X11/include".into());
     }
+
+    env::set_var("CFLAGS", cflags.join(" "));
+    env::set_var("CPPFLAGS", cppflags.join(" "));
+    env::set_var("LDFLAGS", ldflags.join(" "));
 
     let basename = utils::build_basename(&version)?;
     let extract_dir = utils::directory::extracted()?.join(&basename);
