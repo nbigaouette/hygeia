@@ -146,84 +146,42 @@ jobs:
 #     repositoryName: xoac/rust-azure-pipelines
 #     isPreRelease: true
 
+- job: github_release_linux
+  # condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+  displayName: "Release to github (Linux)"
+  # dependsOn:
+  #   - minrust
+  #   - rustfmt
+  #   - cargo_check
+  #   - cargo_test_stable
+  pool:
+    vmImage: 'ubuntu-16.04'
+  container: rust-musl-builder
+  steps:
+    - template: azure-pipelines-github-release.yml
+      parameters:
+        ciCurrentTarget: 'x86_64-unknown-linux-musl'
 
-- job: github_release
-  condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
-  displayName: "Release to github"
-  dependsOn:
-    - minrust
-    - rustfmt
-    - cargo_check
-    - cargo_test_stable
+- job: github_release_macos_windows
+  # condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+  displayName: "Release to github (macOS & Windows)"
+  # dependsOn:
+  #   - minrust
+  #   - rustfmt
+  #   - cargo_check
+  #   - cargo_test_stable
   strategy:
     matrix:
-      Linux:
-        vmImage: ubuntu-16.04
       MacOS:
         vmImage: macOS-10.13
+        target: x86_64-apple-darwin
       Windows:
         vmImage: vs2017-win2016
+        target: x86_64-pc-windows-msvc
   pool:
     vmImage: $(vmImage)
-
   steps:
-  - template: ci/install-rust.yml@templates
-
-  - bash: |
-      MY_TAG="$(Build.SourceBranch)"
-      MY_TAG=${MY_TAG#refs/tags/}
-      echo $MY_TAG
-      echo "##vso[task.setvariable variable=build.my_tag]$MY_TAG"
-      DATE="$(date +%Y-%m-%d)"
-      echo "##vso[task.setvariable variable=build.date]$DATE"
-      CI_CURRENT_TARGET=$(rustup target list | grep '(default)' | awk '{print $1}')
-      echo "##vso[task.setvariable variable=build.ci_current_target]$CI_CURRENT_TARGET"
-    displayName: "Create date and tag variables"
-
-  - script: |
-          rustup target add x86_64-unknown-linux-musl
-          cargo build --release --target x86_64-unknown-linux-musl
-    env:
-      LOOM_MAX_DURATION: 10
-      CI: 'True'
-    displayName: Relase build (Linux musl)
-    condition: eq( variables['Agent.OS'], 'Linux' )
-
-  - script: |
-          cargo build --release
-    env:
-      LOOM_MAX_DURATION: 10
-      CI: 'True'
-    displayName: Relase build (non-Linux)
-    condition: ne( variables['Agent.OS'], 'Linux' )
-
-  - task: CopyFiles@2
-    displayName: Copy files
-    inputs:
-      contents: |
-        *
-        !*.pdb
-        !*.rlib
-        !*.d
-        !.*
-      sourceFolder: '$(Build.SourcesDirectory)/target/release'
-      targetFolder: '$(Build.BinariesDirectory)/$(build.ci_current_target)'
-
-  - task: ArchiveFiles@2
-    displayName: Compress assets
-    inputs:
-      rootFolderOrFile: '$(Build.BinariesDirectory)/$(build.ci_current_target)'
-      archiveType: 'zip'
-      archiveFile: '$(Build.ArtifactStagingDirectory)/pycors-$(build.my_tag)-$(build.ci_current_target).zip'
-
-  - task: GitHubRelease@0
-    displayName: Create release
-    inputs:
-      gitHubConnection: PipelinesTemplates
-      tagSource: manual
-      title: '$(build.my_tag) - $(build.date)'
-      tag: '$(build.my_tag)'
-      action: edit
-      assetUploadMode: 'replace'
-      # isPreRelease: false
-      # isDraft: false
+    - template: ci/install-rust.yml@templates
+    - template: azure-pipelines-github-release.yml
+      parameters:
+        ciCurrentTarget: $(target)

@@ -1,0 +1,64 @@
+parameters:
+  isPreRelease: false
+  isDraft: false
+  ciCurrentTarget: ''
+
+
+steps:
+
+- bash: |
+    if [ -z "$CI_CURRENT_TARGET" ]; then
+      echo "##vso[task.logissue type=error;]Missing template parameter \"ciCurrentTarget\""
+      echo "##vso[task.complete result=Failed;]"
+    fi
+  env:
+    CI_CURRENT_TARGET: ${{ parameters.ciCurrentTarget }}
+  displayName: Check for required parameters
+
+- bash: |
+    MY_TAG="$(Build.SourceBranch)"
+    MY_TAG=${MY_TAG#refs/tags/}
+    echo $MY_TAG
+    echo "##vso[task.setvariable variable=build.my_tag]$MY_TAG"
+    DATE="$(date +%Y-%m-%d)"
+    echo "##vso[task.setvariable variable=build.date]$DATE"
+    CI_CURRENT_TARGET=$(rustup target list | grep '(default)' | awk '{print $1}')
+  displayName: "Create date and tag variables"
+
+- script: |
+        cargo build --release --target ${{ parameters.ciCurrentTarget }}
+  env:
+    LOOM_MAX_DURATION: 10
+    CI: 'True'
+  displayName: Relase build
+
+- task: CopyFiles@2
+  displayName: Copy files
+  inputs:
+    contents: |
+      *
+      !*.pdb
+      !*.rlib
+      !*.d
+      !.*
+    sourceFolder: '$(Build.SourcesDirectory)/target/release'
+    targetFolder: '$(Build.BinariesDirectory)/${{ parameters.ciCurrentTarget }}'
+
+- task: ArchiveFiles@2
+  displayName: Compress assets
+  inputs:
+    rootFolderOrFile: '$(Build.BinariesDirectory)/${{ parameters.ciCurrentTarget }}'
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/pycors-$(build.my_tag)-${{ parameters.ciCurrentTarget }}.zip'
+
+- task: GitHubRelease@0
+  displayName: Create release
+  inputs:
+    gitHubConnection: PipelinesTemplates
+    tagSource: manual
+    title: '$(build.my_tag) - $(build.date)'
+    tag: '$(build.my_tag)'
+    action: edit
+    assetUploadMode: 'replace'
+    isPreRelease: ${{ parameters.isPreRelease }}
+    isDraft: ${{ parameters.isDraft }}
