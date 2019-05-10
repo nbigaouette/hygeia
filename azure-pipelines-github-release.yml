@@ -5,6 +5,13 @@ parameters:
 
 
 steps:
+- script: |
+    rustup -V
+    rustup component list --installed
+    rustup show
+    rustc -Vv
+    cargo -V
+  displayName: Print versions
 
 - bash: |
     MY_TAG="$(Build.SourceBranch)"
@@ -13,6 +20,7 @@ steps:
     echo "##vso[task.setvariable variable=build.my_tag]$MY_TAG"
     DATE="$(date +%Y-%m-%d)"
     echo "##vso[task.setvariable variable=build.date]$DATE"
+    echo "Target ${{ parameters.target }}"
   displayName: "Create date and tag variables"
 
 - script: |
