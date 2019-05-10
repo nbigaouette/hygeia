@@ -17,6 +17,7 @@ resources:
     options: --security-opt seccomp=unconfined
   - container: rust-musl-builder
     image: ekidd/rust-musl-builder:1.34.1
+    options: --user 0:0
 
 jobs:
 # Check formatting
