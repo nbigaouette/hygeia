@@ -22,7 +22,6 @@ steps:
     echo "##vso[task.setvariable variable=build.my_tag]$MY_TAG"
     DATE="$(date +%Y-%m-%d)"
     echo "##vso[task.setvariable variable=build.date]$DATE"
-    CI_CURRENT_TARGET=$(rustup target list | grep '(default)' | awk '{print $1}')
   displayName: "Create date and tag variables"
 
 - script: |
