@@ -18,41 +18,41 @@ resources:
 
 jobs:
 # Check formatting
-- template: ci/rustfmt.yml@templates
-  parameters:
-    name: rustfmt
-    displayName: Check formatting
+# - template: ci/rustfmt.yml@templates
+#   parameters:
+#     name: rustfmt
+#     displayName: Check formatting
 
 # Cargo check
-- template: ci/cargo-check.yml@templates
-  parameters:
-    name: cargo_check
-    displayName: Cargo check
+# - template: ci/cargo-check.yml@templates
+#   parameters:
+#     name: cargo_check
+#     displayName: Cargo check
 
 # This represents the minimum Rust version supported.
 # Tests are not run as tests may require newer versions of rust.
-- template: ci/cargo-check.yml@templates
-  parameters:
-    name: minrust
-    rust_version: 1.31.0 # The 2018 edition
-    displayName: Verify minimum Rust version
+# - template: ci/cargo-check.yml@templates
+#   parameters:
+#     name: minrust
+#     rust_version: 1.31.0 # The 2018 edition
+#     displayName: Verify minimum Rust version
 
-- template: ci/cargo-clippy.yml@templates
-  parameters:
-    name: clippy
-    rust: stable
-    displayName: Clippy (linter)
+# - template: ci/cargo-clippy.yml@templates
+#   parameters:
+#     name: clippy
+#     rust: stable
+#     displayName: Clippy (linter)
 
 ################
 # Test stage   #
 ###############
 
 # Test stable
-- template: ci/test.yml@templates
-  parameters:
-    name: cargo_test_stable
-    displayName: Cargo test
-    cross: true # Test on Windows and macOS
+# - template: ci/test.yml@templates
+#   parameters:
+#     name: cargo_test_stable
+#     displayName: Cargo test
+#     cross: true # Test on Windows and macOS
 
 # # Test nightly
 # - template: ci/test.yml@templates
@@ -79,25 +79,25 @@ jobs:
 #           - x86_64-apple-darwin
 #           - x86_64-pc-windows-msvc
 
-- job: code_coverage
-  displayName: "Code coverage (tarpaulin)"
-  pool:
-    vmImage: 'ubuntu-16.04'
-  variables:
-    CARGO_TERM_VERBOSE: true
-  container: tarpaulin
-  steps:
-    - script: |
-        cargo --version
-        rustc --version
-        cargo tarpaulin --version
-      displayName: "Show versions"
-    - script: time cargo tarpaulin --verbose --out Xml
-      displayName: "Run tarpaulin"
-    - script: |
-        bash <(curl -s https://codecov.io/bash)
-      env:
-        CODECOV_TOKEN: $(CODECOV_TOKEN)
+# - job: code_coverage
+#   displayName: "Code coverage (tarpaulin)"
+#   pool:
+#     vmImage: 'ubuntu-16.04'
+#   variables:
+#     CARGO_TERM_VERBOSE: true
+#   container: tarpaulin
+#   steps:
+#     - script: |
+#         cargo --version
+#         rustc --version
+#         cargo tarpaulin --version
+#       displayName: "Show versions"
+#     - script: time cargo tarpaulin --verbose --out Xml
+#       displayName: "Run tarpaulin"
+#     - script: |
+#         bash <(curl -s https://codecov.io/bash)
+#       env:
+#         CODECOV_TOKEN: $(CODECOV_TOKEN)
 
 ###################
 #    DEPLOY PART  #
