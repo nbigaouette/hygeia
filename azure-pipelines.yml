@@ -179,11 +179,21 @@ jobs:
     displayName: "Create date and tag variables"
 
   - script: |
+          rustup target add x86_64-unknown-linux-musl
+          cargo build --release --target x86_64-unknown-linux-musl
+    env:
+      LOOM_MAX_DURATION: 10
+      CI: 'True'
+    displayName: Relase build (Linux musl)
+    condition: eq( variables['Agent.OS'], 'Linux' )
+
+  - script: |
           cargo build --release
     env:
       LOOM_MAX_DURATION: 10
       CI: 'True'
-    displayName: Relase build
+    displayName: Relase build (non-Linux)
+    condition: ne( variables['Agent.OS'], 'Linux' )
 
   - task: CopyFiles@2
     displayName: Copy files
