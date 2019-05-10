@@ -7,17 +7,6 @@ parameters:
 steps:
 
 - bash: |
-    echo "parameters.ciCurrentTarget: _${{ parameters.ciCurrentTarget }}_"
-    echo "CI_CURRENT_TARGET: _$CI_CURRENT_TARGET_"
-    if [ -z "$CI_CURRENT_TARGET" ]; then
-      echo "##vso[task.logissue type=error;]Missing template parameter \"ciCurrentTarget\""
-      echo "##vso[task.complete result=Failed;]"
-    fi
-  env:
-    CI_CURRENT_TARGET: ${{ parameters.ciCurrentTarget }}
-  displayName: Check for required parameters
-
-- bash: |
     MY_TAG="$(Build.SourceBranch)"
     MY_TAG=${MY_TAG#refs/tags/}
     echo $MY_TAG
