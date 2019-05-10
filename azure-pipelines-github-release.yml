@@ -7,6 +7,7 @@ parameters:
 steps:
 
 - bash: |
+    echo "parameters.ciCurrentTarget: _${{ parameters.ciCurrentTarget }}_"
     echo "CI_CURRENT_TARGET: _$CI_CURRENT_TARGET_"
     if [ -z "$CI_CURRENT_TARGET" ]; then
       echo "##vso[task.logissue type=error;]Missing template parameter \"ciCurrentTarget\""
