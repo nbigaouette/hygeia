@@ -77,9 +77,9 @@ pub fn compile_source(
         "--enable-optimizations".to_string(),
     ];
 
-    let mut cflags = Vec::new();
-    let mut cppflags = Vec::new();
-    let mut ldflags = Vec::new();
+    let mut cflags: Vec<String> = Vec::new();
+    let mut cppflags: Vec<String> = Vec::new();
+    let mut ldflags: Vec<String> = Vec::new();
 
     // See https://devguide.python.org/setup/#macos-and-os-x
     #[cfg(target_os = "macos")]
