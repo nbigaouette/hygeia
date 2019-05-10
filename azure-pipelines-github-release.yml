@@ -25,7 +25,10 @@ steps:
   displayName: "Create date and tag variables"
 
 - script: |
-        cargo build --release --target ${{ parameters.ciCurrentTarget }}
+    echo "pwd" && pwd
+    echo "find ." && find .
+    echo "find /home" && find /home
+    cargo build --release --target ${{ parameters.ciCurrentTarget }}
   env:
     LOOM_MAX_DURATION: 10
     CI: 'True'
