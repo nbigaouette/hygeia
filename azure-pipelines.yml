@@ -149,7 +149,7 @@ jobs:
 
 - job: github_release_linux
   # condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
-  displayName: "Release to github (Linux)"
+  displayName: "Release to github Linux"
   # dependsOn:
   #   - minrust
   #   - rustfmt
@@ -165,7 +165,7 @@ jobs:
 
 - job: github_release_macos_windows
   # condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
-  displayName: "Release to github (macOS & Windows)"
+  displayName: "Release to github"
   # dependsOn:
   #   - minrust
   #   - rustfmt
