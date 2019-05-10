@@ -102,6 +102,8 @@ pub fn compile_source(
             .capture()?
             .stdout_str();
         cflags.push(format!("-I{}/usr/include", macos_sdk_path.trim()));
+
+        cppflags.push("-I/opt/X11/include".into());
     }
 
     env::set_var("CFLAGS", cflags.join(" "));
