@@ -118,7 +118,7 @@ jobs:
 #      repo: https://github.com/xoac/rust-azure-pipelines/
 
 # Release binary
-- template: ci/github-release.yml@templates
+- template: azure-pipelines-github-release.yml
   parameters:
    name: github_release
    dependsOn:
