@@ -11,7 +11,7 @@ parameters:
 jobs:
 - job: ${{ parameters.name }}
   condition: ${{ parameters.condition }}
-  displayName: ${{ parameters.displayName }} 
+  displayName: ${{ parameters.displayName }} (Linux) 
   dependsOn: ${{ parameters.dependsOn }}
   pool:
           vmImage: ubuntu-16.04
