@@ -16,7 +16,7 @@ jobs:
   pool:
           vmImage: ubuntu-16.04
   steps:
-  - template: install-cross-rust.yml
+  - template: ci/install-cross-rust.yml@templates
 
   - bash: |
       MY_TAG="$(Build.SourceBranch)"
@@ -70,7 +70,7 @@ jobs:
       pool:
         vmImage: macOS-10.13
       steps:
-      - template: install-rust.yml
+      - template: ci/install-rust.yml@templates
 
       - bash: |
           MY_TAG="$(Build.SourceBranch)"
@@ -121,7 +121,7 @@ jobs:
       pool:
         vmImage: vs2017-win2016
       steps:
-      - template: install-rust.yml
+      - template: ci/install-rust.yml@templates
 
       - bash: |
           MY_TAG="$(Build.SourceBranch)"
