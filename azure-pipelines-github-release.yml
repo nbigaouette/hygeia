@@ -156,7 +156,7 @@ jobs:
       - task: ArchiveFiles@2
         displayName: Gather assets
         inputs:
-            rootFolderOrFile: '$(Build.BinariesDirectory)/${{ build_target }}/$(build.project)'
+            rootFolderOrFile: '$(Build.BinariesDirectory)/${{ build_target }}/$(build.project).exe'
             archiveType: ${{ parameters.archiveType }}
             tarCompression: ${{ parameters.tarCompression }}
             archiveFile: '$(Build.ArtifactStagingDirectory)/$(build.project)-$(build.my_tag)-${{ build_target }}.zip'
