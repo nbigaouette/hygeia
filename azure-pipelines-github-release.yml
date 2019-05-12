@@ -28,8 +28,6 @@ jobs:
       PROJECT="${{ parameters.github.repositoryName }}"
       PROJECT="${PROJECT#*/}"
       echo "##vso[task.setvariable variable=build.project]$PROJECT"
-      echo "parameters.github.repositoryName ${{ parameters.github.repositoryName }}"
-      echo "PROJECT ${PROJECT}"
     displayName: "Create date and tag variables"
 
   - ${{ each build_target  in parameters.targets }}:
@@ -87,8 +85,6 @@ jobs:
           PROJECT="${{ parameters.github.repositoryName }}"
           PROJECT="${PROJECT#*/}"
           echo "##vso[task.setvariable variable=build.project]$PROJECT"
-          echo "parameters.github.repositoryName ${{ parameters.github.repositoryName }}"
-          echo "PROJECT ${PROJECT}"
         displayName: "Create date and tag variables"
 
       - script: |
@@ -143,8 +139,6 @@ jobs:
           PROJECT="${{ parameters.github.repositoryName }}"
           PROJECT="${PROJECT#*/}"
           echo "##vso[task.setvariable variable=build.project]$PROJECT"
-          echo "parameters.github.repositoryName ${{ parameters.github.repositoryName }}"
-          echo "PROJECT ${PROJECT}"
         displayName: "Create date and tag variables"
 
       - script: |
