@@ -25,6 +25,11 @@ jobs:
       echo "##vso[task.setvariable variable=build.my_tag]$MY_TAG"
       DATE="$(date +%Y-%m-%d)"
       echo "##vso[task.setvariable variable=build.date]$DATE"
+      PROJECT="${{ parameters.github.repositoryName }}"
+      PROJECT="${PROJECT#*/}"
+      echo "##vso[task.setvariable variable=build.project]$PROJECT"
+      echo "parameters.github.repositoryName ${{ parameters.github.repositoryName }}"
+      echo "PROJECT ${PROJECT}"
     displayName: "Create date and tag variables"
 
   - ${{ each build_target  in parameters.targets }}:
@@ -47,7 +52,7 @@ jobs:
               rootFolderOrFile: '$(Build.BinariesDirectory)/${{ build_target }}'
               archiveType: ${{ parameters.archiveType }}
               tarCompression: ${{ parameters.tarCompression }}
-              archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.Repository.Name)-$(build.my_tag)-${{ build_target }}.zip'
+              archiveFile: '$(Build.ArtifactStagingDirectory)/$(build.project)-$(build.my_tag)-${{ build_target }}.zip'
 
   - task: GitHubRelease@0
     displayName: Create release
@@ -79,6 +84,11 @@ jobs:
           echo "##vso[task.setvariable variable=build.my_tag]$MY_TAG"
           DATE="$(date +%Y-%m-%d)"
           echo "##vso[task.setvariable variable=build.date]$DATE"
+          PROJECT="${{ parameters.github.repositoryName }}"
+          PROJECT="${PROJECT#*/}"
+          echo "##vso[task.setvariable variable=build.project]$PROJECT"
+          echo "parameters.github.repositoryName ${{ parameters.github.repositoryName }}"
+          echo "PROJECT ${PROJECT}"
         displayName: "Create date and tag variables"
 
       - script: |
@@ -99,7 +109,7 @@ jobs:
             rootFolderOrFile: '$(Build.BinariesDirectory)/${{ build_target }}'
             archiveType: ${{ parameters.archiveType }}
             tarCompression: ${{ parameters.tarCompression }}
-            archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.Repository.Name)-$(build.my_tag)-${{ build_target }}.zip'
+            archiveFile: '$(Build.ArtifactStagingDirectory)/$(build.project)-$(build.my_tag)-${{ build_target }}.zip'
 
       - task: GitHubRelease@0
         displayName: Create release
@@ -130,6 +140,11 @@ jobs:
           echo "##vso[task.setvariable variable=build.my_tag]$MY_TAG"
           DATE="$(date +%Y-%m-%d)"
           echo "##vso[task.setvariable variable=build.date]$DATE"
+          PROJECT="${{ parameters.github.repositoryName }}"
+          PROJECT="${PROJECT#*/}"
+          echo "##vso[task.setvariable variable=build.project]$PROJECT"
+          echo "parameters.github.repositoryName ${{ parameters.github.repositoryName }}"
+          echo "PROJECT ${PROJECT}"
         displayName: "Create date and tag variables"
 
       - script: |
@@ -150,7 +165,7 @@ jobs:
             rootFolderOrFile: '$(Build.BinariesDirectory)/${{ build_target }}'
             archiveType: ${{ parameters.archiveType }}
             tarCompression: ${{ parameters.tarCompression }}
-            archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.Repository.Name)-$(build.my_tag)-${{ build_target }}.zip'
+            archiveFile: '$(Build.ArtifactStagingDirectory)/$(build.project)-$(build.my_tag)-${{ build_target }}.zip'
 
       - task: GitHubRelease@0
         displayName: Create release
