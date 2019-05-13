@@ -143,4 +143,4 @@ jobs:
    github:
     gitHubConnection: PipelinesTemplates
     repositoryName: nbigaouette/pycors
-    isPreRelease: true
+    isPreRelease: false
