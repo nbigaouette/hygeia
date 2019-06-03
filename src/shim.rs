@@ -1,5 +1,6 @@
 use std::{env, ffi::OsString};
 
+use failure::Fail;
 use subprocess::{Exec, Redirection};
 
 use crate::{
@@ -50,7 +51,18 @@ where
         .env("PATH", new_path)
         .stdout(Redirection::None)
         .stderr(Redirection::None)
-        .join()?;
+        .join()
+        .map_err(|err| {
+            err.context(format!(
+                "Failed command: {} {}",
+                command_full_path.display(),
+                arguments
+                    .iter()
+                    .map(|s| s.as_ref())
+                    .collect::<Vec<&str>>()
+                    .join(" ")
+            ))
+        })?;
 
     let new_bin_files: Vec<_> = bin_dir_monitor.check()?.collect();
 
