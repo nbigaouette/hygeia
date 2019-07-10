@@ -66,7 +66,7 @@ TBD
     2. create the file `$PYCORS_HOME/extra-packages-to-install.txt` containing
     [a list of Python packages to pip-install](extra-packages-to-install.txt)
     when flag `--extra`/`-e` is used with `install` or `select` commands
-    3. setup `~/.bash_profile` to add `${HOME}/.pycors/shims` in the front of your `${PATH}`
+    3. setup `~/.bashrc` to add `${HOME}/.pycors/shims` in the front of your `${PATH}`
 4. You can delete the downloaded archive and the extracted binary.
 
 ## Compilation
@@ -116,8 +116,8 @@ This will:
 * Copy the `pycors` binary to `$PYCORS_HOME/shims/`;
 * Create hard-links to it with Python binary names;
 * Create a bash completion script in `$PYCORS_HOME/pycors.bash-completion`;
-* Add `$PYCORS_HOME/shims/` to `$PATH` through `~/.bash_profile`;
-* Add line sourcing `$PYCORS_HOME/pycors.bash-completion` in `~/.bash_profile`;
+* Add `$PYCORS_HOME/shims/` to `$PATH` through `~/.bashrc`;
+* Add line sourcing `$PYCORS_HOME/pycors.bash-completion` in `~/.bashrc`;
 * Create the file `$PYCORS_HOME/extra-packages-to-install.txt` containing
   [a list of Python packages to pip-install](extra-packages-to-install.txt)
   when flag `--extra`/`-e` is used with `install` or `select` command.

@@ -64,12 +64,12 @@ pub fn run(shell: Shell) -> Result<()> {
     let mut file = File::create(output_filename)?;
     file.write_all(extra_packages_file_default_content.as_bytes())?;
 
-    // Add ~/.EXECUTABLE_NAME/bin to $PATH in ~/.bash_profile and install autocomplete
+    // Add ~/.EXECUTABLE_NAME/bin to $PATH in ~/.bashrc and install autocomplete
     match shell {
         structopt::clap::Shell::Bash => {
             let home =
                 dirs::home_dir().ok_or_else(|| format_err!("Error getting home directory"))?;
-            let bash_profile = home.join(".bash_profile");
+            let bashrc = home.join(".bashrc");
 
             // Add the autocomplete too
             let autocomplete_file =
@@ -77,27 +77,27 @@ pub fn run(shell: Shell) -> Result<()> {
             let mut f = fs::File::create(&autocomplete_file)?;
             commands::autocomplete::run(shell, &mut f)?;
 
-            log::debug!("Adding {:?} to $PATH in {:?}...", shims_dir, bash_profile);
-            let bash_profile_line = format!(r#"export PATH="{}:$PATH""#, shims_dir.display());
+            log::debug!("Adding {:?} to $PATH in {:?}...", shims_dir, bashrc);
+            let bashrc_line = format!(r#"export PATH="{}:$PATH""#, shims_dir.display());
 
-            let do_edit_bash_profile = if !bash_profile.exists() {
+            let do_edit_bashrc = if !bashrc.exists() {
                 true
             } else {
                 // Verify that file does not contain a line `export PATH=...`
 
-                let f = fs::File::open(&bash_profile)?;
+                let f = fs::File::open(&bashrc)?;
                 let f = BufReader::new(f);
                 let mut line_found = false;
                 for line in f.lines() {
                     match line {
                         Err(e) => {
-                            log::error!("Failed to read line from file {:?}: {:?}", bash_profile, e,)
+                            log::error!("Failed to read line from file {:?}: {:?}", bashrc, e,)
                         }
                         Ok(line) => {
-                            if line == bash_profile_line {
+                            if line == bashrc_line {
                                 log::debug!(
                                     "File {:?} already contains PATH export. Skipping.",
-                                    bash_profile
+                                    bashrc
                                 );
                                 line_found = true;
                                 break;
@@ -109,23 +109,23 @@ pub fn run(shell: Shell) -> Result<()> {
                 !line_found
             };
 
-            if do_edit_bash_profile {
-                let bash_profile_existed = bash_profile.exists();
+            if do_edit_bashrc {
+                let bashrc_existed = bashrc.exists();
                 let mut file = fs::OpenOptions::new()
                     .append(true)
                     .create(true)
-                    .open(&bash_profile)?;
+                    .open(&bashrc)?;
                 let lines = &[
                     String::from(""),
                     "#################################################".to_string(),
                     format!("# These lines were added by {}.", EXECUTABLE_NAME),
                     format!("# See {}", env!("CARGO_PKG_HOMEPAGE")),
-                    if !bash_profile_existed {
+                    if !bashrc_existed {
                         "source ${HOME}/.bashrc".to_string()
                     } else {
                         String::from("")
                     },
-                    bash_profile_line,
+                    bashrc_line,
                     format!(r#"source "{}""#, autocomplete_file.display()),
                     "#################################################".to_string(),
                 ];

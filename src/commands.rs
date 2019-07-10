@@ -94,7 +94,7 @@ pub enum Command {
     /// Setup the shim
     ///
     /// This will install pycor's binary to `~/.pycors/bin` and add the
-    /// directory to the `$PATH` environment variable (through `~/.bash_profile`).
+    /// directory to the `$PATH` environment variable (through `~/.profile`).
     ///
     /// Supported shells: Bash, Fish, Zsh, PowerShell and Elvish.
     #[structopt(name = "setup")]
