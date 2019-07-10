@@ -78,7 +78,15 @@ pub fn run(shell: Shell) -> Result<()> {
             commands::autocomplete::run(shell, &mut f)?;
 
             log::debug!("Adding {:?} to $PATH in {:?}...", shims_dir, bashrc);
-            let bashrc_line = format!(r#"export PATH="{}:$PATH""#, shims_dir.display());
+            let bashrc_lines: Vec<String> = vec![
+                format!(
+                    r#"if ! command -v {} >/dev/null 2>&1; then"#,
+                    EXECUTABLE_NAME
+                ),
+                format!(r#"    PATH="{}:$PATH""#, shims_dir.display()),
+                String::from("    export PATH"),
+                String::from("fi"),
+            ];
 
             let do_edit_bashrc = if !bashrc.exists() {
                 true
@@ -94,7 +102,7 @@ pub fn run(shell: Shell) -> Result<()> {
                             log::error!("Failed to read line from file {:?}: {:?}", bashrc, e,)
                         }
                         Ok(line) => {
-                            if line == bashrc_line {
+                            if line == bashrc_lines[0] {
                                 log::debug!(
                                     "File {:?} already contains PATH export. Skipping.",
                                     bashrc
@@ -125,7 +133,7 @@ pub fn run(shell: Shell) -> Result<()> {
                     } else {
                         String::from("")
                     },
-                    bashrc_line,
+                    bashrc_lines.join("\n"),
                     format!(r#"source "{}""#, autocomplete_file.display()),
                     "#################################################".to_string(),
                 ];
