@@ -104,7 +104,18 @@ pub fn default_extra_package_file() -> Result<PathBuf> {
 }
 
 pub fn build_basename(version: &Version) -> Result<String> {
-    let version_file = format!("{}", version).replace("-", "");
+    // Starting with 3.3, the filename contains the full MAJOR.MINOR.PATCH-RC (f.e. "3.3.0" or "3.7.2-rc1").
+    // Before that, the filename only contained MAJOR.MINOR (without the patch, for example "3.2")
+    // See for example the difference between those versions:
+    //      https://www.python.org/ftp/python/3.2
+    //      https://www.python.org/ftp/python/3.3.0
+    // let version_string =
+    let version_file = if *version >= Version::new(3, 3, 0) {
+        format!("{}", version)
+    } else {
+        format!("{}.{}", version.major, version.minor)
+    }
+    .replace("-", "");
 
     Ok(format!("Python-{}", version_file))
 }
@@ -633,5 +644,4 @@ mod tests {
             let _ = fs::remove_file(&hardlink_location.replace("###", "replaced"));
         }
     }
-
 }

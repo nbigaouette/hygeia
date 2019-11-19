@@ -100,11 +100,13 @@ pub fn download_source(version: &Version) -> Result<()> {
 }
 
 fn build_url(version: &Version) -> Result<Url> {
-    let main_version = format!("{}.{}", version.major, version.minor);
-    let version_path = if version.patch == 0 {
-        main_version.clone()
+    // Starting with 3.3, the Url contains the full MAJOR.MINOR.PATCH (f.e. "3.3.0").
+    // Before that, the Url only contained MAJOR.MINOR (without the patch, for example "3.2")
+    // See directory listing in https://www.python.org/ftp/python/
+    let version_path = if *version >= Version::new(3, 3, 0) {
+        format!("{}.{}.{}", version.major, version.minor, version.patch)
     } else {
-        format!("{}.{}", main_version, version.patch)
+        format!("{}.{}", version.major, version.minor)
     };
 
     let filename = build_filename(&version)?;
