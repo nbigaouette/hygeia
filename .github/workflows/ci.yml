@@ -97,3 +97,49 @@ jobs:
   #       with:
   #         command: clippy
   #         args: -- -D warnings
+
+  # Inspired by https://github.com/BurntSushi/ripgrep/blob/8cb7271b647f63420530ac04bc13ed8ea7353690/.github/workflows/ci.yml#L10-L101
+  release:
+    name: Build release binary
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        build:
+          - musl
+          - macos
+          - win-msvc-64
+        include:
+          - build: musl
+            os: ubuntu-18.04
+            rust: 1.39.0
+            target: x86_64-unknown-linux-musl
+          - build: macos
+            os: macOS-10.14
+            rust: 1.39.0
+            target: x86_64-apple-darwin
+          - build: win-msvc-64
+            os: windows-2019
+            rust: 1.39.0
+            target: x86_64-pc-windows-msvc
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - name: Install Rust Target
+        run: rustup target add ${{ matrix.target }}
+      - name: Install musl-gcc
+        if: contains(matrix.target, 'musl')
+        run: |
+          sudo apt-get install musl-tools
+      - name: Build release
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --target ${{ matrix.target }}
