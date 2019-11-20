@@ -111,11 +111,46 @@ jobs:
   #         command: clippy
   #         args: -- -D warnings
 
-  # Inspired by https://github.com/BurntSushi/ripgrep/blob/8cb7271b647f63420530ac04bc13ed8ea7353690/.github/workflows/ci.yml#L10-L101
+  # Inspired by:
+  #   https://github.com/BurntSushi/ripgrep/blob/8cb7271b647f63420530ac04bc13ed8ea7353690/.github/workflows/ci.yml#L10-L101
+  #   https://github.com/actions/create-release/issues/14
+
+  create_release:
+    name: Create GitHub release
+    # if: startsWith(github.ref, 'refs/tags/v')
+    needs: test
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+      - name: Create GitHub release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions
+        with:
+          #tag_name: testing-release-${{ github.ref }}
+          tag_name: v0.1.100
+          release_name: Release ${{ github.ref }}
+          body: |
+            Changes in this Release
+            - First Change
+            - Second Change
+          draft: true
+          prerelease: true
+      - name: Output release URL file
+        run: echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
+      - name: Save Release URL File for publish
+        uses: actions/upload-artifact@v1
+        with:
+          name: release_url
+          path: release_url.txt
+
   release:
     name: Build release binary
     # if: startsWith(github.ref, 'refs/tags/v')
-    needs: test
+    needs: create_release
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -169,23 +204,6 @@ jobs:
           command: build
           args: --release --target ${{ matrix.target }}
 
-      - name: Create Release
-        # Create release only once (from Linux)
-        if: contains(matrix.target, 'musl')
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions
-        with:
-          tag_name: testing-release-${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          body: |
-            Changes in this Release
-            - First Change
-            - Second Change
-          draft: false
-          prerelease: true
-
       - name: Package artifacts
         run: |
           cd target/${{ matrix.target }}/release
@@ -196,12 +214,24 @@ jobs:
             tar czvf ../../../pycors-version-${{ matrix.target }}${{ matrix.archive_ext }} pycors
           fi
           cd -
+
+      - name: Get release file name and upload URL
+        id: get_release_info
+        run: |
+          echo ::set-output name=file_name::${REPOSITORY_NAME##*/}-${TAG_REF_NAME##*/v} # RepositoryName-v1.0.0
+          value=`cat release_url/release_url.txt`
+          echo ::set-output name=upload_url::$value
+        env:
+          TAG_REF_NAME: v0.1.100
+          #TAG_REF_NAME: ${{ github.ref }}
+          REPOSITORY_NAME: ${{ github.repository }}
+
       - name: Upload assets
         uses: actions/upload-release-asset@v1.0.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./${{ matrix.archive }}
-          asset_name: ${{ matrix.archive }}
+          upload_url: ${{ steps.get_release_info.outputs.upload_url }}
+          asset_path: ./pycors-version-${{ matrix.target }}${{ matrix.archive_ext }}
+          asset_name: pycors-version-${{ matrix.target }}${{ matrix.archive_ext }}
           asset_content_type: ${{ matrix.mime }}
