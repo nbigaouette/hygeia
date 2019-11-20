@@ -6,7 +6,7 @@
 
 on: [push, pull_request]
 
-name: Continuous integration
+name: CI
 
 env:
   RUST_BACKTRACE: 1
