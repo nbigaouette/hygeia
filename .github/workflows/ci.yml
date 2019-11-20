@@ -166,3 +166,9 @@ jobs:
           draft: false
           prerelease: true
 
+      - name: Package artifacts
+        run: |
+          # Create directory "pycors-${{ github.ref }}-${{ matrix.target }}"
+          # Copy target/release/${{ matrix.target }}/pycors to it
+          # Compress directory to "pycors-${{ github.ref }}-${{ matrix.target }}.zip"
+          # Upload to GitHub
