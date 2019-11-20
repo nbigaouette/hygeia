@@ -8,6 +8,9 @@ on: [push, pull_request]
 
 name: Continuous integration
 
+env:
+  RUST_BACKTRACE: 1
+
 jobs:
   fmt:
     name: Rustfmt
