@@ -2,7 +2,7 @@
 #   * Environment variables RUST_BACKTRACE=1
 #   * Build release and upload artifacts
 #   * Nightly run for cargo audit
-#   * Cache? See https://github.com/marketplace/actions/cache
+#   * Cache? See https://github.com/marketplace/actions/cache and https://help.github.com/en/actions/automating-your-workflow-with-github-actions/caching-dependencies-to-speed-up-workflows
 
 on: [push, pull_request]
 
