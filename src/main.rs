@@ -168,6 +168,10 @@ mod tests {
         // Strip out the `v` prefix
         let (v, git_version_without_v) = crate::git_version().split_at(1);
 
+        println!("crate_version: {:?}", crate_version);
+        println!("v: {}", v);
+        println!("git_version_without_v: {}", git_version_without_v);
+
         assert_eq!(v, "v");
         assert!(git_version_without_v.starts_with(crate_version));
     }
