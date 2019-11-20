@@ -120,19 +120,19 @@ jobs:
             os: ubuntu-18.04
             rust: 1.39.0
             target: x86_64-unknown-linux-musl
-            archive: pycors-${{ github.ref }}-${{ matrix.target }}.tar.gz
+            archive_ext: tar.gz
             mime: application/gzip
           - build: macos
             os: macOS-10.14
             rust: 1.39.0
             target: x86_64-apple-darwin
-            archive: pycors-${{ github.ref }}-${{ matrix.target }}.tar.gz
+            archive_ext: tar.gz
             mime: application/gzip
           - build: win-msvc-64
             os: windows-2019
             rust: 1.39.0
             target: x86_64-pc-windows-msvc
-            archive: pycors-${{ github.ref }}-${{ matrix.target }}.zip
+            archive_ext: zip
             mime: application/zip
     steps:
       - name: Git checkout
@@ -179,9 +179,9 @@ jobs:
           cd target/${{ matrix.target }}/release
           if [[ "${{ matrix.os }}" == "windows-latest" ]]
           then
-            7z a ../../../${{ matrix.archive }} pycors.exe
+            7z a ../../../pycors-version-${{ matrix.target }}${{ matrix.archive_ext }} pycors.exe
           else
-            tar czvf ../../../${{ matrix.archive }} pycors
+            tar czvf ../../../pycors-version-${{ matrix.target }}${{ matrix.archive_ext }} pycors
           fi
           cd -
       - name: Upload assets
