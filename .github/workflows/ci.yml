@@ -207,7 +207,7 @@ jobs:
           args: --release --target ${{ matrix.target }}
 
       - name: Package artifacts (Unix)
-        if: ! contains(matrix.os , 'windows')
+        if: matrix.build == 'macos' || matrix.build == 'musl'
         run: |
           cd target/${{ matrix.target }}/release
           tar czvf ../../../pycors-version-${{ matrix.target }}.${{ matrix.archive_ext }} pycors
