@@ -7,7 +7,7 @@ repository = "https://github.com/nbigaouette/pycors"
 edition = "2018"
 
 [dependencies]
-console = "0.7"
+console = "0.9"
 chrono = "0.4"
 dirs = "1.0"
 env_logger = "0.6"
