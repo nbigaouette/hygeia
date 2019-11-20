@@ -137,10 +137,6 @@ jobs:
           override: true
       - name: Install Rust Target
         run: rustup target add ${{ matrix.target }}
-      - name: Install openssl (linux only)
-        if: contains(matrix.target, 'musl')
-        run: |
-          sudo apt-get install libssl-dev
       - name: Install musl-gcc
         if: contains(matrix.target, 'musl')
         run: |
