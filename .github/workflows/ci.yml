@@ -1,3 +1,9 @@
+# TODO:
+#   * Environment variables RUST_BACKTRACE=1
+#   * Build release and upload artifacts
+#   * Nightly run for cargo audit
+#   * Cache? See https://github.com/marketplace/actions/cache
+
 on: [push, pull_request]
 
 name: Continuous integration
