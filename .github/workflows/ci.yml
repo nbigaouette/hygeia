@@ -120,14 +120,20 @@ jobs:
             os: ubuntu-18.04
             rust: 1.39.0
             target: x86_64-unknown-linux-musl
+            archive: pycors-${{ github.ref }}-${{ matrix.target }}.tar.gz
+            mime: application/gzip
           - build: macos
             os: macOS-10.14
             rust: 1.39.0
             target: x86_64-apple-darwin
+            archive: pycors-${{ github.ref }}-${{ matrix.target }}.tar.gz
+            mime: application/gzip
           - build: win-msvc-64
             os: windows-2019
             rust: 1.39.0
             target: x86_64-pc-windows-msvc
+            archive: pycors-${{ github.ref }}-${{ matrix.target }}.zip
+            mime: application/zip
     steps:
       - name: Git checkout
         uses: actions/checkout@v1
@@ -154,11 +160,12 @@ jobs:
       - name: Create Release
         # Create release only once (from Linux)
         if: contains(matrix.target, 'musl')
+        id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions
         with:
-          tag_name: ${{ github.ref }}
+          tag_name: testing-release-${{ github.ref }}
           release_name: Release ${{ github.ref }}
           body: |
             Changes in this Release
@@ -169,7 +176,20 @@ jobs:
 
       - name: Package artifacts
         run: |
-          # Create directory "pycors-${{ github.ref }}-${{ matrix.target }}"
-          # Copy target/release/${{ matrix.target }}/pycors to it
-          # Compress directory to "pycors-${{ github.ref }}-${{ matrix.target }}.zip"
-          # Upload to GitHub
+          cd target/${{ matrix.target }}/release
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]
+          then
+            7z a ../../../${{ matrix.archive }} pycors.exe
+          else
+            tar czvf ../../../${{ matrix.archive }} pycors
+          fi
+          cd -
+      - name: Upload assets
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./${{ matrix.archive }}
+          asset_name: ${{ matrix.archive }}
+          asset_content_type: ${{ matrix.mime }}
