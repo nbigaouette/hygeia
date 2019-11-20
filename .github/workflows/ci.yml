@@ -165,20 +165,14 @@ jobs:
             os: ubuntu-18.04
             rust: 1.39.0
             target: x86_64-unknown-linux-musl
-            archive_ext: tar.gz
-            mime: application/gzip
           - build: macos
             os: macOS-10.14
             rust: 1.39.0
             target: x86_64-apple-darwin
-            archive_ext: tar.gz
-            mime: application/gzip
           - build: win-msvc-64
             os: windows-2019
             rust: 1.39.0
             target: x86_64-pc-windows-msvc
-            archive_ext: zip
-            mime: application/zip
     steps:
       - name: Git checkout
         uses: actions/checkout@v1
@@ -223,6 +217,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.get_release_info.outputs.upload_url }}
-          asset_path: ./pycors-version-${{ matrix.target }}.${{ matrix.archive_ext }}
-          asset_name: pycors-version-${{ matrix.target }}.${{ matrix.archive_ext }}
-          asset_content_type: ${{ matrix.mime }}
+          asset_path: ./pycors-version-${{ matrix.target }}.zip
+          asset_name: pycors-version-${{ matrix.target }}.zip
+          asset_content_type: application/zip
