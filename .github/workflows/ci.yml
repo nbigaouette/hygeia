@@ -106,6 +106,7 @@ jobs:
   # Inspired by https://github.com/BurntSushi/ripgrep/blob/8cb7271b647f63420530ac04bc13ed8ea7353690/.github/workflows/ci.yml#L10-L101
   release:
     name: Build release binary
+    # if: startsWith(github.ref, 'refs/tags/v')
     needs: test
     runs-on: ${{ matrix.os }}
     strategy:
