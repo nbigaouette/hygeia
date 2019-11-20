@@ -68,7 +68,7 @@ fn release_url() -> Result<(), DynError> {
 }
 
 fn archive_basename() -> String {
-    format!("pycors-{}", TARGET)
+    format!("{}-{}", BIN_NAME, TARGET)
 }
 
 fn bin_name() -> String {
