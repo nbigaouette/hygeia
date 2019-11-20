@@ -2,6 +2,7 @@
 
 use std::{env, fs, io, path::Path};
 
+use structopt::StructOpt;
 use zip::write::FileOptions;
 
 type DynError = Box<dyn std::error::Error>;
@@ -17,6 +18,32 @@ const BIN_EXTENSION: &str = "";
 
 const ARCHIVE_EXTENSION: &str = "zip";
 
+/// Tasks meant for CI
+#[derive(StructOpt, Debug)]
+enum Opt {
+    /// Print to stdout the content of the `release_url/release_url.txt` file
+    ReleaseUrl,
+    /// Package the binary into a zip file meant for release
+    PackageArtifacts(Target),
+}
+
+#[derive(StructOpt, Debug)]
+enum Target {
+    /// Debug
+    Debug,
+    /// Release
+    Release,
+}
+
+impl Target {
+    fn as_str(&self) -> &'static str {
+        match self {
+            Target::Debug => "debug",
+            Target::Release => "release",
+        }
+    }
+}
+
 fn main() {
     if let Err(e) = try_main() {
         eprintln!("{}", e);
@@ -25,21 +52,12 @@ fn main() {
 }
 
 fn try_main() -> Result<(), DynError> {
-    let task = env::args().nth(1);
-    match task.as_ref().map(|it| it.as_str()) {
-        Some("package_artifacts") => package_artifacts()?,
-        Some("release_url") => release_url()?,
-        _ => print_help(),
-    }
-    Ok(())
-}
+    let opt = Opt::from_args();
 
-fn print_help() {
-    eprintln!(
-        "Tasks:
-release_url            Extract release url from 'release_url/release_url.txt' file
-"
-    )
+    match opt {
+        Opt::ReleaseUrl => release_url(),
+        Opt::PackageArtifacts(target) => package_artifacts(target),
+    }
 }
 
 fn release_url() -> Result<(), DynError> {
@@ -61,18 +79,19 @@ fn archive_name() -> String {
     format!("{}.{}", archive_basename(), ARCHIVE_EXTENSION)
 }
 
-fn package_artifacts() -> Result<(), DynError> {
+fn package_artifacts(target: Target) -> Result<(), DynError> {
     let bin_path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .unwrap()
         .join("target")
-        // .join("release")
-        .join("debug")
+        .join(target.as_str())
         .join(bin_name());
-    println!("bin_path: {:?}", bin_path);
+    let archive_path = archive_name();
+
+    println!("Compressing {:?} into {:?}...", bin_path, archive_path);
 
     let mut b_in = io::BufReader::new(fs::File::open(&bin_path)?);
-    let b_out = io::BufWriter::new(fs::File::create(archive_name())?);
+    let b_out = io::BufWriter::new(fs::File::create(archive_path)?);
 
     let mut zip = zip::ZipWriter::new(b_out);
     let options = FileOptions::default().unix_permissions(0o755);
