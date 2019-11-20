@@ -204,15 +204,18 @@ jobs:
           command: build
           args: --release --target ${{ matrix.target }}
 
-      - name: Package artifacts
+      - name: Package artifacts (Unix)
+        if: ! contains(matrix.os , 'windows')
         run: |
           cd target/${{ matrix.target }}/release
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]
-          then
-            7z a ../../../pycors-version-${{ matrix.target }}${{ matrix.archive_ext }} pycors.exe
-          else
-            tar czvf ../../../pycors-version-${{ matrix.target }}${{ matrix.archive_ext }} pycors
-          fi
+          tar czvf ../../../pycors-version-${{ matrix.target }}.${{ matrix.archive_ext }} pycors
+          cd -
+
+      - name: Package artifacts (Windows)
+        if: contains(matrix.os, 'windows')
+        run: |
+          cd target/${{ matrix.target }}/release
+          7z a ../../../pycors-version-${{ matrix.target }}.${{ matrix.archive_ext }} pycors.exe
           cd -
 
       - name: Get release file name and upload URL
@@ -232,6 +235,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.get_release_info.outputs.upload_url }}
-          asset_path: ./pycors-version-${{ matrix.target }}${{ matrix.archive_ext }}
-          asset_name: pycors-version-${{ matrix.target }}${{ matrix.archive_ext }}
+          asset_path: ./pycors-version-${{ matrix.target }}.${{ matrix.archive_ext }}
+          asset_name: pycors-version-${{ matrix.target }}.${{ matrix.archive_ext }}
           asset_content_type: ${{ matrix.mime }}
