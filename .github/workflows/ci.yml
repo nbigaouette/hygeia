@@ -62,10 +62,16 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
+      - name: Build tests (cargo test)
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --no-run
       - name: Test (cargo test)
         uses: actions-rs/cargo@v1
         with:
           command: test
+          args: --no-fail-fast
   # clippy:
   #   name: Clippy
   #   runs-on: ubuntu-latest
