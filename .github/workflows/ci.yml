@@ -149,3 +149,20 @@ jobs:
         with:
           command: build
           args: --release --target ${{ matrix.target }}
+
+      - name: Create Release
+        # Create release only once (from Linux)
+        if: contains(matrix.target, 'musl')
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            Changes in this Release
+            - First Change
+            - Second Change
+          draft: false
+          prerelease: true
+
