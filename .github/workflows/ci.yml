@@ -206,19 +206,8 @@ jobs:
           command: build
           args: --release --target ${{ matrix.target }}
 
-      - name: Package artifacts (Unix)
-        if: matrix.build == 'macos' || matrix.build == 'musl'
-        run: |
-          cd target/${{ matrix.target }}/release
-          tar czvf ../../../pycors-version-${{ matrix.target }}.${{ matrix.archive_ext }} pycors
-          cd -
-
-      - name: Package artifacts (Windows)
-        if: contains(matrix.os, 'windows')
-        run: |
-          cd target/${{ matrix.target }}/release
-          7z a ../../../pycors-version-${{ matrix.target }}.${{ matrix.archive_ext }} pycors.exe
-          cd -
+      - name: Package artifacts
+        run: cargo xtask package-artifacts release
 
       - name: Get release file name and upload URL
         id: get_release_info
