@@ -36,7 +36,7 @@ fn git_version() -> &'static str {
 
 /// Control which Python toolchain to use on a directory basis.
 #[derive(StructOpt, Debug)]
-#[structopt(raw(version = "git_version()"))]
+#[structopt(version = git_version())]
 struct Opt {
     #[structopt(subcommand)]
     subcommand: Option<commands::Command>,
