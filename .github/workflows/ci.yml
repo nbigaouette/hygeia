@@ -21,8 +21,6 @@ jobs:
           - 1.39.0
     steps:
       - uses: actions/checkout@v1
-        with:
-          fetch-depth: 1
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -124,8 +122,6 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v1
-        with:
-          fetch-depth: 1
       - name: Create GitHub release
         id: create_release
         uses: actions/create-release@v1
@@ -176,8 +172,6 @@ jobs:
     steps:
       - name: Git checkout
         uses: actions/checkout@v1
-        with:
-          fetch-depth: 1
       - name: Load Release URL File from release job
         uses: actions/download-artifact@v1
         with:
