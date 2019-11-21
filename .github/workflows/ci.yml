@@ -1,8 +1,10 @@
 # TODO:
-#   * Environment variables RUST_BACKTRACE=1
-#   * Build release and upload artifacts
+#   * Change release name to "<git tag> - <date>"
+#   * Use a real changelog for the release (see https://github.com/urbica/martin/blob/master/.github/workflows/ci.yml#L198)
 #   * Nightly run for cargo audit
 #   * Cache? See https://github.com/marketplace/actions/cache and https://help.github.com/en/actions/automating-your-workflow-with-github-actions/caching-dependencies-to-speed-up-workflows
+#   * Centralize Rust version into a single env variable (possible?)
+#   * Possible to centralize OS versions into env variable?
 
 on: [push, pull_request]
 
