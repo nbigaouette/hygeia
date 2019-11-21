@@ -115,15 +115,15 @@ jobs:
     name: Code coverage
     needs: [fmt, check, test, clippy]
     runs-on: ubuntu-18.04
+    container:
+      image: xd009642/tarpaulin@sha256:5b9ad2082bd87f791528598fcbb9c94c920029ee464d6e688c9ab1bf78e4ab89
+      env:
+        RUST_BACKTRACE: 1
+      volumes:
+        - ${GITHUB_WORKSPACE}:/volume
     steps:
       - uses: actions/checkout@v1
       - name: Run tarpaulin
-        container:
-          image: xd009642/tarpaulin@sha256:5b9ad2082bd87f791528598fcbb9c94c920029ee464d6e688c9ab1bf78e4ab89
-          env:
-            RUST_BACKTRACE: 1
-          volumes:
-            - ${GITHUB_WORKSPACE}:/volume
         run: cargo tarpaulin --out Xml --verbose
       - name: Upload coverage to codecov.io
         # run: bash <(curl -s https://codecov.io/bash)
