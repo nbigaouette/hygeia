@@ -54,41 +54,41 @@ jobs:
   #       with:
   #         command: check
 
-  test:
-    name: Test Suite
-    needs: fmt
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macOS-latest]
-        rust:
-          - 1.39.0
-    steps:
-      - name: Git checkout
-        uses: actions/checkout@v1
-        with:
-          fetch-depth: 1
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: ${{ matrix.rust }}
-          override: true
-      - name: Build (cargo build)
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-      - name: Build tests (cargo test)
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --no-run
-      - name: Test (cargo test)
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --no-fail-fast -- --nocapture
+  # test:
+  #   name: Test Suite
+  #   needs: fmt
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       os: [ubuntu-latest, windows-latest, macOS-latest]
+  #       rust:
+  #         - 1.39.0
+  #   steps:
+  #     - name: Git checkout
+  #       uses: actions/checkout@v1
+  #       with:
+  #         fetch-depth: 1
+  #     - name: Install Rust
+  #       uses: actions-rs/toolchain@v1
+  #       with:
+  #         profile: minimal
+  #         toolchain: ${{ matrix.rust }}
+  #         override: true
+  #     - name: Build (cargo build)
+  #       uses: actions-rs/cargo@v1
+  #       with:
+  #         command: build
+  #     - name: Build tests (cargo test)
+  #       uses: actions-rs/cargo@v1
+  #       with:
+  #         command: test
+  #         args: --no-run
+  #     - name: Test (cargo test)
+  #       uses: actions-rs/cargo@v1
+  #       with:
+  #         command: test
+  #         args: --no-fail-fast -- --nocapture
   # clippy:
   #   name: Clippy
   #   runs-on: ubuntu-latest
@@ -120,7 +120,7 @@ jobs:
     # if: startsWith(github.ref, 'refs/tags/v')
     # FIXME: Delete this and replace with 'refs/tags/v'
     if: startsWith(github.ref, 'refs/heads/ci-github-actions')
-    needs: test
+    # needs: test
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v1
@@ -203,7 +203,6 @@ jobs:
       - name: Package artifacts
         run: |
           ls target
-          ls target/debug
           ls target/release
           cargo xtask package-artifacts release
 
