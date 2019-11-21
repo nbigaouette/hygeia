@@ -90,27 +90,27 @@ jobs:
           command: test
           args: --no-fail-fast -- --nocapture
 
-  # clippy:
-  #   name: Clippy
-  #   runs-on: ubuntu-18.04
-  #   strategy:
-  #     matrix:
-  #       rust:
-  #         - 1.39.0
-  #   steps:
-  #     - uses: actions/checkout@v1
-  #       with:
-  #         fetch-depth: 1
-  #     - uses: actions-rs/toolchain@v1
-  #       with:
-  #         profile: minimal
-  #         toolchain: ${{ matrix.rust }}
-  #         override: true
-  #     - run: rustup component add clippy
-  #     - uses: actions-rs/cargo@v1
-  #       with:
-  #         command: clippy
-  #         args: -- -D warnings
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        rust:
+          - 1.39.0
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - run: rustup component add clippy
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -D warnings
 
   # Inspired by:
   #   https://github.com/BurntSushi/ripgrep/blob/8cb7271b647f63420530ac04bc13ed8ea7353690/.github/workflows/ci.yml#L10-L101
