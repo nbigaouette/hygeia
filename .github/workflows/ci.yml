@@ -126,9 +126,14 @@ jobs:
             - ${GITHUB_WORKSPACE}:/volume
         run: cargo tarpaulin --out Xml --verbose
       - name: Upload coverage to codecov.io
-        env:
-          CODECOV_TOKEN: $(CODECOV_TOKEN)
-        run: bash <(curl -s https://codecov.io/bash)
+        # run: bash <(curl -s https://codecov.io/bash)
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }} #required
+          file: ./cobertura.xml
+          # flags: unittests #optional
+          # name: codecov-umbrella #optional
+          # yml: ./codecov.yml #optional
 
   # Inspired by:
   #   https://github.com/BurntSushi/ripgrep/blob/8cb7271b647f63420530ac04bc13ed8ea7353690/.github/workflows/ci.yml#L10-L101
