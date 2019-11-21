@@ -1,6 +1,6 @@
 // TODO: Add `git describe --dirty=-modified --tags --always --long` to archive name
 
-use std::{env, fs, io, path::Path, str::FromStr};
+use std::{env, fs, io, path::Path, process::Command, str::FromStr};
 
 use structopt::StructOpt;
 use zip::write::FileOptions;
@@ -56,7 +56,7 @@ impl FromStr for Target {
         match s.to_lowercase().as_str() {
             "debug" => Ok(Target::Debug),
             "release" => Ok(Target::Release),
-            _ => panic!(),
+            _ => Err(Self::Err::from(format!("Unknown target: {}", s))),
         }
     }
 }
@@ -87,16 +87,25 @@ fn release_url() -> Result<(), DynError> {
     Ok(())
 }
 
-fn archive_basename(target_triple: &str) -> String {
-    format!("{}-{}", BIN_NAME, target_triple)
+fn archive_basename(target_triple: &str) -> Result<String, DynError> {
+    Ok(format!(
+        "{}-{}-{}",
+        BIN_NAME,
+        git_describe()?,
+        target_triple
+    ))
 }
 
 fn bin_name() -> String {
     format!("{}{}", BIN_NAME, BIN_EXTENSION)
 }
 
-fn archive_name(target_triple: &str) -> String {
-    format!("{}.{}", archive_basename(target_triple), ARCHIVE_EXTENSION)
+fn archive_name(target_triple: &str) -> Result<String, DynError> {
+    Ok(format!(
+        "{}.{}",
+        archive_basename(target_triple)?,
+        ARCHIVE_EXTENSION
+    ))
 }
 
 fn package_artifacts(target: Target, target_triple: String) -> Result<(), DynError> {
@@ -107,7 +116,7 @@ fn package_artifacts(target: Target, target_triple: String) -> Result<(), DynErr
         .join(&target_triple)
         .join(target.as_str())
         .join(bin_name());
-    let archive_path = archive_name(&target_triple);
+    let archive_path = archive_name(&target_triple)?;
 
     println!("Compressing {:?} into {:?}...", bin_path, archive_path);
 
@@ -121,4 +130,30 @@ fn package_artifacts(target: Target, target_triple: String) -> Result<(), DynErr
     zip.finish()?;
 
     Ok(())
+}
+
+pub fn git_describe() -> Result<String, DynError> {
+    Ok(Command::new("git")
+        .arg("describe")
+        .arg("--always")
+        .arg("--tags")
+        .arg("--long")
+        .arg("--dirty=-modified")
+        .output()
+        .map_err(|e: io::Error| -> DynError { Box::new(e) })
+        .and_then(|output| {
+            if !output.status.success() {
+                Err(DynError::from(format!(
+                    "Failed to call 'git describe --always --tags --long --dirty=-modified'"
+                )))
+            } else {
+                Ok(output)
+            }
+        })
+        .and_then(|output| {
+            String::from_utf8(output.stdout)
+                .map_err(|e: std::string::FromUtf8Error| -> DynError { Box::new(e) })
+        })?
+        .trim()
+        .to_string())
 }
