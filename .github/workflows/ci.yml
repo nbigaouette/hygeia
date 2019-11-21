@@ -202,7 +202,7 @@ jobs:
 
       - name: Package artifacts
         run: |
-          cargo xtask package-artifacts release
+          cargo xtask package-artifacts --target release --target-triple ${{ matrix.target }}
 
       - name: Get release file name and upload URL
         id: get_release_info

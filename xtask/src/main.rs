@@ -1,13 +1,11 @@
 // TODO: Add `git describe --dirty=-modified --tags --always --long` to archive name
 
-use std::{env, fs, io, path::Path};
+use std::{env, fs, io, path::Path, str::FromStr};
 
 use structopt::StructOpt;
 use zip::write::FileOptions;
 
 type DynError = Box<dyn std::error::Error>;
-
-const TARGET: &str = env!("TARGET");
 
 const BIN_NAME: &str = "pycors";
 
@@ -18,13 +16,20 @@ const BIN_EXTENSION: &str = "";
 
 const ARCHIVE_EXTENSION: &str = "zip";
 
-/// Tasks meant for CI
+// /// Tasks meant for CI
 #[derive(StructOpt, Debug)]
 enum Opt {
     /// Print to stdout the content of the `release_url/release_url.txt` file
     ReleaseUrl,
     /// Package the binary into a zip file meant for release
-    PackageArtifacts(Target),
+    PackageArtifacts {
+        /// Build target (debug or release)
+        #[structopt(short, long)]
+        target: Target,
+        /// Target triple (f.e. x86_64-apple-darwin)
+        #[structopt(short, long)]
+        target_triple: String,
+    },
 }
 
 #[derive(StructOpt, Debug)]
@@ -44,6 +49,18 @@ impl Target {
     }
 }
 
+impl FromStr for Target {
+    type Err = DynError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "debug" => Ok(Target::Debug),
+            "release" => Ok(Target::Release),
+            _ => panic!(),
+        }
+    }
+}
+
 fn main() {
     if let Err(e) = try_main() {
         eprintln!("{}", e);
@@ -56,7 +73,10 @@ fn try_main() -> Result<(), DynError> {
 
     match opt {
         Opt::ReleaseUrl => release_url(),
-        Opt::PackageArtifacts(target) => package_artifacts(target),
+        Opt::PackageArtifacts {
+            target,
+            target_triple,
+        } => package_artifacts(target, target_triple),
     }
 }
 
@@ -67,27 +87,27 @@ fn release_url() -> Result<(), DynError> {
     Ok(())
 }
 
-fn archive_basename() -> String {
-    format!("{}-{}", BIN_NAME, TARGET)
+fn archive_basename(target_triple: &str) -> String {
+    format!("{}-{}", BIN_NAME, target_triple)
 }
 
 fn bin_name() -> String {
     format!("{}{}", BIN_NAME, BIN_EXTENSION)
 }
 
-fn archive_name() -> String {
-    format!("{}.{}", archive_basename(), ARCHIVE_EXTENSION)
+fn archive_name(target_triple: &str) -> String {
+    format!("{}.{}", archive_basename(target_triple), ARCHIVE_EXTENSION)
 }
 
-fn package_artifacts(target: Target) -> Result<(), DynError> {
+fn package_artifacts(target: Target, target_triple: String) -> Result<(), DynError> {
     let bin_path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .unwrap()
         .join("target")
-        .join(TARGET)
+        .join(&target_triple)
         .join(target.as_str())
         .join(bin_name());
-    let archive_path = archive_name();
+    let archive_path = archive_name(&target_triple);
 
     println!("Compressing {:?} into {:?}...", bin_path, archive_path);
 
