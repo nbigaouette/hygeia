@@ -201,7 +201,11 @@ jobs:
           args: --release --target ${{ matrix.target }}
 
       - name: Package artifacts
-        run: cargo xtask package-artifacts release
+        run: |
+          ls target
+          ls target/debug
+          ls target/release
+          cargo xtask package-artifacts release
 
       - name: Get release file name and upload URL
         id: get_release_info
