@@ -111,6 +111,25 @@ jobs:
           command: clippy
           args: -- -D warnings
 
+  coverage:
+    name: Code coverage
+    needs: [fmt, check, test, clippy]
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v1
+      - name: Run tarpaulin
+        container:
+          image: xd009642/tarpaulin@sha256:5b9ad2082bd87f791528598fcbb9c94c920029ee464d6e688c9ab1bf78e4ab89
+          env:
+            RUST_BACKTRACE: 1
+          volumes:
+            - ${GITHUB_WORKSPACE}:/volume
+        run: cargo tarpaulin --out Xml --verbose
+      - name: Upload coverage to codecov.io
+        env:
+          CODECOV_TOKEN: $(CODECOV_TOKEN)
+        run: bash <(curl -s https://codecov.io/bash)
+
   # Inspired by:
   #   https://github.com/BurntSushi/ripgrep/blob/8cb7271b647f63420530ac04bc13ed8ea7353690/.github/workflows/ci.yml#L10-L101
   #   https://github.com/actions/create-release/issues/14
@@ -118,7 +137,7 @@ jobs:
   create_release:
     name: Create GitHub release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [fmt, check, test, clippy]
+    needs: coverage
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v1
