@@ -84,6 +84,7 @@ fn package_artifacts(target: Target) -> Result<(), DynError> {
         .parent()
         .unwrap()
         .join("target")
+        .join(TARGET)
         .join(target.as_str())
         .join(bin_name());
     let archive_path = archive_name();
