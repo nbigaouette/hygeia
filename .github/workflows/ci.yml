@@ -205,10 +205,6 @@ jobs:
       - name: Get release file name and upload URL
         id: get_release_info
         run: cargo xtask release-url
-        env:
-          TAG_REF_NAME: v0.1.100
-          #TAG_REF_NAME: ${{ github.ref }}
-          REPOSITORY_NAME: ${{ github.repository }}
 
       - name: Upload assets
         uses: actions/upload-release-asset@v1.0.1
