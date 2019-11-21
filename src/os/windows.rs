@@ -2,6 +2,7 @@ use semver::Version;
 
 use crate::{installed::InstalledToolchain, utils, Result};
 
+#[cfg_attr(not(windows), allow(dead_code))]
 pub fn build_filename_exe(version: &Version) -> Result<String> {
     Ok(format!(
         "{}-amd64.exe",
@@ -9,6 +10,7 @@ pub fn build_filename_exe(version: &Version) -> Result<String> {
     ))
 }
 
+#[cfg_attr(not(windows), allow(dead_code))]
 pub fn command_with_major_version(
     command: &str,
     interpreter_to_use: &InstalledToolchain,
