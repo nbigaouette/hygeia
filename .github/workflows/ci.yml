@@ -16,7 +16,7 @@ env:
 jobs:
   fmt:
     name: Rustfmt
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     strategy:
       matrix:
         rust:
@@ -36,7 +36,7 @@ jobs:
 
   # check:
   #   name: Check
-  #   runs-on: ubuntu-latest
+  #   runs-on: ubuntu-18.04
   #   strategy:
   #     matrix:
   #       rust:
@@ -61,7 +61,7 @@ jobs:
   #   strategy:
   #     fail-fast: false
   #     matrix:
-  #       os: [ubuntu-latest, windows-latest, macOS-latest]
+  #       os: [ubuntu-18.04, windows-2019, macOS-10.14]
   #       rust:
   #         - 1.39.0
   #   steps:
@@ -91,7 +91,7 @@ jobs:
   #         args: --no-fail-fast -- --nocapture
   # clippy:
   #   name: Clippy
-  #   runs-on: ubuntu-latest
+  #   runs-on: ubuntu-18.04
   #   strategy:
   #     matrix:
   #       rust:
