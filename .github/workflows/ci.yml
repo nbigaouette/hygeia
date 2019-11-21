@@ -202,8 +202,6 @@ jobs:
 
       - name: Package artifacts
         run: |
-          ls target
-          ls target/release
           cargo xtask package-artifacts release
 
       - name: Get release file name and upload URL
