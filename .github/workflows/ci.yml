@@ -54,41 +54,42 @@ jobs:
         with:
           command: check
 
-  # test:
-  #   name: Test Suite
-  #   needs: fmt
-  #   runs-on: ${{ matrix.os }}
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       os: [ubuntu-18.04, windows-2019, macOS-10.14]
-  #       rust:
-  #         - 1.39.0
-  #   steps:
-  #     - name: Git checkout
-  #       uses: actions/checkout@v1
-  #       with:
-  #         fetch-depth: 1
-  #     - name: Install Rust
-  #       uses: actions-rs/toolchain@v1
-  #       with:
-  #         profile: minimal
-  #         toolchain: ${{ matrix.rust }}
-  #         override: true
-  #     - name: Build (cargo build)
-  #       uses: actions-rs/cargo@v1
-  #       with:
-  #         command: build
-  #     - name: Build tests (cargo test)
-  #       uses: actions-rs/cargo@v1
-  #       with:
-  #         command: test
-  #         args: --no-run
-  #     - name: Test (cargo test)
-  #       uses: actions-rs/cargo@v1
-  #       with:
-  #         command: test
-  #         args: --no-fail-fast -- --nocapture
+  test:
+    name: Test Suite
+    needs: fmt
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-18.04, windows-2019, macOS-10.14]
+        rust:
+          - 1.39.0
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - name: Build (cargo build)
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+      - name: Build tests (cargo test)
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --no-run
+      - name: Test (cargo test)
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --no-fail-fast -- --nocapture
+
   # clippy:
   #   name: Clippy
   #   runs-on: ubuntu-18.04
