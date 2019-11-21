@@ -175,7 +175,7 @@ pub fn compile_source(
                     "Source {:?} not found when creating hard link",
                     basename_src
                 ),
-                _ => Err(e)?,
+                _ => return Err(e.into()),
             },
         }
         // Create a hard link to the file containing the major version only

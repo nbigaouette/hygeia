@@ -50,7 +50,7 @@ impl SelectedVersion {
 
         // Read first line only
         let line = match buffered.lines().next() {
-            None => Err(format_err!("File does not even contains a line"))?,
+            None => return Err(format_err!("File does not even contains a line")),
             Some(line_result) => line_result?,
         };
         let version: VersionReq = line.parse()?;
@@ -79,7 +79,7 @@ impl SelectedVersion {
         let stdin = io::stdin();
         println!("Please type the Python version to use in this directory:");
         let line = match stdin.lock().lines().next() {
-            None => Err(format_err!("Standard input did not contain a single line"))?,
+            None => return Err(format_err!("Standard input did not contain a single line")),
             Some(line_result) => line_result?,
         };
         log::debug!("Given: {}", line);
@@ -88,7 +88,7 @@ impl SelectedVersion {
 
         if line.is_empty() {
             log::error!("Empty line given as input.");
-            Err(format_err!("Empty line provided"))?
+            Err(format_err!("Empty line provided"))
         } else {
             log::debug!("Parsed version: {}", version);
             Ok(SelectedVersion { version })

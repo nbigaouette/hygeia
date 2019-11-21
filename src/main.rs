@@ -64,7 +64,7 @@ fn main() -> Result<()> {
         Err(e) => {
             let err_message = format!("Cannot get executable's path: {:?}", e);
             error!("{}", err_message);
-            Err(format_err!("{}", err_message))?
+            return Err(format_err!("{}", err_message));
         }
         Ok(current_exe) => {
             let exe = match current_exe.file_name() {
@@ -74,7 +74,7 @@ fn main() -> Result<()> {
                 None => {
                     let err_message = format!("Cannot get executable's path: {:?}", current_exe);
                     error!("{}", err_message);
-                    Err(format_err!("{}", err_message))?
+                    return Err(format_err!("{}", err_message));
                 }
             };
 
