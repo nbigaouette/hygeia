@@ -201,8 +201,10 @@ jobs:
           args: --release --target ${{ matrix.target }}
 
       - name: Package artifacts
+        id: package
         run: |
           cargo xtask package-artifacts --target release --target-triple ${{ matrix.target }}
+          echo ::set-output name=git_describe::$(git describe --always --tags --long --dirty=-modified)
 
       - name: Get release file name and upload URL
         id: get_release_info
@@ -218,6 +220,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.get_release_info.outputs.upload_url }}
-          asset_path: ./pycors-${{ matrix.target }}.zip
-          asset_name: pycors-${{ matrix.target }}.zip
+          asset_path: ./pycors-${{ steps.package.outputs.git_describe }}-${{ matrix.target }}.zip
+          asset_name: pycors-${{ steps.package.outputs.git_describe }}-${{ matrix.target }}.zip
           asset_content_type: application/zip
