@@ -198,7 +198,7 @@ jobs:
         id: package
         run: |
           cargo xtask package-artifacts --target release --target-triple ${{ matrix.target }}
-          echo ::set-output name=git_describe::$(git describe --always --tags --long --dirty=-modified)
+          echo "::set-output name=git_describe::$(git describe --always --tags --long --dirty=-modified)"
 
       - name: Get release file name and upload URL
         id: get_release_info
