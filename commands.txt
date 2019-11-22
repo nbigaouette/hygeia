@@ -1,0 +1,28 @@
+SUBCOMMANDS:
+    install         Install version, either from the provided version or from `.python-version`
+    select          Select specified Python versions to use
+
+-vvv
+
+install latest
+    --pre
+install =3.7.3
+install ~3.7
+    --force
+    --extra
+    --extra-from
+    --select
+    --docker
+
+list
+list --available
+
+# Install extra pip packages for selected interpreter
+extra
+extra --from=path
+
+select =3.7.3
+select 3.7
+select ~3.7
+select /path/to/interpreter/bin
+select /path/to/interpreter/bin/python
