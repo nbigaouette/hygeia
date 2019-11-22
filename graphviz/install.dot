@@ -1,0 +1,89 @@
+// To generate a PNG version: dot -Tpng install.dot > install.png
+
+digraph install {
+    node [shape="rectangle"];
+
+    command_install [label="Command: install"];
+
+    decision_parse_version [label="Version provided?", shape="diamond"];
+    command_install -> decision_parse_version;
+
+    version_latest [label="latest"];
+    version_exact [label="=3.7.3"];
+    version_tilde [label="~3.7"];
+    decision_parse_version -> version_latest [label="latest"];
+    decision_parse_version -> version_exact [label="exact"];
+    decision_parse_version -> version_tilde [label="compatible"];
+
+    cache_query [label="query cache"];
+    decision_cache_up_to_date [label="Up to date?", shape="diamond"];
+    cache_update [label="update cache"];
+    cache_query -> decision_cache_up_to_date;
+    decision_cache_up_to_date -> version_selected [label="Yes"];
+    decision_cache_up_to_date -> cache_update [label="No"];
+
+    decision_available_versions [label="Which versions\nare available?", shape="diamond"];
+    version_tilde -> decision_available_versions;
+    version_latest -> decision_available_versions;
+    decision_available_versions -> cache_query;
+
+    version_selected [label = "Selected version\nf.e. =3.7.3"];
+    cache_update -> version_selected;
+    version_exact -> version_selected;
+
+    decision_already_installed [label="Already\ninstalled?", shape="diamond"];
+    version_selected -> decision_already_installed;
+
+    decision_force_install [label="Force\ninstall?", shape="diamond"];
+    decision_already_installed -> decision_force_install [label="Yes"];
+    decision_already_installed -> install [label="No"];
+    install [label="Install"];
+    decision_force_install -> install [label="Yes"];
+    decision_force_install -> done [label="No"];
+
+    decision_already_downloaded [label="Already\ndownloaded?", shape="diamond"];
+    install -> decision_already_downloaded;
+
+    download [label="Download"];
+    decision_already_downloaded -> download;
+
+    decision_valid_checksum [label="Valid\nchecksum/signature?", shape="diamond"];
+    download -> decision_valid_checksum;
+    decision_valid_checksum -> decision_already_extracted [label="Yes"];
+    decision_valid_checksum -> done [label="No"];
+
+    decision_already_extracted [label="Already\nextracted?", shape="diamond"];
+    decision_already_extracted -> extracted [label="Yes"];
+    decision_already_extracted -> extract [label="No"];
+
+    extract [label="Extract"];
+    extracted [label="Extracted"];
+    extract -> extracted;
+
+    configure_make_make_install [label="configure\nmake\nmake install"];
+    extracted -> configure_make_make_install;
+
+    decision_install_extras [label="Install\nextras?", shape="diamond"];
+    configure_make_make_install -> decision_install_extras;
+    decision_install_extras -> decision_extras_from_file [label="Yes"];
+    decision_install_extras -> decision_write_version_file [label="No"];
+
+    decision_extras_from_file [label="Install extras\nfrom file?", shape="diamond"];
+    decision_extras_from_file -> extras_from_file;
+    decision_extras_from_file -> extras_from_default;
+    extras_from_file -> decision_write_version_file;
+    extras_from_default -> decision_write_version_file;
+
+    extras_from_file [label="Install extras\nfrom file"];
+    extras_from_default [label="Install extras\nfrom default file"];
+
+    decision_write_version_file [label="Write .python-version file?", shape="diamond"];
+    write_version_file [label="Write .python-version file"];
+
+    decision_write_version_file -> write_version_file [label="Yes"];
+    decision_write_version_file -> done [label="No"];
+
+    write_version_file -> done;
+
+    done [label="Done"];
+}

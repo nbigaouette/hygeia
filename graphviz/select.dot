@@ -1,0 +1,45 @@
+// To generate a PNG version: dot -Tpng select.dot > select.png
+
+digraph select {
+    node [shape="rectangle"];
+
+    command_select [label="Command: select"];
+
+    decision_path_or_version [label="Path or version?", shape="diamond"];
+    command_select -> decision_path_or_version;
+
+    decision_path_or_version -> normalize_path [label="Path"];
+    decision_path_or_version -> decision_parse_version [label="Version"];
+
+    normalize_path [label="Normalize path"];
+    normalize_path -> write_file;
+
+    write_file [label="Write to .python-version"];
+    write_file -> done;
+
+    decision_parse_version [label="Version format?", shape="diamond"];
+
+    version_latest [label="latest"];
+    version_exact [label="=3.7.3"];
+    version_tilde [label="~3.7"];
+    decision_parse_version -> version_latest [label="latest"];
+    decision_parse_version -> version_exact [label="exact"];
+    decision_parse_version -> version_tilde [label="compatible"];
+
+    decision_available_versions [label="Which installed\nversion match?", shape="diamond"];
+    version_tilde -> decision_available_versions;
+    version_latest -> decision_available_versions;
+    decision_available_versions -> version_selected [label="Match"];
+    decision_available_versions -> done [label="No match"];
+
+    version_selected [label = "Selected version\nf.e. =3.7.3"];
+    version_exact -> version_selected;
+
+    decision_is_installed [label="Is installed?", shape="diamond"];
+    version_selected -> decision_is_installed;
+
+    decision_is_installed -> write_file [label="Yes"];
+    decision_is_installed -> done [label="No"];
+
+    done [label="Done"];
+}
