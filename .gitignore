@@ -1,4 +1,4 @@
-/target
+**/target
 **/*.rs.bk
 *.zip
 *.tar.gz
@@ -8,3 +8,4 @@
 cobertura.xml
 venv_pycobertura
 coverage/tarpaulin.html
+release_url*

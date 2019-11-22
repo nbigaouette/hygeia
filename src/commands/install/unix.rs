@@ -8,6 +8,7 @@ use std::{
 use failure::format_err;
 use flate2::read::GzDecoder;
 use semver::Version;
+#[cfg(target_os = "macos")]
 use subprocess::{Exec, Redirection};
 use tar::Archive;
 
@@ -18,6 +19,7 @@ use crate::{
     Result,
 };
 
+#[cfg_attr(windows, allow(dead_code))]
 pub fn install_package(
     version_to_install: &Version,
     install_extra_packages: &commands::InstallExtraPackagesOptions,
@@ -27,6 +29,7 @@ pub fn install_package(
     Ok(())
 }
 
+#[cfg_attr(windows, allow(dead_code))]
 pub fn extract_source(version: &Version) -> Result<()> {
     let download_dir = utils::directory::downloaded()?;
     let filename = build_filename(&version)?;
@@ -57,6 +60,7 @@ pub fn extract_source(version: &Version) -> Result<()> {
     Ok(())
 }
 
+#[cfg_attr(windows, allow(dead_code))]
 pub fn compile_source(
     version: &Version,
     install_extra_packages: &commands::InstallExtraPackagesOptions,
@@ -67,7 +71,7 @@ pub fn compile_source(
 
     let install_dir = utils::directory::install_dir(version)?;
 
-    #[allow(unused_mut)]
+    #[cfg_attr(not(macos), allow(unused_mut))]
     let mut configure_args = vec![
         "--prefix".to_string(),
         install_dir
@@ -77,8 +81,11 @@ pub fn compile_source(
         "--enable-optimizations".to_string(),
     ];
 
+    #[cfg_attr(not(macos), allow(unused_mut))]
     let mut cflags: Vec<String> = Vec::new();
+    #[cfg_attr(not(macos), allow(unused_mut))]
     let mut cppflags: Vec<String> = Vec::new();
+    #[cfg_attr(not(macos), allow(unused_mut))]
     let mut ldflags: Vec<String> = Vec::new();
 
     // See https://devguide.python.org/setup/#macos-and-os-x
@@ -168,7 +175,7 @@ pub fn compile_source(
                     "Source {:?} not found when creating hard link",
                     basename_src
                 ),
-                _ => Err(e)?,
+                _ => return Err(e.into()),
             },
         }
         // Create a hard link to the file containing the major version only

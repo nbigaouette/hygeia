@@ -132,16 +132,15 @@ where
     }
     log::debug!("Creating hard-link from {:?} to {:?}", from, to);
     match fs::hard_link(&from, &to) {
-        Ok(()) => {}
+        Ok(()) => Ok(()),
         Err(e) => match e.kind() {
             io::ErrorKind::NotFound => {
-                log::warn!("Source {:?} not found when creating hard link", from)
+                log::warn!("Source {:?} not found when creating hard link", from);
+                Ok(())
             }
-            _ => Err(e)?,
+            _ => Err(e.into()),
         },
     }
-
-    Ok(())
 }
 
 pub fn create_hard_links<S, P1, P2>(
@@ -404,7 +403,7 @@ where
                 args,
                 code,
                 log_filepath.display()
-            ))?,
+            )),
         },
         subprocess::ExitStatus::Signaled(signal) => Err(format_err!(
             "Command {} with arguments {:?} failed due to it being sent signal {} (see log file {})",
@@ -412,17 +411,17 @@ where
             args,
             signal,
                 log_filepath.display()
-        ))?,
+        )),
         subprocess::ExitStatus::Other(unknown_code) => Err(format_err!(
             "Command {} with arguments {:?} failed with an unknown exit status {} (see log file {})",
             cmd,
             args,
             unknown_code,
                 log_filepath.display()
-        ))?,
+        )),
         subprocess::ExitStatus::Undetermined => {
             log::error!("Could not get process exit status code.");
-            Err(format_err!("Could not get process exit status code."))?
+            Err(format_err!("Could not get process exit status code."))
         }
     }
 }

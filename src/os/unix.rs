@@ -3,10 +3,12 @@ use semver::Version;
 
 use crate::{installed::InstalledToolchain, utils, Result};
 
+#[cfg_attr(windows, allow(dead_code))]
 pub fn build_filename_tgz(version: &Version) -> Result<String> {
     Ok(format!("{}.tgz", utils::build_basename(version)?))
 }
 
+#[cfg_attr(windows, allow(dead_code))]
 pub fn command_with_major_version(
     command: &str,
     interpreter_to_use: &InstalledToolchain,

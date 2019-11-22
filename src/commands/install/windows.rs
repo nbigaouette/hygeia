@@ -8,6 +8,7 @@ use crate::{
     utils, Result,
 };
 
+#[cfg_attr(not(windows), allow(dead_code))]
 pub fn install_package(
     version: &Version,
     install_extra_packages: &commands::InstallExtraPackagesOptions,

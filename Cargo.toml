@@ -6,6 +6,11 @@ homepage = "https://github.com/nbigaouette/pycors"
 repository = "https://github.com/nbigaouette/pycors"
 edition = "2018"
 
+[workspace]
+members = [
+    "xtask",
+]
+
 [dependencies]
 console = "0.9"
 chrono = "0.4"
@@ -21,7 +26,6 @@ log = "0.4"
 prettytable-rs = "0.8"
 question = "0.2"
 regex = "1"
-reqwest = "0.9"
 semver = "0.9"
 structopt = "0.3"
 subprocess = "0.1"
@@ -30,3 +34,8 @@ terminal_size = "0.1"
 url = "2"
 shlex = "0.1"
 which = "3"
+
+[dependencies.reqwest]
+version = "0.9"
+default-features = false
+features = ["rustls"]
