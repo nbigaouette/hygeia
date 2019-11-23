@@ -38,6 +38,10 @@ fn git_version() -> &'static str {
 #[derive(StructOpt, Debug)]
 #[structopt(version = git_version())]
 struct Opt {
+    /// Verbose mode (-v, -vv, -vvv, etc.)
+    #[structopt(short, long, parse(from_occurrences))]
+    verbose: u8,
+
     #[structopt(subcommand)]
     subcommand: Option<commands::Command>,
 }
@@ -111,16 +115,7 @@ pub fn no_shim_execution(
             Command::List => commands::list::run(selected_version, installed_toolchains)?,
             Command::Path => commands::path::run(selected_version, installed_toolchains)?,
             Command::Version => commands::version::run(selected_version, installed_toolchains)?,
-            Command::Select {
-                version,
-                install_extra_packages,
-                install_if_not_present,
-            } => commands::select::run(
-                &version,
-                installed_toolchains,
-                &install_extra_packages,
-                install_if_not_present,
-            )?,
+            Command::Select(version) => commands::select::run(version, installed_toolchains)?,
             Command::Install {
                 from_version,
                 install_extra_packages,

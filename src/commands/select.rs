@@ -1,59 +1,85 @@
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+};
+
 use failure::format_err;
 use semver::VersionReq;
 
 use crate::{commands, installed::InstalledToolchain, selected::SelectedVersion, utils, Result};
 
-pub fn run(
-    requested_version: &str,
-    installed_toolchains: &[InstalledToolchain],
-    install_extra_packages: &commands::InstallExtraPackagesOptions,
-    install_if_not_present: bool,
-) -> Result<()> {
-    // Convert the requested version string to proper VersionReq
-    // FIXME: Should a `~` be explicitly added here if user does not provide it?
-    log::debug!("Requesting version: {}", requested_version);
-    let version: VersionReq = requested_version.parse()?;
-    log::debug!("Semantic version requirement: {}", version);
+enum VersionOrPath {
+    VersionReq(semver::VersionReq),
+    Path(PathBuf),
+}
 
-    let python_to_use = match utils::active_version(&version, installed_toolchains) {
-        Some(python_to_use) => python_to_use.clone(),
-        None => {
-            if install_if_not_present {
-                let new_selected_version = Some(SelectedVersion { version });
-                let version = commands::install::run(
-                    None,
-                    &new_selected_version,
-                    installed_toolchains,
-                    install_extra_packages,
-                    false, // Don't 'select' here, will do so as last step.
-                )?
-                .ok_or_else(|| format_err!("A Python version should have been installed"))?;
-                let install_dir = utils::directory::install_dir(&version)?;
+impl FromStr for VersionOrPath {
+    type Err = std::io::Error;
 
-                InstalledToolchain {
-                    version,
-                    location: install_dir,
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        // One can use 'latest' to mean '*'
+        if s == "latest" {
+            "*"
+        } else {
+            s
+        };
+
+        match semver::VersionReq::parse(s) {
+            Ok(version_req) => {
+                log::info!("Parsed {:?} as semantic version : {}", s, version_req);
+                Ok(VersionOrPath::VersionReq(version_req))
+            }
+            Err(e) => {
+                log::debug!("e: {:?}", e);
+                let path = Path::new(s);
+                log::info!("Parsed {:?} as Path: {:?}", s, path);
+                if path.exists() {
+                    Ok(VersionOrPath::Path(path.to_path_buf()))
+                } else {
+                    Err(std::io::Error::new(
+                        std::io::ErrorKind::NotFound,
+                        format!("Path {:?} not found", s),
+                    ))
                 }
-            } else {
-                return Err(format_err!(
-                    "Python version {} not found!",
-                    requested_version
-                ));
             }
         }
-    };
-
-    log::debug!(
-        "Using {} from {}",
-        python_to_use.version,
-        python_to_use.location.display()
-    );
-
-    // Write to `.python-version`
-    SelectedVersion {
-        version: VersionReq::exact(&python_to_use.version),
     }
-    .save()?;
+}
+
+pub fn run(
+    requested_version: commands::VersionOrPath,
+    installed_toolchains: &[InstalledToolchain],
+) -> Result<()> {
+    log::debug!("Requested version: {:?}", requested_version);
+
+    let version_or_path: VersionOrPath = requested_version.version_or_path.parse()?;
+
+    match version_or_path {
+        VersionOrPath::VersionReq(version_req) => {
+            let python_to_use = match utils::active_version(&version_req, installed_toolchains) {
+                Some(python_to_use) => python_to_use.clone(),
+                None => {
+                    return Err(format_err!(
+                        "Python version {} not found!",
+                        requested_version.version_or_path
+                    ));
+                }
+            };
+
+            log::debug!(
+                "Using {} from {}",
+                python_to_use.version,
+                python_to_use.location.display()
+            );
+
+            // Write to `.python-version`
+            SelectedVersion {
+                version: VersionReq::exact(&python_to_use.version),
+            }
+            .save()?;
+        }
+        VersionOrPath::Path(path) => unimplemented!(),
+    }
 
     Ok(())
 }

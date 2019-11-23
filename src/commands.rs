@@ -12,6 +12,10 @@ pub mod setup;
 pub mod version;
 
 #[derive(StructOpt, Debug)]
+pub struct VersionOrPath {
+    version_or_path: String,
+}
+#[derive(StructOpt, Debug)]
 pub enum Command {
     /// Print to stdout an autocomplete script for the specified shell
     ///
@@ -52,16 +56,7 @@ pub enum Command {
     ///     pycors select =3.7.2
     /// will select an exact version.
     #[structopt(name = "select")]
-    Select {
-        version: String,
-
-        /// Install specified version if not already present
-        #[structopt(long = "install", short = "i")]
-        install_if_not_present: bool,
-
-        #[structopt(flatten)]
-        install_extra_packages: InstallExtraPackagesOptions,
-    },
+    Select(VersionOrPath),
 
     /// Install version, either from the provided version or from `.python-version`
     #[structopt(name = "install")]
