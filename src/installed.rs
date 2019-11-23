@@ -157,8 +157,9 @@ where
         };
 
         if python_path.exists() {
-            let python_path: &Path = path;
-            let python_pathbuf: PathBuf = python_path.to_path_buf();
+            let python_path = path
+                .canonicalize()
+                .expect("python_path is expected to exists");
 
             log::debug!("python_path: {}", python_path.display());
             if python_path.join(EXECUTABLE_NAME).exists() {
@@ -168,7 +169,7 @@ where
 
             log::debug!("Found python executable in {}", python_path.display());
 
-            let full_executable_path = python_pathbuf.join(&executable);
+            let full_executable_path = python_path.join(&executable);
             let python_version = match Exec::cmd(&full_executable_path)
                 .arg("-V")
                 .stdout(Redirection::Pipe)
@@ -212,7 +213,7 @@ where
             };
             log::debug!("    {:?}", python_version);
 
-            other_pythons.insert(python_version, python_pathbuf);
+            other_pythons.insert(python_version, python_path);
         }
     }
 
