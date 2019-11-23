@@ -157,9 +157,7 @@ where
         };
 
         if python_path.exists() {
-            let python_path = path
-                .canonicalize()
-                .expect("python_path is expected to exists");
+            let python_path = path.to_path_buf();
 
             log::debug!("python_path: {}", python_path.display());
             if python_path.join(EXECUTABLE_NAME).exists() {
