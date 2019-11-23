@@ -1,50 +1,12 @@
-use std::{
-    path::{Path, PathBuf},
-    str::FromStr,
-};
-
 use failure::format_err;
 use semver::VersionReq;
 
-use crate::{commands, installed::InstalledToolchain, selected::SelectedVersion, utils, Result};
-
-enum VersionOrPath {
-    VersionReq(semver::VersionReq),
-    Path(PathBuf),
-}
-
-impl FromStr for VersionOrPath {
-    type Err = std::io::Error;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        // One can use 'latest' to mean '*'
-        if s == "latest" {
-            "*"
-        } else {
-            s
-        };
-
-        match semver::VersionReq::parse(s) {
-            Ok(version_req) => {
-                log::info!("Parsed {:?} as semantic version : {}", s, version_req);
-                Ok(VersionOrPath::VersionReq(version_req))
-            }
-            Err(e) => {
-                log::debug!("e: {:?}", e);
-                let path = Path::new(s);
-                log::info!("Parsed {:?} as Path: {:?}", s, path);
-                if path.exists() {
-                    Ok(VersionOrPath::Path(path.to_path_buf()))
-                } else {
-                    Err(std::io::Error::new(
-                        std::io::ErrorKind::NotFound,
-                        format!("Path {:?} not found", s),
-                    ))
-                }
-            }
-        }
-    }
-}
+use crate::{
+    commands,
+    installed::InstalledToolchain,
+    selected::{SelectedVersion, VersionOrPath},
+    utils, Result,
+};
 
 pub fn run(
     requested_version: commands::VersionOrPath,
