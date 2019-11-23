@@ -112,6 +112,8 @@ pub fn find_installed_toolchains() -> Result<Vec<InstalledToolchain>> {
     let other_pythons = get_python_versions_from_paths(&original_path);
     installed_python.extend(other_pythons);
 
+    installed_python.sort_unstable_by(|p1, p2| p2.version.cmp(&p1.version));
+
     Ok(installed_python)
 }
 
