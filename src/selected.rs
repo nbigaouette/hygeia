@@ -11,6 +11,7 @@ use semver::VersionReq;
 
 use crate::{constants::TOOLCHAIN_FILE, utils, Result};
 
+#[derive(Debug, PartialEq)]
 pub enum VersionOrPath {
     VersionReq(semver::VersionReq),
     Path(PathBuf),
@@ -134,5 +135,49 @@ impl SelectedVersion {
             log::debug!("Parsed version: {}", version);
             Ok(SelectedVersion { version })
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn version_or_path_from_str_success_major_minor_patch() {
+        let v = "3.7.4";
+        let vop: VersionOrPath = v.parse().unwrap();
+        assert_eq!(
+            vop,
+            VersionOrPath::VersionReq(VersionReq::parse(v).unwrap())
+        );
+    }
+    #[test]
+    fn version_or_path_from_str_success_eq_major_minor_patch() {
+        let v = "=3.7.4";
+        let vop: VersionOrPath = v.parse().unwrap();
+        assert_eq!(
+            vop,
+            VersionOrPath::VersionReq(VersionReq::parse(v).unwrap())
+        );
+    }
+
+    #[test]
+    fn version_or_path_from_str_success_tilde_major_minor() {
+        let v = "~3.7";
+        let vop: VersionOrPath = v.parse().unwrap();
+        assert_eq!(
+            vop,
+            VersionOrPath::VersionReq(VersionReq::parse(v).unwrap())
+        );
+    }
+
+    #[test]
+    fn version_or_path_from_str_success_tilde_major() {
+        let v = "~3";
+        let vop: VersionOrPath = v.parse().unwrap();
+        assert_eq!(
+            vop,
+            VersionOrPath::VersionReq(VersionReq::parse(v).unwrap())
+        );
     }
 }
