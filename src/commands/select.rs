@@ -78,7 +78,29 @@ pub fn run(
             }
             .save()?;
         }
-        VersionOrPath::Path(path) => unimplemented!(),
+        VersionOrPath::Path(path) => {
+            match InstalledToolchain::from_path(&path) {
+                Some(python_to_use) => {
+                    log::debug!(
+                        "Using {} from {}",
+                        python_to_use.version,
+                        python_to_use.location.display()
+                    );
+
+                    // Write to `.python-version`
+                    SelectedVersion {
+                        version: VersionReq::exact(&python_to_use.version),
+                    }
+                    .save()?;
+                }
+                None => {
+                    return Err(format_err!(
+                        "Could not find a Python interpreter under {:?}",
+                        path
+                    ));
+                }
+            }
+        }
     }
 
     Ok(())
