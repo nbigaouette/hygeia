@@ -17,6 +17,22 @@ pub struct InstalledToolchain {
 }
 
 impl InstalledToolchain {
+    pub fn from_path<P>(path: P) -> Option<InstalledToolchain>
+    where
+        P: AsRef<Path>,
+    {
+        let versions_found = get_python_versions_from_path(path.as_ref());
+        log::debug!("versions_found: {:?}", versions_found);
+
+        let highest_version = versions_found.into_iter().max_by(|x, y| (x.0.cmp(&y.0)))?;
+        log::debug!("highest_version: {:?}", highest_version);
+
+        Some(InstalledToolchain {
+            version: highest_version.0,
+            location: highest_version.1,
+        })
+    }
+
     pub fn is_custom_install(&self) -> bool {
         match self.location.parent() {
             None => {
