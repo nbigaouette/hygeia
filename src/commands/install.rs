@@ -1,3 +1,5 @@
+use std::io::{self, BufRead};
+
 use failure::format_err;
 use semver::{Version, VersionReq};
 
@@ -22,7 +24,7 @@ pub fn run(
 ) -> Result<Option<Version>> {
     let version: VersionReq = match from_version {
         None => match selected_version {
-            None => SelectedVersion::from_user_input()?.version,
+            None => selected_version_from_user_input()?.version,
             Some(selected_version) => selected_version.version.clone(),
         },
         Some(version) => VersionReq::parse(&version)?,
@@ -105,4 +107,26 @@ fn install_package(
     }
 
     Ok(())
+}
+
+fn selected_version_from_user_input() -> Result<SelectedVersion> {
+    log::debug!("Reading configuration from stdin");
+
+    let stdin = io::stdin();
+    println!("Please type the Python version to use in this directory:");
+    let line = match stdin.lock().lines().next() {
+        None => return Err(format_err!("Standard input did not contain a single line")),
+        Some(line_result) => line_result?,
+    };
+    log::debug!("Given: {}", line);
+
+    let version: VersionReq = line.trim().parse()?;
+
+    if line.is_empty() {
+        log::error!("Empty line given as input.");
+        Err(format_err!("Empty line provided"))
+    } else {
+        log::debug!("Parsed version: {}", version);
+        Ok(SelectedVersion { version })
+    }
 }

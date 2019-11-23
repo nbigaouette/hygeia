@@ -1,7 +1,7 @@
 use std::{
     env,
     fs::File,
-    io::{self, BufRead, BufReader, Write},
+    io::{BufRead, BufReader, Write},
     path::{Path, PathBuf},
     str::FromStr,
 };
@@ -113,28 +113,6 @@ impl SelectedVersion {
         let l1 = output.write(version.as_bytes())?;
         let l2 = output.write(b"\n")?;
         Ok(l1 + l2)
-    }
-
-    pub fn from_user_input() -> Result<SelectedVersion> {
-        log::debug!("Reading configuration from stdin");
-
-        let stdin = io::stdin();
-        println!("Please type the Python version to use in this directory:");
-        let line = match stdin.lock().lines().next() {
-            None => return Err(format_err!("Standard input did not contain a single line")),
-            Some(line_result) => line_result?,
-        };
-        log::debug!("Given: {}", line);
-
-        let version: VersionReq = line.trim().parse()?;
-
-        if line.is_empty() {
-            log::error!("Empty line given as input.");
-            Err(format_err!("Empty line provided"))
-        } else {
-            log::debug!("Parsed version: {}", version);
-            Ok(SelectedVersion { version })
-        }
     }
 }
 
