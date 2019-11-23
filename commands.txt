@@ -22,7 +22,7 @@ extra
 extra --from=path
 
 select =3.7.3
-select 3.7
+select 3.7          --> Interpreted as ^3.7, which matches 3.8.0
 select ~3.7
 select /path/to/interpreter/bin
 select /path/to/interpreter/bin/python
