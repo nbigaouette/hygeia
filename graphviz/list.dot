@@ -1,0 +1,88 @@
+digraph list {
+    node [shape="rectangle"];
+
+    list [label="Command: list", shape="oval", style="filled", fillcolor="lightblue"];
+    get_all [label="Get all\navailable versions"];
+    full_list [label="Full list", style="filled", fillcolor="lightsalmon"];
+
+    subgraph cluster_get_all {
+        label = "Installed toolchains";
+        style = "filled";
+        shape = "rectangle";
+
+        get_from_installed [label="Get installed version"];
+        installed_list [label="Installed list", shape="hexagon"];
+    }
+
+    subgraph cluster_get_file {
+        label = "From .python-version";
+        style = "filled";
+        shape = "rectangle";
+
+        get_from_file [label="Get version\nfrom .python-version"];
+
+        file_exists [label=".python-version exists?", shape="diamond"];
+        load_file [label="Load .python-version"];
+
+        decision_path_or_version [label="Path or Version?", shape="diamond"];
+
+        loaded_path [label="Path"];
+        loaded_version [label="Version"];
+
+        normalize_path [label="Normalize path"];
+        path_exists [label="Path exists?", shape="diamond"];
+        path_is_python [label="Path is\nPython path?", shape="diamond"];
+        get_version_from_path [label="Get Version\nfrom executable"];
+        combined_version_path [label="Path+Version"];
+        decision_is_installed [label="Is installed?", shape="diamond"];
+
+        subgraph cluster_versions {
+            color = "none";
+            label = "";
+            installed_toolchain [label="Installed toolchain\n(Version, Path)"];
+            not_installed_toolchain_version [label="Not Installed toolchain\n(Version)"];
+            not_installed_toolchain_path [label="Not Installed toolchain\n(Path)"];
+        }
+
+        selected_toolchain [label="Selected toolchain", shape="hexagon"];
+    }
+
+    // ========================================================
+    // Transitions
+
+    list -> get_all;
+    get_all -> get_from_file;
+    get_all -> get_from_installed;
+
+    get_from_installed -> installed_list;
+
+    get_from_file -> file_exists;
+    file_exists -> load_file [label="Yes"];
+    load_file -> decision_path_or_version;
+    decision_path_or_version -> loaded_path;
+    decision_path_or_version -> loaded_version;
+
+    loaded_path -> normalize_path;
+    normalize_path -> path_exists;
+    path_exists -> path_is_python [label="Yes"];
+    path_exists -> not_installed_toolchain_path [label="No"];
+
+    path_is_python -> get_version_from_path [label="Yes"];
+    path_is_python -> not_installed_toolchain_path [label="No"];
+
+    get_version_from_path -> combined_version_path;
+
+    combined_version_path -> installed_toolchain;
+
+    loaded_version -> decision_is_installed;
+    installed_list -> decision_is_installed;
+
+    decision_is_installed -> installed_toolchain [label="Yes"];
+    decision_is_installed -> not_installed_toolchain_version [label="No"];
+
+    not_installed_toolchain_version -> selected_toolchain;
+    not_installed_toolchain_path -> selected_toolchain;
+    installed_toolchain -> selected_toolchain;
+    installed_list -> full_list;
+    selected_toolchain -> full_list;
+}

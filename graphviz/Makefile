@@ -1,7 +1,7 @@
 
 # dot -Tpng install.dot > install.png
 
-graphs = run.png install.png select.png
+graphs = install.png list.png run.png select.png
 
 all: $(graphs)
 
