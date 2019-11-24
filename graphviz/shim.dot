@@ -1,0 +1,47 @@
+digraph start {
+    node [shape="rectangle"];
+
+    start [label="Start", shape="oval", style="filled", fillcolor="lightblue"];
+    subgraph cluster_aligned {
+        color="none";
+        exit [label="Exit", style="filled", fillcolor="lightsalmon"];
+        ready [label="Ready"];
+    }
+    installed_list [label="Installed list", shape="hexagon"];
+
+    load_file [label="Load .python-version"];
+    decision_path_or_version [label="Path or Version?", shape="diamond"];
+
+    loaded_path [label="Path"];
+    loaded_version [label="Version"];
+
+    normalize_path [label="Normalize path"];
+    get_version_from_path [label="Get Version\nfrom executable"];
+    combined_version_path [label="Path+Version"];
+    installed_toolchain [label="Installed toolchain\n(Version, Path, Source)"];
+    decision_is_installed [label="Is installed?", shape="diamond"];
+
+
+    // ========================================================
+    // Transitions
+
+    start -> load_file;
+    load_file -> decision_path_or_version;
+    decision_path_or_version -> loaded_path;
+    decision_path_or_version -> loaded_version;
+
+    loaded_path -> normalize_path;
+    normalize_path -> get_version_from_path;
+    get_version_from_path -> combined_version_path;
+    normalize_path -> combined_version_path;
+
+    combined_version_path -> installed_toolchain;
+
+    loaded_version -> decision_is_installed;
+    installed_list -> decision_is_installed;
+
+    decision_is_installed -> installed_toolchain [label="Yes"];
+    decision_is_installed -> exit [label="No"];
+
+    installed_toolchain -> ready;
+}
