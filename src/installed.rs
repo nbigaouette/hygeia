@@ -1,6 +1,8 @@
 use std::{
     collections::HashMap,
-    env, fs,
+    env,
+    fs::{self, File},
+    io::Write,
     path::{Path, PathBuf},
 };
 
@@ -8,7 +10,7 @@ use semver::Version;
 use subprocess::{Exec, Redirection};
 use which::which_in;
 
-use crate::{utils, Result, EXECUTABLE_NAME};
+use crate::{constants::TOOLCHAIN_FILE, utils, Result, EXECUTABLE_NAME};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct InstalledToolchain {
@@ -42,6 +44,28 @@ impl InstalledToolchain {
             Some(parent) => parent.join(crate::INFO_FILE).exists(),
         }
     }
+
+    pub fn save_version(&self) -> Result<usize> {
+        let version = format!("{}", self.version);
+        save(&version, TOOLCHAIN_FILE)
+    }
+
+    pub fn save_path(&self) -> Result<usize> {
+        let location = format!("{}", self.location.display());
+        save(&location, TOOLCHAIN_FILE)
+    }
+}
+
+fn save<P>(content: &str, path: P) -> Result<usize>
+where
+    P: AsRef<Path>,
+{
+    log::debug!("Writing toolchain selection to file {:?}", path.as_ref());
+
+    let mut output = File::create(&path)?;
+    let l1 = output.write(content.as_bytes())?;
+    let l2 = output.write(b"\n")?;
+    Ok(l1 + l2)
 }
 
 pub fn find_installed_toolchains() -> Result<Vec<InstalledToolchain>> {
