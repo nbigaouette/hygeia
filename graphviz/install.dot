@@ -30,6 +30,8 @@ digraph install {
             label = "Available Versions Cache";
             shape = "rectangle";
             color = "black";
+            style = "filled";
+            fillcolor = "lightgrey";
             decision_cache_available_versions [label="Which versions\nare available?", shape="diamond"];
             cache_query [label="Query cache"];
             decision_cache_up_to_date [label="Up to date?", shape="diamond"];
@@ -41,6 +43,8 @@ digraph install {
             label = "Installation";
             shape = "rectangle";
             color = "black";
+            style = "filled";
+            fillcolor = "lightgrey";
             decision_already_downloaded [label="Already\ndownloaded?", shape="diamond"];
             download [label="Download"];
             decision_valid_checksum [label="Valid\nchecksum/signature?", shape="diamond"];
@@ -53,6 +57,8 @@ digraph install {
             label = "Extras Installation";
             shape = "rectangle";
             color = "black";
+            style = "filled";
+            fillcolor = "lightgrey";
             decision_install_extras [label="Install\nextras?", shape="diamond"];
             decision_extras_from_file [label="Install extras\nfrom file?", shape="diamond"];
             extras_from_file [label="Install extras\nfrom file"];
