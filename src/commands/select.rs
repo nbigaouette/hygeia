@@ -1,12 +1,6 @@
 use failure::format_err;
-use semver::VersionReq;
 
-use crate::{
-    commands,
-    installed::InstalledToolchain,
-    selected::{SelectedVersion, VersionOrPath},
-    utils, Result,
-};
+use crate::{commands, installed::InstalledToolchain, selected::VersionOrPath, utils, Result};
 
 pub fn run(
     requested_version_or_path: commands::VersionOrPath,
@@ -19,7 +13,12 @@ pub fn run(
     let python_to_use: InstalledToolchain = match version_or_path {
         VersionOrPath::VersionReq(version_req) => {
             match utils::active_version(&version_req, installed_toolchains) {
-                Some(python_to_use) => python_to_use.clone(),
+                Some(python_to_use) => {
+                    // Write to `.python-version`
+                    python_to_use.save_version()?;
+
+                    python_to_use.clone()
+                }
                 None => {
                     return Err(format_err!(
                         "Python version {} not found!",
@@ -29,7 +28,11 @@ pub fn run(
             }
         }
         VersionOrPath::Path(path) => match InstalledToolchain::from_path(&path) {
-            Some(python_to_use) => python_to_use,
+            Some(python_to_use) => {
+                // Write to `.python-version`
+                python_to_use.save_path()?;
+                python_to_use
+            }
             None => {
                 return Err(format_err!(
                     "Could not find a Python interpreter under {:?}",
@@ -44,12 +47,6 @@ pub fn run(
         python_to_use.version,
         python_to_use.location.display()
     );
-
-    // Write to `.python-version`
-    SelectedVersion {
-        version: VersionReq::exact(&python_to_use.version),
-    }
-    .save()?;
 
     Ok(())
 }
