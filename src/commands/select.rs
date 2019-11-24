@@ -9,12 +9,12 @@ use crate::{
 };
 
 pub fn run(
-    requested_version: commands::VersionOrPath,
+    requested_version_or_path: commands::VersionOrPath,
     installed_toolchains: &[InstalledToolchain],
 ) -> Result<()> {
-    log::debug!("Requested version: {:?}", requested_version);
+    log::debug!("Requested version: {:?}", requested_version_or_path);
 
-    let version_or_path: VersionOrPath = requested_version.version_or_path.parse()?;
+    let version_or_path: VersionOrPath = requested_version_or_path.version_or_path.parse()?;
 
     let python_to_use = match version_or_path {
         VersionOrPath::VersionReq(version_req) => {
@@ -23,7 +23,7 @@ pub fn run(
                 None => {
                     return Err(format_err!(
                         "Python version {} not found!",
-                        requested_version.version_or_path
+                        requested_version_or_path.version_or_path
                     ));
                 }
             }
