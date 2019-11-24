@@ -1,7 +1,7 @@
-digraph start {
+digraph run {
     node [shape="rectangle"];
 
-    start [label="Start", shape="oval", style="filled", fillcolor="lightblue"];
+    run [label="Command: run", shape="oval", style="filled", fillcolor="lightblue"];
     subgraph cluster_aligned {
         color="none";
         exit [label="Exit", style="filled", fillcolor="lightsalmon"];
@@ -29,7 +29,7 @@ digraph start {
     // ========================================================
     // Transitions
 
-    start -> file_exists;
+    run -> file_exists;
     file_exists -> load_file [label="Yes"];
     file_exists -> pick_latest [label="No"];
     load_file -> decision_path_or_version;
