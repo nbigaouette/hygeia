@@ -60,6 +60,15 @@ fn main() -> Result<()> {
     let installed_toolchains = find_installed_toolchains()?;
     // Invert the Option<Result> to Result<Option> and use ? to unwrap the Result.
     let selected_version_opt = load_selected_toolchain_file().map_or(Ok(None), |v| v.map(Some))?;
+#[derive(Debug, failure::Fail)]
+pub enum MainError {
+    #[fail(display = "Cannot get executable's path: {:?}", _0)]
+    Io(#[fail(cause)] io::Error),
+    #[fail(display = "Failed to get str representation of {:?}", _0)]
+    Str(OsString),
+    #[fail(display = "Cannot get executable's path: {:?}", _0)]
+    ExecutablePath(PathBuf),
+}
 
     let arguments: Vec<_> = env::args().collect();
     let (_, remaining_args) = arguments.split_at(1);
