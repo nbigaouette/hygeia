@@ -1,4 +1,9 @@
-use std::env;
+use std::{
+    env,
+    ffi::{OsStr, OsString},
+    io,
+    path::PathBuf,
+};
 
 use failure::format_err;
 use git_testament::{git_testament, render_testament};
@@ -46,20 +51,6 @@ struct Opt {
     subcommand: Option<commands::Command>,
 }
 
-fn main() -> Result<()> {
-    setup_panic!();
-
-    std::env::var("RUST_LOG").or_else(|_| -> Result<String> {
-        let rust_log = format!("{}=warn", EXECUTABLE_NAME);
-        std::env::set_var("RUST_LOG", &rust_log);
-        Ok(rust_log)
-    })?;
-
-    env_logger::init();
-
-    let installed_toolchains = find_installed_toolchains()?;
-    // Invert the Option<Result> to Result<Option> and use ? to unwrap the Result.
-    let selected_version_opt = load_selected_toolchain_file().map_or(Ok(None), |v| v.map(Some))?;
 #[derive(Debug, failure::Fail)]
 pub enum MainError {
     #[fail(display = "Cannot get executable's path: {:?}", _0)]
@@ -69,44 +60,60 @@ pub enum MainError {
     #[fail(display = "Cannot get executable's path: {:?}", _0)]
     ExecutablePath(PathBuf),
 }
+fn main() -> Result<()> {
+    setup_panic!();
 
-    let arguments: Vec<_> = env::args().collect();
-    let (_, remaining_args) = arguments.split_at(1);
+    // Detect if running as shim as soon as possible
+    let current_exe: PathBuf = env::current_exe().map_err(|e| MainError::Io(e))?;
+    let file_name: &OsStr = current_exe
+        .file_name()
+        .ok_or_else(|| MainError::ExecutablePath(current_exe.clone()))?;
+    let exe = file_name
+        .to_str()
+        .ok_or_else(|| MainError::Str(file_name.to_os_string()))?;
 
-    match env::current_exe() {
-        Err(e) => {
-            let err_message = format!("Cannot get executable's path: {:?}", e);
-            error!("{}", err_message);
-            return Err(format_err!("{}", err_message));
-        }
-        Ok(current_exe) => {
-            let exe = match current_exe.file_name() {
-                Some(file_name) => file_name.to_str().ok_or_else(|| {
-                    format_err!("Could not get str representation of {:?}", file_name)
-                })?,
-                None => {
-                    let err_message = format!("Cannot get executable's path: {:?}", current_exe);
-                    error!("{}", err_message);
-                    return Err(format_err!("{}", err_message));
-                }
-            };
-
-            if exe.starts_with(EXECUTABLE_NAME) {
-                debug!("Running {}", EXECUTABLE_NAME);
-                no_shim_execution(&selected_version_opt, &installed_toolchains)?;
-            } else {
-                debug!("Running a Python shim");
-                python_shim(
-                    exe,
-                    &selected_version_opt,
-                    &installed_toolchains,
-                    remaining_args,
-                )?;
-            }
-        }
+    if exe.starts_with(EXECUTABLE_NAME) {
+        // no_shim_execution(&selected_version_opt, &installed_toolchains)?;
+        unimplemented!()
+    } else {
+        unimplemented!()
+        // python_shim(
+        //     exe,
+        //     &selected_version_opt,
+        //     &installed_toolchains,
+        //     remaining_args,
+        // )?;
     }
 
-    Ok(())
+    //
+    //
+    //
+    // ========================================================================
+    //
+    //
+    //
+    //
+    //
+    //
+    //
+    //
+
+    // std::env::var("RUST_LOG").or_else(|_| -> Result<String> {
+    //     let rust_log = format!("{}=warn", EXECUTABLE_NAME);
+    //     std::env::set_var("RUST_LOG", &rust_log);
+    //     Ok(rust_log)
+    // })?;
+
+    // env_logger::init();
+
+    // let installed_toolchains = find_installed_toolchains()?;
+    // // // Invert the Option<Result> to Result<Option> and use ? to unwrap the Result.
+    // // let selected_version_opt =
+    // //     load_selected_toolchain_file(&installed_toolchains).map_or(Ok(None), |v| v.map(Some))?;
+    // let selected_version_opt = load_selected_toolchain_file(&installed_toolchains);
+
+    // let arguments: Vec<_> = env::args().collect();
+    // let (_, remaining_args) = arguments.split_at(1);
 }
 
 pub fn no_shim_execution(
