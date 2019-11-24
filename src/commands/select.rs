@@ -16,7 +16,7 @@ pub fn run(
 
     let version_or_path: VersionOrPath = requested_version_or_path.version_or_path.parse()?;
 
-    let python_to_use = match version_or_path {
+    let python_to_use: InstalledToolchain = match version_or_path {
         VersionOrPath::VersionReq(version_req) => {
             match utils::active_version(&version_req, installed_toolchains) {
                 Some(python_to_use) => python_to_use.clone(),
