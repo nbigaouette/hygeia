@@ -9,6 +9,10 @@ digraph start {
     }
     installed_list [label="Installed list", shape="hexagon"];
 
+    file_exists [label=".python-version exists?", shape="diamond"];
+    latest_available [label="Is there\na latest?", shape="diamond"];
+
+    pick_latest [label="Pick latest\nversion available"];
     load_file [label="Load .python-version"];
     decision_path_or_version [label="Path or Version?", shape="diamond"];
 
@@ -25,7 +29,9 @@ digraph start {
     // ========================================================
     // Transitions
 
-    start -> load_file;
+    start -> file_exists;
+    file_exists -> load_file [label="Yes"];
+    file_exists -> pick_latest [label="No"];
     load_file -> decision_path_or_version;
     decision_path_or_version -> loaded_path;
     decision_path_or_version -> loaded_version;
@@ -42,6 +48,11 @@ digraph start {
 
     decision_is_installed -> installed_toolchain [label="Yes"];
     decision_is_installed -> exit [label="No"];
+
+    installed_list -> pick_latest;
+    pick_latest -> latest_available;
+    latest_available -> installed_toolchain [label="Yes"];
+    latest_available -> exit [label="No"];
 
     installed_toolchain -> ready;
 }
