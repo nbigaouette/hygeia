@@ -10,6 +10,7 @@ use human_panic::setup_panic;
 use lazy_static::lazy_static;
 use structopt::StructOpt;
 
+mod cache;
 mod commands;
 mod constants;
 mod dir_monitor;
@@ -139,22 +140,15 @@ pub fn no_shim_execution() -> Result<()> {
             Command::Path { version } => commands::path::run(version)?,
             Command::Version { version } => commands::version::run(version)?,
             Command::Select(version_or_path) => commands::select::run(version_or_path)?,
-            // Command::Install {
-            //     from_version,
-            //     install_extra_packages,
-            //     select,
-            // } => {
-            //     commands::install::run(
-            //         from_version,
-            //         selected_version,
-            //         installed_toolchains,
-            //         &install_extra_packages,
-            //         select,
-            //     )?;
-            // }
+            Command::Install {
+                from_version,
+                install_extra_packages,
+                select,
+            } => {
+                commands::install::run(from_version, &install_extra_packages, select)?;
+            }
             Command::Run { version, command } => commands::run::run(version, &command)?,
             Command::Setup { shell } => commands::setup::run(shell)?,
-            _ => unimplemented!(),
         }
     }
 

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use structopt::{self, StructOpt};
 
 pub mod autocomplete;
-// pub mod install;
+pub mod install;
 pub mod list;
 pub mod path;
 pub mod run;
