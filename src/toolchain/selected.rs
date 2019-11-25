@@ -9,7 +9,7 @@ use std::{
 use failure::format_err;
 use semver::VersionReq;
 
-use crate::{constants::TOOLCHAIN_FILE, installed::InstalledToolchain, utils, Result};
+use crate::{constants::TOOLCHAIN_FILE, toolchain::installed::InstalledToolchain, utils, Result};
 
 #[derive(Debug, PartialEq)]
 pub enum VersionOrPath {

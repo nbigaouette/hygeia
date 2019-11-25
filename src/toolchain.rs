@@ -14,6 +14,9 @@ use which::which_in;
 
 use crate::{constants::TOOLCHAIN_FILE, utils, Result, EXECUTABLE_NAME};
 
+pub mod installed;
+pub mod selected;
+
 // #[derive(Debug, PartialEq)]
 // pub enum RequestedToolchain {
 //     VersionReq(semver::VersionReq),
@@ -475,7 +478,7 @@ pub fn get_compatible_version_or_latest(
 pub fn get_compatible_version_extact(
     installed_toolchains: &[InstalledToolchain],
 ) -> Result<Option<&InstalledToolchain>> {
-    get_compatible_version(installed_toolchains, false)
+    get_compatible_version(installed_toolchains, true)
 }
 
 fn get_compatible_version(

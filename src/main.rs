@@ -13,9 +13,7 @@ use structopt::StructOpt;
 mod commands;
 mod constants;
 mod dir_monitor;
-mod installed;
 mod os;
-mod selected;
 mod shim;
 mod toolchain;
 mod utils;
@@ -156,9 +154,7 @@ pub fn no_shim_execution() -> Result<()> {
             //         select,
             //     )?;
             // }
-            // Command::Run { version, command } => {
-            //     commands::run::run(selected_version, installed_toolchains, version, &command)?
-            // }
+            Command::Run { version, command } => commands::run::run(version, &command)?,
             Command::Setup { shell } => commands::setup::run(shell)?,
             _ => unimplemented!(),
         }

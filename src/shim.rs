@@ -4,7 +4,7 @@ use failure::Fail;
 use subprocess::{Exec, Redirection};
 
 use crate::{
-    dir_monitor::DirectoryMonitor, installed::InstalledToolchain, os::command_with_major_version,
+    dir_monitor::DirectoryMonitor, os::command_with_major_version, toolchain::InstalledToolchain,
     utils, Result, EXECUTABLE_NAME,
 };
 

@@ -11,7 +11,8 @@ use semver::{Version, VersionReq};
 use subprocess::{Exec, Redirection};
 
 use crate::{
-    constants::TOOLCHAIN_FILE, selected::VersionOrPath, toolchain::get_python_versions_from_path,
+    constants::TOOLCHAIN_FILE,
+    toolchain::{get_python_versions_from_path, selected::VersionOrPath},
     utils, Result, EXECUTABLE_NAME,
 };
 
