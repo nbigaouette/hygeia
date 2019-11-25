@@ -39,11 +39,9 @@ pub enum InstallError {
 
 pub fn run(
     requested_version: Option<String>,
-    // selected_version: &Option<SelectedVersion>,
-    // installed_toolchains: &[InstalledToolchain],
     install_extra_packages: &commands::InstallExtraPackagesOptions,
     select: bool,
-) -> Result<Option<Version>> {
+) -> Result<()> {
     let requested_version_req: VersionReq = match requested_version {
         Some(requested_version) => {
             log::debug!("Parsing string {:?} as VersionReq", requested_version);
@@ -75,13 +73,23 @@ pub fn run(
 
     let requested_version = cache.query(&requested_version_req)?;
 
-    log::info!("Installing Python {:?}", requested_version);
+    log::info!(
+        "Installing Python {} (from {})",
+        requested_version.version,
+        requested_version.url
+    );
 
-    //
-    unimplemented!()
-    //
-    //
-    //
+    // Already installed?
+
+    // Force installation?
+
+    // Configure make make install
+
+    // Install extras
+
+    // Write .python-version file, if required
+
+    Ok(())
     //
 
     // let version: VersionReq = match from_version {
