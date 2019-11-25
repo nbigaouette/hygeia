@@ -1,7 +1,7 @@
 use failure::format_err;
 use semver::Version;
 
-use crate::{toolchain::InstalledToolchain, utils, Result};
+use crate::{toolchain::installed::InstalledToolchain, utils, Result};
 
 #[cfg_attr(windows, allow(dead_code))]
 pub fn build_filename_tgz(version: &Version) -> Result<String> {

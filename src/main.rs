@@ -18,7 +18,7 @@ mod shim;
 mod toolchain;
 mod utils;
 
-use crate::{commands::Command, constants::*, toolchain::InstalledToolchain};
+use crate::{commands::Command, constants::*, toolchain::installed::InstalledToolchain};
 
 pub type Result<T> = std::result::Result<T, failure::Error>;
 

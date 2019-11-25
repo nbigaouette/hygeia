@@ -5,8 +5,8 @@ use semver::VersionReq;
 
 use crate::{
     toolchain::{
-        find_installed_toolchains, is_a_custom_install, InstalledToolchain, SelectedToolchain,
-        ToolchainFile,
+        find_installed_toolchains, installed::InstalledToolchain, is_a_custom_install,
+        SelectedToolchain, ToolchainFile,
     },
     Result,
 };

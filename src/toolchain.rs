@@ -17,11 +17,7 @@ use crate::{constants::TOOLCHAIN_FILE, utils, Result, EXECUTABLE_NAME};
 pub mod installed;
 pub mod selected;
 
-// #[derive(Debug, PartialEq)]
-// pub enum RequestedToolchain {
-//     VersionReq(semver::VersionReq),
-//     Path(PathBuf),
-// }
+use installed::{InstalledToolchain, NotInstalledToolchain};
 
 #[derive(Debug, failure::Fail)]
 pub enum ToolchainError {
@@ -122,34 +118,10 @@ impl ToolchainFile {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct InstalledToolchain {
-    pub version: Version,
-    pub location: PathBuf,
-}
-
-#[derive(Debug)]
-pub struct NotInstalledToolchain {
-    pub version: Option<VersionReq>,
-    pub location: Option<PathBuf>,
-}
-
 #[derive(Debug)]
 pub enum SelectedToolchain {
     InstalledToolchain(InstalledToolchain),
     NotInstalledToolchain(NotInstalledToolchain),
-}
-
-impl InstalledToolchain {
-    pub fn is_custom_install(&self) -> bool {
-        match self.location.parent() {
-            None => {
-                log::error!("Cannot get parent directory of {:?}", self.location);
-                false
-            }
-            Some(parent) => parent.join(crate::INFO_FILE).exists(),
-        }
-    }
 }
 
 impl SelectedToolchain {

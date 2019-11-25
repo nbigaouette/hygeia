@@ -1,6 +1,6 @@
 use semver::Version;
 
-use crate::{toolchain::InstalledToolchain, utils, Result};
+use crate::{toolchain::installed::InstalledToolchain, utils, Result};
 
 #[cfg_attr(not(windows), allow(dead_code))]
 pub fn build_filename_exe(version: &Version) -> Result<String> {

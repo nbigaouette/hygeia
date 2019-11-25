@@ -4,7 +4,8 @@ use semver::VersionReq;
 use crate::{
     shim,
     toolchain::{
-        find_installed_toolchains, CompatibleToolchainBuilder, InstalledToolchain, ToolchainFile,
+        find_installed_toolchains, installed::InstalledToolchain, CompatibleToolchainBuilder,
+        ToolchainFile,
     },
     Result,
 };

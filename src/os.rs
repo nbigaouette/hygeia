@@ -1,6 +1,6 @@
 use semver::Version;
 
-use crate::{toolchain::InstalledToolchain, Result};
+use crate::{toolchain::installed::InstalledToolchain, Result};
 
 pub mod unix;
 pub mod windows;

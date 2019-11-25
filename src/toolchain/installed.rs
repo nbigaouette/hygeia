@@ -28,6 +28,12 @@ pub struct InstalledToolchain {
     pub version: Version,
 }
 
+#[derive(Debug)]
+pub struct NotInstalledToolchain {
+    pub version: Option<VersionReq>,
+    pub location: Option<PathBuf>,
+}
+
 impl InstalledToolchain {
     pub fn from_path<P>(path: P) -> Option<InstalledToolchain>
     where

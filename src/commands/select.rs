@@ -1,6 +1,13 @@
 use failure::format_err;
 
-use crate::{commands, installed::InstalledToolchain, selected::VersionOrPath, utils, Result};
+use crate::{
+    commands,
+    toolchain::{
+        find_installed_toolchains, installed::InstalledToolchain, selected::VersionOrPath,
+        CompatibleToolchainBuilder,
+    },
+    utils, Result,
+};
 
 pub fn run(
     requested_version_or_path: commands::VersionOrPath,

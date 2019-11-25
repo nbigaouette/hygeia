@@ -4,8 +4,8 @@ use failure::Fail;
 use subprocess::{Exec, Redirection};
 
 use crate::{
-    dir_monitor::DirectoryMonitor, os::command_with_major_version, toolchain::InstalledToolchain,
-    utils, Result, EXECUTABLE_NAME,
+    dir_monitor::DirectoryMonitor, os::command_with_major_version,
+    toolchain::installed::InstalledToolchain, utils, Result, EXECUTABLE_NAME,
 };
 
 pub fn run<S>(interpreter_to_use: &InstalledToolchain, command: &str, arguments: &[S]) -> Result<()>
