@@ -59,6 +59,8 @@ pub enum MainError {
     Str(OsString),
     #[fail(display = "Cannot get executable's path: {:?}", _0)]
     ExecutablePath(PathBuf),
+    #[fail(display = "Failed to execute command: {:?}", _0)]
+    Command(#[fail(cause)] failure::Error),
 }
 fn main() -> Result<()> {
     setup_panic!();
@@ -73,8 +75,7 @@ fn main() -> Result<()> {
         .ok_or_else(|| MainError::Str(file_name.to_os_string()))?;
 
     if exe.starts_with(EXECUTABLE_NAME) {
-        // no_shim_execution(&selected_version_opt, &installed_toolchains)?;
-        unimplemented!()
+        no_shim_execution().map_err(|e| MainError::Command(e).into())
     } else {
         unimplemented!()
         // python_shim(
@@ -116,41 +117,48 @@ fn main() -> Result<()> {
     // let (_, remaining_args) = arguments.split_at(1);
 }
 
-pub fn no_shim_execution(
-    selected_version: &Option<SelectedVersion>,
-    installed_toolchains: &[InstalledToolchain],
-) -> Result<()> {
+pub fn no_shim_execution() -> Result<()> {
     let opt = Opt::from_args();
     log::debug!("{:?}", opt);
+    // FIXME: Add -vvv flag to control log level
+
+    std::env::var("RUST_LOG").or_else(|_| -> Result<String> {
+        let rust_log = format!("{}=warn", EXECUTABLE_NAME);
+        std::env::set_var("RUST_LOG", &rust_log);
+        Ok(rust_log)
+    })?;
+
+    env_logger::init();
 
     if let Some(subcommand) = opt.subcommand {
         match subcommand {
             Command::Autocomplete { shell } => {
                 commands::autocomplete::run(shell, &mut std::io::stdout())?;
             }
-            Command::List => commands::list::run(selected_version, installed_toolchains)?,
-            Command::Path => commands::path::run(selected_version, installed_toolchains)?,
-            Command::Version => commands::version::run(selected_version, installed_toolchains)?,
-            Command::Select(version_or_path) => {
-                commands::select::run(version_or_path, installed_toolchains)?
-            }
-            Command::Install {
-                from_version,
-                install_extra_packages,
-                select,
-            } => {
-                commands::install::run(
-                    from_version,
-                    selected_version,
-                    installed_toolchains,
-                    &install_extra_packages,
-                    select,
-                )?;
-            }
-            Command::Run { version, command } => {
-                commands::run::run(selected_version, installed_toolchains, version, &command)?
-            }
+            Command::List => commands::list::run()?,
+            // Command::Path => commands::path::run(selected_version, installed_toolchains)?,
+            // Command::Version => commands::version::run(selected_version, installed_toolchains)?,
+            // Command::Select(version_or_path) => {
+            //     commands::select::run(version_or_path, installed_toolchains)?
+            // }
+            // Command::Install {
+            //     from_version,
+            //     install_extra_packages,
+            //     select,
+            // } => {
+            //     commands::install::run(
+            //         from_version,
+            //         selected_version,
+            //         installed_toolchains,
+            //         &install_extra_packages,
+            //         select,
+            //     )?;
+            // }
+            // Command::Run { version, command } => {
+            //     commands::run::run(selected_version, installed_toolchains, version, &command)?
+            // }
             Command::Setup { shell } => commands::setup::run(shell)?,
+            _ => unimplemented!(),
         }
     } else {
     }
