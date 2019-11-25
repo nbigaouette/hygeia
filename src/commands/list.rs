@@ -5,6 +5,7 @@ use semver::Version;
 
 use crate::{
     installed::{find_installed_toolchains, InstalledToolchain},
+    toolchain::ToolchainFile,
     utils, Result,
 };
 
@@ -96,6 +97,8 @@ impl ToolChainTable {
 
 pub fn run() -> Result<()> {
     let installed_toolchains: Vec<InstalledToolchain> = find_installed_toolchains()?;
+
+    let toolchain_file = ToolchainFile::load();
 
     let toolchains_table = ToolChainTable::new(&installed_toolchains);
 
