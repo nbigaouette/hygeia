@@ -75,8 +75,8 @@ pub fn run(
 
     let requested_version = cache.query(&requested_version_req)?;
 
-    // log::info!("Installing Python {}", version);
-    //
+    log::info!("Installing Python {:?}", requested_version);
+
     //
     unimplemented!()
     //
