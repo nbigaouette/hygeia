@@ -1,10 +1,19 @@
-use crate::{installed::InstalledToolchain, selected::SelectedVersion, utils, Result};
+use crate::{
+    toolchain::{find_installed_toolchains, get_compatible_version_or_latest, InstalledToolchain},
+    Result,
+};
 
-pub fn run(
-    selected_version: &Option<SelectedVersion>,
-    installed_toolchains: &[InstalledToolchain],
-) -> Result<()> {
-    let interpreter_to_use = utils::get_interpreter_to_use(selected_version, installed_toolchains)?;
-    println!("{}", interpreter_to_use.version);
+pub fn run() -> Result<()> {
+    let installed_toolchains: Vec<InstalledToolchain> = find_installed_toolchains()?;
+    let compatible_toolchain = get_compatible_version_or_latest(&installed_toolchains)?;
+
+    match compatible_toolchain {
+        Some(compatible_toolchain) => println!("{}", compatible_toolchain.version),
+        None => {
+            log::error!("No Python interpreter found at all. Please install at least one!");
+            println!("")
+        }
+    }
+
     Ok(())
 }

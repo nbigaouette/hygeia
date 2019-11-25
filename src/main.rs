@@ -139,7 +139,7 @@ pub fn no_shim_execution() -> Result<()> {
             }
             Command::List => commands::list::run()?,
             Command::Path => commands::path::run()?,
-            // Command::Version => commands::version::run(selected_version, installed_toolchains)?,
+            Command::Version => commands::version::run()?,
             // Command::Select(version_or_path) => {
             //     commands::select::run(version_or_path, installed_toolchains)?
             // }

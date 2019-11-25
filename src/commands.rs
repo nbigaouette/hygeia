@@ -9,7 +9,7 @@ pub mod path;
 // pub mod run;
 // pub mod select;
 pub mod setup;
-// pub mod version;
+pub mod version;
 
 #[derive(StructOpt, Debug)]
 pub struct VersionOrPath {
