@@ -176,6 +176,49 @@ impl SelectedToolchain {
         }
     }
 
+    pub fn from_toolchain_file(
+        toolchain_file: &ToolchainFile,
+        installed_toolchains: &[InstalledToolchain],
+    ) -> SelectedToolchain {
+        match toolchain_file {
+            ToolchainFile::VersionReq(version_req) => {
+                match find_compatible_toolchain(&version_req, &installed_toolchains) {
+                    Some(compatible_toolchain) => {
+                        SelectedToolchain::InstalledToolchain(compatible_toolchain.clone())
+                    }
+                    None => SelectedToolchain::NotInstalledToolchain(NotInstalledToolchain {
+                        version: Some(version_req.clone()),
+                        location: None,
+                    }),
+                }
+            }
+            ToolchainFile::Path(path) => {
+                let normalized_path = path.canonicalize();
+                match normalized_path {
+                    Ok(normalized_path) => SelectedToolchain::from_path(&normalized_path),
+                    Err(e) => {
+                        log::error!("Cannot use {:?} as toolchain path: {:?}", path, e);
+                        log::error!(
+                            "Please select a valid toolchain using: {} select",
+                            EXECUTABLE_NAME
+                        );
+                        SelectedToolchain::NotInstalledToolchain(NotInstalledToolchain {
+                            version: None,
+                            location: Some(path.clone()),
+                        })
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn version_req(&self) -> Option<VersionReq> {
+        match self {
+            SelectedToolchain::InstalledToolchain(t) => Some(VersionReq::exact(&t.version)),
+            SelectedToolchain::NotInstalledToolchain(t) => t.version.clone(),
+        }
+    }
+
     pub fn is_installed(&self) -> bool {
         match self {
             SelectedToolchain::InstalledToolchain(_) => true,

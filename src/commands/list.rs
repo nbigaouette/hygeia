@@ -150,36 +150,8 @@ pub fn run() -> Result<()> {
     let mut toolchains_table = ToolChainTable::new(&installed_toolchains);
 
     if let Some(toolchain_file) = ToolchainFile::load()? {
-        let selected_toolchain: SelectedToolchain = match toolchain_file {
-            ToolchainFile::VersionReq(version_req) => {
-                match find_compatible_toolchain(&version_req, &installed_toolchains) {
-                    Some(compatible_toolchain) => {
-                        SelectedToolchain::InstalledToolchain(compatible_toolchain.clone())
-                    }
-                    None => SelectedToolchain::NotInstalledToolchain(NotInstalledToolchain {
-                        version: Some(version_req),
-                        location: None,
-                    }),
-                }
-            }
-            ToolchainFile::Path(path) => {
-                let normalized_path = path.canonicalize();
-                match normalized_path {
-                    Ok(normalized_path) => SelectedToolchain::from_path(&normalized_path),
-                    Err(e) => {
-                        log::error!("Cannot use {:?} as toolchain path: {:?}", path, e);
-                        log::error!(
-                            "Please select a valid toolchain using: {} select",
-                            EXECUTABLE_NAME
-                        );
-                        SelectedToolchain::NotInstalledToolchain(NotInstalledToolchain {
-                            version: None,
-                            location: Some(path),
-                        })
-                    }
-                }
-            }
-        };
+        let selected_toolchain =
+            SelectedToolchain::from_toolchain_file(&toolchain_file, &installed_toolchains);
 
         // Information was loaded from .python-version. Mark the relevant installed toolchain
         // as being active. If not found, add it to the list as not-installed.
