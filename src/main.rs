@@ -19,6 +19,7 @@ mod installed;
 mod os;
 mod selected;
 mod shim;
+mod toolchain;
 mod utils;
 
 use crate::{
