@@ -5,7 +5,7 @@ use structopt::{self, StructOpt};
 pub mod autocomplete;
 // pub mod install;
 pub mod list;
-// pub mod path;
+pub mod path;
 // pub mod run;
 // pub mod select;
 pub mod setup;

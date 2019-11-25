@@ -466,6 +466,68 @@ pub fn find_compatible_toolchain<'a>(
     compatible_versions.last().cloned()
 }
 
+pub fn get_compatible_version_or_latest(
+    installed_toolchains: &[InstalledToolchain],
+) -> Result<Option<&InstalledToolchain>> {
+    get_compatible_version(installed_toolchains, true)
+}
+
+pub fn get_compatible_version_extact(
+    installed_toolchains: &[InstalledToolchain],
+) -> Result<Option<&InstalledToolchain>> {
+    get_compatible_version(installed_toolchains, false)
+}
+
+fn get_compatible_version(
+    installed_toolchains: &[InstalledToolchain],
+    pick_latest_if_none_found: bool,
+) -> Result<Option<&InstalledToolchain>> {
+    let compatible = match ToolchainFile::load()? {
+        Some(toolchain_file) => {
+            let selected_toolchain =
+                SelectedToolchain::from_toolchain_file(&toolchain_file, &installed_toolchains);
+            match selected_toolchain.version_req() {
+                Some(version_req) => {
+                    let search_result =
+                        find_compatible_toolchain(&version_req, &installed_toolchains);
+                    log::debug!("Compatible version found: {:?}", search_result);
+                    search_result
+                }
+                None => {
+                    // We couldn't get a VersionReq from the toolchain, because we loaded a path
+                    // from the toolchain file that does not contain a valid Python interpreter.
+                    assert!(!selected_toolchain.is_installed());
+                    log::debug!(
+                    "Cannot find a compatible toolchain since selected toolchain is not installed."
+                );
+                    None
+                }
+            }
+        }
+        None => {
+            // We could not load a toolchain file.
+            log::debug!("Cannot find a compatible toolchain since no toolchain file exists.");
+            None
+        }
+    }
+    .or_else(|| {
+        // We could not get a compatible version.
+        if pick_latest_if_none_found {
+            // Let's pick the latest installed one instead, if any.
+            let latest_toolchain = installed_toolchains.get(0);
+            log::debug!(
+                "No compatible toolchain found, trying latest installed: {:?}",
+                latest_toolchain
+            );
+            latest_toolchain
+        } else {
+            None
+        }
+    });
+
+    Ok(compatible)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

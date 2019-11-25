@@ -5,11 +5,9 @@ use std::{
     path::PathBuf,
 };
 
-use failure::format_err;
 use git_testament::{git_testament, render_testament};
 use human_panic::setup_panic;
 use lazy_static::lazy_static;
-use log::{debug, error};
 use structopt::StructOpt;
 
 mod commands;
@@ -22,10 +20,7 @@ mod shim;
 mod toolchain;
 mod utils;
 
-use crate::{
-    commands::Command, constants::*, selected::load_selected_toolchain_file,
-    toolchain::InstalledToolchain,
-};
+use crate::{commands::Command, constants::*, toolchain::InstalledToolchain};
 
 pub type Result<T> = std::result::Result<T, failure::Error>;
 
@@ -143,7 +138,7 @@ pub fn no_shim_execution() -> Result<()> {
                 commands::autocomplete::run(shell, &mut std::io::stdout())?;
             }
             Command::List => commands::list::run()?,
-            // Command::Path => commands::path::run(selected_version, installed_toolchains)?,
+            Command::Path => commands::path::run()?,
             // Command::Version => commands::version::run(selected_version, installed_toolchains)?,
             // Command::Select(version_or_path) => {
             //     commands::select::run(version_or_path, installed_toolchains)?
@@ -167,7 +162,6 @@ pub fn no_shim_execution() -> Result<()> {
             Command::Setup { shell } => commands::setup::run(shell)?,
             _ => unimplemented!(),
         }
-    } else {
     }
 
     Ok(())
