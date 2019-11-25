@@ -23,10 +23,8 @@ mod toolchain;
 mod utils;
 
 use crate::{
-    commands::Command,
-    constants::*,
-    installed::{find_installed_toolchains, InstalledToolchain},
-    selected::{load_selected_toolchain_file, SelectedVersion},
+    commands::Command, constants::*, selected::load_selected_toolchain_file,
+    toolchain::InstalledToolchain,
 };
 
 pub type Result<T> = std::result::Result<T, failure::Error>;
@@ -63,8 +61,14 @@ pub enum MainError {
     #[fail(display = "Failed to execute command: {:?}", _0)]
     Command(#[fail(cause)] failure::Error),
 }
-fn main() -> Result<()> {
-    setup_panic!();
+
+fn main() {
+    try_main().unwrap()
+}
+
+// fn main() -> Result<()> {
+fn try_main() -> Result<()> {
+    // setup_panic!();
 
     // Detect if running as shim as soon as possible
     let current_exe: PathBuf = env::current_exe().map_err(|e| MainError::Io(e))?;
@@ -118,6 +122,8 @@ fn main() -> Result<()> {
     // let (_, remaining_args) = arguments.split_at(1);
 }
 
+// selected_version: &Option<Result<InstalledToolchain>>,
+// installed_toolchains: &[InstalledToolchain],
 pub fn no_shim_execution() -> Result<()> {
     let opt = Opt::from_args();
     log::debug!("{:?}", opt);
@@ -169,13 +175,14 @@ pub fn no_shim_execution() -> Result<()> {
 
 pub fn python_shim(
     command: &str,
-    selected_version: &Option<SelectedVersion>,
+    selected_version: &Option<Result<InstalledToolchain>>,
     installed_toolchains: &[InstalledToolchain],
     arguments: &[String],
 ) -> Result<()> {
-    let interpreter_to_use = utils::get_interpreter_to_use(selected_version, installed_toolchains)?;
+    // let interpreter_to_use = utils::get_interpreter_to_use(selected_version, installed_toolchains)?;
 
-    shim::run(&interpreter_to_use, command, arguments)
+    // shim::run(&interpreter_to_use, command, arguments)
+    unimplemented!()
 }
 
 #[cfg(test)]

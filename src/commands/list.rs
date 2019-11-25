@@ -1,19 +1,22 @@
-use std::{fmt, path::PathBuf};
+use std::path::PathBuf;
 
 use prettytable::{cell, row, Cell, Row, Table};
-use semver::Version;
+use semver::VersionReq;
 
 use crate::{
-    installed::{find_installed_toolchains, InstalledToolchain},
-    toolchain::ToolchainFile,
-    utils, Result,
+    constants::EXECUTABLE_NAME,
+    toolchain::{
+        find_compatible_toolchain, find_installed_toolchains, is_a_custom_install,
+        InstalledToolchain, NotInstalledToolchain, SelectedToolchain, ToolchainFile,
+    },
+    Result,
 };
 
 struct ToolChainTableLine {
     active: bool,
-    version: Version,
+    version: Option<VersionReq>,
     custom_install: bool,
-    location: PathBuf,
+    location: Option<PathBuf>,
     installed: bool,
 }
 
@@ -25,13 +28,53 @@ impl ToolChainTable {
             .iter()
             .map(|t| ToolChainTableLine {
                 active: false,
-                version: t.version.clone(),
+                version: Some(VersionReq::exact(&t.version)),
                 custom_install: t.is_custom_install(),
-                location: t.location.clone(),
+                location: Some(t.location.clone()),
                 installed: true,
             })
             .collect();
         ToolChainTable(list)
+    }
+
+    fn append(&mut self, toolchain: &SelectedToolchain, active: bool) {
+        match self.0.iter_mut().find(|t| match (&t.version, &t.location) {
+            (None, _) => false,
+            (_, None) => false,
+            (Some(version), Some(location)) => {
+                toolchain.same_location(&location) && toolchain.same_version(&version)
+            }
+        }) {
+            Some(installed_toolchain_line) => {
+                // We found the toolchain in the list; change its properties
+                installed_toolchain_line.active = active;
+            }
+            None => {
+                // The passed toolchain was not found in the list. Append it.
+                let line: ToolChainTableLine = match toolchain {
+                    SelectedToolchain::InstalledToolchain(t) => ToolChainTableLine {
+                        active,
+                        version: Some(VersionReq::exact(&t.version)),
+                        custom_install: is_a_custom_install(&t.location),
+                        location: Some(t.location.clone()),
+                        installed: true,
+                    },
+                    SelectedToolchain::NotInstalledToolchain(t) => ToolChainTableLine {
+                        active,
+                        version: t.version.clone(),
+                        custom_install: t
+                            .location
+                            .as_ref()
+                            .map(|p| is_a_custom_install(&p))
+                            .unwrap_or(false),
+                        location: t.location.clone(),
+                        installed: false,
+                    },
+                };
+                // Insert at the top of the list
+                self.0.insert(0, line);
+            }
+        }
     }
 }
 
@@ -53,10 +96,10 @@ impl ToolChainTable {
         let red = prettytable::Attr::ForegroundColor(prettytable::color::RED);
         let bold = prettytable::Attr::Bold;
 
-        self.0.iter().for_each(|t| {
+        self.0.iter().for_each(|t: &ToolChainTableLine| {
             let (active_char, line_color, line_style) = match (t.active, t.installed) {
                 (true, true) => ("✓", Some(green), Some(bold)),
-                (true, false) => ("✗", Some(red), None),
+                (true, false) => ("✗", Some(red), Some(bold)),
                 (false, _) => ("", None, None),
             };
             let custom_char = if t.custom_install { "✓" } else { "" };
@@ -64,14 +107,20 @@ impl ToolChainTable {
             let mut col_1 = Cell::new_align(active_char, prettytable::format::Alignment::CENTER);
 
             let mut col_2 = Cell::new_align(
-                &format!("{}", t.version),
+                &t.version
+                    .as_ref()
+                    .map(|t| format!("{}", t).replace("= ", ""))
+                    .unwrap_or(String::new()),
                 prettytable::format::Alignment::CENTER,
             );
 
             let mut col_3 = Cell::new_align(&custom_char, prettytable::format::Alignment::CENTER);
 
             let mut col_4 = Cell::new_align(
-                &format!("{}", t.location.display()),
+                &t.location
+                    .as_ref()
+                    .map(|t| format!("{}", t.display()))
+                    .unwrap_or(String::new()),
                 prettytable::format::Alignment::LEFT,
             );
 
@@ -98,9 +147,44 @@ impl ToolChainTable {
 pub fn run() -> Result<()> {
     let installed_toolchains: Vec<InstalledToolchain> = find_installed_toolchains()?;
 
-    let toolchain_file = ToolchainFile::load();
+    let mut toolchains_table = ToolChainTable::new(&installed_toolchains);
 
-    let toolchains_table = ToolChainTable::new(&installed_toolchains);
+    if let Some(toolchain_file) = ToolchainFile::load()? {
+        let selected_toolchain: SelectedToolchain = match toolchain_file {
+            ToolchainFile::VersionReq(version_req) => {
+                match find_compatible_toolchain(&version_req, &installed_toolchains) {
+                    Some(compatible_toolchain) => {
+                        SelectedToolchain::InstalledToolchain(compatible_toolchain.clone())
+                    }
+                    None => SelectedToolchain::NotInstalledToolchain(NotInstalledToolchain {
+                        version: Some(version_req),
+                        location: None,
+                    }),
+                }
+            }
+            ToolchainFile::Path(path) => {
+                let normalized_path = path.canonicalize();
+                match normalized_path {
+                    Ok(normalized_path) => SelectedToolchain::from_path(&normalized_path),
+                    Err(e) => {
+                        log::error!("Cannot use {:?} as toolchain path: {:?}", path, e);
+                        log::error!(
+                            "Please select a valid toolchain using: {} select",
+                            EXECUTABLE_NAME
+                        );
+                        SelectedToolchain::NotInstalledToolchain(NotInstalledToolchain {
+                            version: None,
+                            location: Some(path),
+                        })
+                    }
+                }
+            }
+        };
+
+        // Information was loaded from .python-version. Mark the relevant installed toolchain
+        // as being active. If not found, add it to the list as not-installed.
+        toolchains_table.append(&selected_toolchain, true);
+    }
 
     toolchains_table.printstd();
 

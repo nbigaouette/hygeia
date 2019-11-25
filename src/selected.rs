@@ -9,7 +9,7 @@ use std::{
 use failure::format_err;
 use semver::VersionReq;
 
-use crate::{constants::TOOLCHAIN_FILE, utils, Result};
+use crate::{constants::TOOLCHAIN_FILE, installed::InstalledToolchain, utils, Result};
 
 #[derive(Debug, PartialEq)]
 pub enum VersionOrPath {
@@ -57,7 +57,10 @@ pub struct SelectedVersion {
     pub version: VersionReq,
 }
 
-pub fn load_selected_toolchain_file() -> Option<Result<SelectedVersion>> {
+// FIXME: This function will now return a Some(Err(not installed)) is the required toolchain is not installed.
+pub fn load_selected_toolchain_file(
+    installed_toolchains: &[InstalledToolchain],
+) -> Option<Result<InstalledToolchain>> {
     match env::current_dir() {
         Ok(mut path) => {
             loop {
@@ -65,7 +68,10 @@ pub fn load_selected_toolchain_file() -> Option<Result<SelectedVersion>> {
                 if utils::path_exists(&toolchain_file) {
                     // We've found the file, stop.
                     log::debug!("Found file {:?}", toolchain_file);
-                    break Some(SelectedVersion::from_file(toolchain_file));
+                    break Some(InstalledToolchain::from_select_file(
+                        path,
+                        installed_toolchains,
+                    ));
                 }
 
                 if path.parent().is_none() {
@@ -113,49 +119,5 @@ impl SelectedVersion {
         let l1 = output.write(version.as_bytes())?;
         let l2 = output.write(b"\n")?;
         Ok(l1 + l2)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn version_or_path_from_str_success_major_minor_patch() {
-        let v = "3.7.4";
-        let vop: VersionOrPath = v.parse().unwrap();
-        assert_eq!(
-            vop,
-            VersionOrPath::VersionReq(VersionReq::parse(v).unwrap())
-        );
-    }
-    #[test]
-    fn version_or_path_from_str_success_eq_major_minor_patch() {
-        let v = "=3.7.4";
-        let vop: VersionOrPath = v.parse().unwrap();
-        assert_eq!(
-            vop,
-            VersionOrPath::VersionReq(VersionReq::parse(v).unwrap())
-        );
-    }
-
-    #[test]
-    fn version_or_path_from_str_success_tilde_major_minor() {
-        let v = "~3.7";
-        let vop: VersionOrPath = v.parse().unwrap();
-        assert_eq!(
-            vop,
-            VersionOrPath::VersionReq(VersionReq::parse(v).unwrap())
-        );
-    }
-
-    #[test]
-    fn version_or_path_from_str_success_tilde_major() {
-        let v = "~3";
-        let vop: VersionOrPath = v.parse().unwrap();
-        assert_eq!(
-            vop,
-            VersionOrPath::VersionReq(VersionReq::parse(v).unwrap())
-        );
     }
 }

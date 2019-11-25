@@ -3,13 +3,13 @@ use std::path::PathBuf;
 use structopt::{self, StructOpt};
 
 pub mod autocomplete;
-pub mod install;
+// pub mod install;
 pub mod list;
-pub mod path;
-pub mod run;
-pub mod select;
+// pub mod path;
+// pub mod run;
+// pub mod select;
 pub mod setup;
-pub mod version;
+// pub mod version;
 
 #[derive(StructOpt, Debug)]
 pub struct VersionOrPath {
