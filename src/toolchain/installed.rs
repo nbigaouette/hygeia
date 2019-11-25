@@ -99,7 +99,7 @@ impl InstalledToolchain {
     }
 
     pub fn save_version(&self) -> Result<usize> {
-        let version = format!("{}", self.version);
+        let version = format!("{}", VersionReq::exact(&self.version));
         save(&version, TOOLCHAIN_FILE)
     }
 
