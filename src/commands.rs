@@ -7,7 +7,7 @@ pub mod autocomplete;
 pub mod list;
 pub mod path;
 pub mod run;
-// pub mod select;
+pub mod select;
 pub mod setup;
 pub mod version;
 

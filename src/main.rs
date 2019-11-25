@@ -138,9 +138,7 @@ pub fn no_shim_execution() -> Result<()> {
             Command::List => commands::list::run()?,
             Command::Path { version } => commands::path::run(version)?,
             Command::Version { version } => commands::version::run(version)?,
-            // Command::Select(version_or_path) => {
-            //     commands::select::run(version_or_path, installed_toolchains)?
-            // }
+            Command::Select(version_or_path) => commands::select::run(version_or_path)?,
             // Command::Install {
             //     from_version,
             //     install_extra_packages,
