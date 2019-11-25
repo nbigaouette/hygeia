@@ -34,7 +34,11 @@ pub enum Command {
     ///     pycors path
     ///     /usr/local/bin
     #[structopt(name = "path")]
-    Path,
+    Path {
+        /// Use specified interpreter version
+        #[structopt(long = "version", short = "v")]
+        version: Option<String>,
+    },
 
     /// Get version of active interpreter
     ///
@@ -42,7 +46,11 @@ pub enum Command {
     ///     pycors version
     ///     3.7.2
     #[structopt(name = "version")]
-    Version,
+    Version {
+        /// Use specified interpreter version
+        #[structopt(long = "version", short = "v")]
+        version: Option<String>,
+    },
 
     /// Select specified Python versions to use
     ///

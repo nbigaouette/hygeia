@@ -136,8 +136,8 @@ pub fn no_shim_execution() -> Result<()> {
                 commands::autocomplete::run(shell, &mut std::io::stdout())?;
             }
             Command::List => commands::list::run()?,
-            Command::Path => commands::path::run()?,
-            Command::Version => commands::version::run()?,
+            Command::Path { version } => commands::path::run(version)?,
+            Command::Version { version } => commands::version::run(version)?,
             // Command::Select(version_or_path) => {
             //     commands::select::run(version_or_path, installed_toolchains)?
             // }
