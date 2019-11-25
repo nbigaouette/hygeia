@@ -4,13 +4,31 @@ use prettytable::{cell, row, Cell, Row, Table};
 use semver::VersionReq;
 
 use crate::{
-    constants::EXECUTABLE_NAME,
     toolchain::{
-        find_compatible_toolchain, find_installed_toolchains, is_a_custom_install,
-        InstalledToolchain, NotInstalledToolchain, SelectedToolchain, ToolchainFile,
+        find_installed_toolchains, is_a_custom_install, InstalledToolchain, SelectedToolchain,
+        ToolchainFile,
     },
     Result,
 };
+
+pub fn run() -> Result<()> {
+    let installed_toolchains: Vec<InstalledToolchain> = find_installed_toolchains()?;
+
+    let mut toolchains_table = ToolChainTable::new(&installed_toolchains);
+
+    if let Some(toolchain_file) = ToolchainFile::load()? {
+        let selected_toolchain =
+            SelectedToolchain::from_toolchain_file(&toolchain_file, &installed_toolchains);
+
+        // Information was loaded from .python-version. Mark the relevant installed toolchain
+        // as being active. If not found, add it to the list as not-installed.
+        toolchains_table.append(&selected_toolchain, true);
+    }
+
+    toolchains_table.printstd();
+
+    Ok(())
+}
 
 struct ToolChainTableLine {
     active: bool,
@@ -142,23 +160,4 @@ impl ToolChainTable {
 
         table.printstd();
     }
-}
-
-pub fn run() -> Result<()> {
-    let installed_toolchains: Vec<InstalledToolchain> = find_installed_toolchains()?;
-
-    let mut toolchains_table = ToolChainTable::new(&installed_toolchains);
-
-    if let Some(toolchain_file) = ToolchainFile::load()? {
-        let selected_toolchain =
-            SelectedToolchain::from_toolchain_file(&toolchain_file, &installed_toolchains);
-
-        // Information was loaded from .python-version. Mark the relevant installed toolchain
-        // as being active. If not found, add it to the list as not-installed.
-        toolchains_table.append(&selected_toolchain, true);
-    }
-
-    toolchains_table.printstd();
-
-    Ok(())
 }
