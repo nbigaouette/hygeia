@@ -6,7 +6,7 @@ use std::{
 
 use chrono::{DateTime, Utc};
 use regex::Regex;
-use semver::{SemVerError, Version, VersionReq};
+use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use url::Url;
@@ -23,13 +23,11 @@ use crate::{
 
 #[derive(Debug, failure::Fail)]
 pub enum CacheError {
-    #[fail(display = "Failed to parse version: {:?}", _0)]
-    SemVerError(#[fail(cause)] SemVerError),
     #[fail(display = "No compatible version found")]
     NoCompatibleVersionFound,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct AvailableToolchain {
     pub version: Version,
     pub base_url: Url,
@@ -156,4 +154,145 @@ fn parse_index_html(index_html: &str) -> Result<Vec<AvailableToolchain>> {
     // Sort the versions vector (in reverse order)
     toolchains.sort_unstable_by(|a, b| b.version.cmp(&a.version));
     Ok(toolchains)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_html() {
+        let index_html = include_str!("../tests/fixtures/index.html");
+
+        let parsed: Vec<AvailableToolchain> = parse_index_html(index_html).unwrap();
+
+        let url =
+            Url::parse(PYTHON_BASE_URL).expect("Constant 'PYTHON_BASE_URL' should be parsable");
+
+        #[rustfmt::skip]
+        let expected: Vec<AvailableToolchain> = vec![
+            AvailableToolchain{version: "3.8.0".parse().unwrap(), base_url: url.join("3.8.0").unwrap()},
+            AvailableToolchain{version: "3.7.5".parse().unwrap(), base_url: url.join("3.7.5").unwrap()},
+            AvailableToolchain{version: "3.7.4".parse().unwrap(), base_url: url.join("3.7.4").unwrap()},
+            AvailableToolchain{version: "3.7.3".parse().unwrap(), base_url: url.join("3.7.3").unwrap()},
+            AvailableToolchain{version: "3.7.2".parse().unwrap(), base_url: url.join("3.7.2").unwrap()},
+            AvailableToolchain{version: "3.7.1".parse().unwrap(), base_url: url.join("3.7.1").unwrap()},
+            AvailableToolchain{version: "3.7.0".parse().unwrap(), base_url: url.join("3.7.0").unwrap()},
+            AvailableToolchain{version: "3.6.9".parse().unwrap(), base_url: url.join("3.6.9").unwrap()},
+            AvailableToolchain{version: "3.6.8".parse().unwrap(), base_url: url.join("3.6.8").unwrap()},
+            AvailableToolchain{version: "3.6.7".parse().unwrap(), base_url: url.join("3.6.7").unwrap()},
+            AvailableToolchain{version: "3.6.6".parse().unwrap(), base_url: url.join("3.6.6").unwrap()},
+            AvailableToolchain{version: "3.6.5".parse().unwrap(), base_url: url.join("3.6.5").unwrap()},
+            AvailableToolchain{version: "3.6.4".parse().unwrap(), base_url: url.join("3.6.4").unwrap()},
+            AvailableToolchain{version: "3.6.3".parse().unwrap(), base_url: url.join("3.6.3").unwrap()},
+            AvailableToolchain{version: "3.6.2".parse().unwrap(), base_url: url.join("3.6.2").unwrap()},
+            AvailableToolchain{version: "3.6.1".parse().unwrap(), base_url: url.join("3.6.1").unwrap()},
+            AvailableToolchain{version: "3.6.0".parse().unwrap(), base_url: url.join("3.6.0").unwrap()},
+            AvailableToolchain{version: "3.5.9".parse().unwrap(), base_url: url.join("3.5.9").unwrap()},
+            AvailableToolchain{version: "3.5.8".parse().unwrap(), base_url: url.join("3.5.8").unwrap()},
+            AvailableToolchain{version: "3.5.7".parse().unwrap(), base_url: url.join("3.5.7").unwrap()},
+            AvailableToolchain{version: "3.5.6".parse().unwrap(), base_url: url.join("3.5.6").unwrap()},
+            AvailableToolchain{version: "3.5.5".parse().unwrap(), base_url: url.join("3.5.5").unwrap()},
+            AvailableToolchain{version: "3.5.4".parse().unwrap(), base_url: url.join("3.5.4").unwrap()},
+            AvailableToolchain{version: "3.5.3".parse().unwrap(), base_url: url.join("3.5.3").unwrap()},
+            AvailableToolchain{version: "3.5.2".parse().unwrap(), base_url: url.join("3.5.2").unwrap()},
+            AvailableToolchain{version: "3.5.1".parse().unwrap(), base_url: url.join("3.5.1").unwrap()},
+            AvailableToolchain{version: "3.5.0".parse().unwrap(), base_url: url.join("3.5.0").unwrap()},
+            AvailableToolchain{version: "3.4.10".parse().unwrap(), base_url: url.join("3.4.10").unwrap()},
+            AvailableToolchain{version: "3.4.9".parse().unwrap(), base_url: url.join("3.4.9").unwrap()},
+            AvailableToolchain{version: "3.4.8".parse().unwrap(), base_url: url.join("3.4.8").unwrap()},
+            AvailableToolchain{version: "3.4.7".parse().unwrap(), base_url: url.join("3.4.7").unwrap()},
+            AvailableToolchain{version: "3.4.6".parse().unwrap(), base_url: url.join("3.4.6").unwrap()},
+            AvailableToolchain{version: "3.4.5".parse().unwrap(), base_url: url.join("3.4.5").unwrap()},
+            AvailableToolchain{version: "3.4.4".parse().unwrap(), base_url: url.join("3.4.4").unwrap()},
+            AvailableToolchain{version: "3.4.3".parse().unwrap(), base_url: url.join("3.4.3").unwrap()},
+            AvailableToolchain{version: "3.4.2".parse().unwrap(), base_url: url.join("3.4.2").unwrap()},
+            AvailableToolchain{version: "3.4.1".parse().unwrap(), base_url: url.join("3.4.1").unwrap()},
+            AvailableToolchain{version: "3.4.0".parse().unwrap(), base_url: url.join("3.4.0").unwrap()},
+            AvailableToolchain{version: "3.3.7".parse().unwrap(), base_url: url.join("3.3.7").unwrap()},
+            AvailableToolchain{version: "3.3.6".parse().unwrap(), base_url: url.join("3.3.6").unwrap()},
+            AvailableToolchain{version: "3.3.5".parse().unwrap(), base_url: url.join("3.3.5").unwrap()},
+            AvailableToolchain{version: "3.3.4".parse().unwrap(), base_url: url.join("3.3.4").unwrap()},
+            AvailableToolchain{version: "3.3.3".parse().unwrap(), base_url: url.join("3.3.3").unwrap()},
+            AvailableToolchain{version: "3.3.2".parse().unwrap(), base_url: url.join("3.3.2").unwrap()},
+            AvailableToolchain{version: "3.3.1".parse().unwrap(), base_url: url.join("3.3.1").unwrap()},
+            AvailableToolchain{version: "3.3.0".parse().unwrap(), base_url: url.join("3.3.0").unwrap()},
+            AvailableToolchain{version: "3.2.6".parse().unwrap(), base_url: url.join("3.2.6").unwrap()},
+            AvailableToolchain{version: "3.2.5".parse().unwrap(), base_url: url.join("3.2.5").unwrap()},
+            AvailableToolchain{version: "3.2.4".parse().unwrap(), base_url: url.join("3.2.4").unwrap()},
+            AvailableToolchain{version: "3.2.3".parse().unwrap(), base_url: url.join("3.2.3").unwrap()},
+            AvailableToolchain{version: "3.2.2".parse().unwrap(), base_url: url.join("3.2.2").unwrap()},
+            AvailableToolchain{version: "3.2.1".parse().unwrap(), base_url: url.join("3.2.1").unwrap()},
+            AvailableToolchain{version: "3.2.0".parse().unwrap(), base_url: url.join("3.2").unwrap()},
+            AvailableToolchain{version: "3.1.5".parse().unwrap(), base_url: url.join("3.1.5").unwrap()},
+            AvailableToolchain{version: "3.1.4".parse().unwrap(), base_url: url.join("3.1.4").unwrap()},
+            AvailableToolchain{version: "3.1.3".parse().unwrap(), base_url: url.join("3.1.3").unwrap()},
+            AvailableToolchain{version: "3.1.2".parse().unwrap(), base_url: url.join("3.1.2").unwrap()},
+            AvailableToolchain{version: "3.1.1".parse().unwrap(), base_url: url.join("3.1.1").unwrap()},
+            AvailableToolchain{version: "3.1.0".parse().unwrap(), base_url: url.join("3.1").unwrap()},
+            AvailableToolchain{version: "3.0.1".parse().unwrap(), base_url: url.join("3.0.1").unwrap()},
+            AvailableToolchain{version: "3.0.0".parse().unwrap(), base_url: url.join("3.0").unwrap()},
+            AvailableToolchain{version: "2.7.17".parse().unwrap(), base_url: url.join("2.7.17").unwrap()},
+            AvailableToolchain{version: "2.7.16".parse().unwrap(), base_url: url.join("2.7.16").unwrap()},
+            AvailableToolchain{version: "2.7.15".parse().unwrap(), base_url: url.join("2.7.15").unwrap()},
+            AvailableToolchain{version: "2.7.14".parse().unwrap(), base_url: url.join("2.7.14").unwrap()},
+            AvailableToolchain{version: "2.7.13".parse().unwrap(), base_url: url.join("2.7.13").unwrap()},
+            AvailableToolchain{version: "2.7.12".parse().unwrap(), base_url: url.join("2.7.12").unwrap()},
+            AvailableToolchain{version: "2.7.11".parse().unwrap(), base_url: url.join("2.7.11").unwrap()},
+            AvailableToolchain{version: "2.7.10".parse().unwrap(), base_url: url.join("2.7.10").unwrap()},
+            AvailableToolchain{version: "2.7.9".parse().unwrap(), base_url: url.join("2.7.9").unwrap()},
+            AvailableToolchain{version: "2.7.8".parse().unwrap(), base_url: url.join("2.7.8").unwrap()},
+            AvailableToolchain{version: "2.7.7".parse().unwrap(), base_url: url.join("2.7.7").unwrap()},
+            AvailableToolchain{version: "2.7.6".parse().unwrap(), base_url: url.join("2.7.6").unwrap()},
+            AvailableToolchain{version: "2.7.5".parse().unwrap(), base_url: url.join("2.7.5").unwrap()},
+            AvailableToolchain{version: "2.7.4".parse().unwrap(), base_url: url.join("2.7.4").unwrap()},
+            AvailableToolchain{version: "2.7.3".parse().unwrap(), base_url: url.join("2.7.3").unwrap()},
+            AvailableToolchain{version: "2.7.2".parse().unwrap(), base_url: url.join("2.7.2").unwrap()},
+            AvailableToolchain{version: "2.7.1".parse().unwrap(), base_url: url.join("2.7.1").unwrap()},
+            AvailableToolchain{version: "2.7.0".parse().unwrap(), base_url: url.join("2.7").unwrap()},
+            AvailableToolchain{version: "2.6.9".parse().unwrap(), base_url: url.join("2.6.9").unwrap()},
+            AvailableToolchain{version: "2.6.8".parse().unwrap(), base_url: url.join("2.6.8").unwrap()},
+            AvailableToolchain{version: "2.6.7".parse().unwrap(), base_url: url.join("2.6.7").unwrap()},
+            AvailableToolchain{version: "2.6.6".parse().unwrap(), base_url: url.join("2.6.6").unwrap()},
+            AvailableToolchain{version: "2.6.5".parse().unwrap(), base_url: url.join("2.6.5").unwrap()},
+            AvailableToolchain{version: "2.6.4".parse().unwrap(), base_url: url.join("2.6.4").unwrap()},
+            AvailableToolchain{version: "2.6.3".parse().unwrap(), base_url: url.join("2.6.3").unwrap()},
+            AvailableToolchain{version: "2.6.2".parse().unwrap(), base_url: url.join("2.6.2").unwrap()},
+            AvailableToolchain{version: "2.6.1".parse().unwrap(), base_url: url.join("2.6.1").unwrap()},
+            AvailableToolchain{version: "2.6.0".parse().unwrap(), base_url: url.join("2.6").unwrap()},
+            AvailableToolchain{version: "2.5.6".parse().unwrap(), base_url: url.join("2.5.6").unwrap()},
+            AvailableToolchain{version: "2.5.5".parse().unwrap(), base_url: url.join("2.5.5").unwrap()},
+            AvailableToolchain{version: "2.5.4".parse().unwrap(), base_url: url.join("2.5.4").unwrap()},
+            AvailableToolchain{version: "2.5.3".parse().unwrap(), base_url: url.join("2.5.3").unwrap()},
+            AvailableToolchain{version: "2.5.2".parse().unwrap(), base_url: url.join("2.5.2").unwrap()},
+            AvailableToolchain{version: "2.5.1".parse().unwrap(), base_url: url.join("2.5.1").unwrap()},
+            AvailableToolchain{version: "2.5.0".parse().unwrap(), base_url: url.join("2.5").unwrap()},
+            AvailableToolchain{version: "2.4.6".parse().unwrap(), base_url: url.join("2.4.6").unwrap()},
+            AvailableToolchain{version: "2.4.5".parse().unwrap(), base_url: url.join("2.4.5").unwrap()},
+            AvailableToolchain{version: "2.4.4".parse().unwrap(), base_url: url.join("2.4.4").unwrap()},
+            AvailableToolchain{version: "2.4.3".parse().unwrap(), base_url: url.join("2.4.3").unwrap()},
+            AvailableToolchain{version: "2.4.2".parse().unwrap(), base_url: url.join("2.4.2").unwrap()},
+            AvailableToolchain{version: "2.4.1".parse().unwrap(), base_url: url.join("2.4.1").unwrap()},
+            AvailableToolchain{version: "2.4.0".parse().unwrap(), base_url: url.join("2.4").unwrap()},
+            AvailableToolchain{version: "2.3.7".parse().unwrap(), base_url: url.join("2.3.7").unwrap()},
+            AvailableToolchain{version: "2.3.6".parse().unwrap(), base_url: url.join("2.3.6").unwrap()},
+            AvailableToolchain{version: "2.3.5".parse().unwrap(), base_url: url.join("2.3.5").unwrap()},
+            AvailableToolchain{version: "2.3.4".parse().unwrap(), base_url: url.join("2.3.4").unwrap()},
+            AvailableToolchain{version: "2.3.3".parse().unwrap(), base_url: url.join("2.3.3").unwrap()},
+            AvailableToolchain{version: "2.3.2".parse().unwrap(), base_url: url.join("2.3.2").unwrap()},
+            AvailableToolchain{version: "2.3.1".parse().unwrap(), base_url: url.join("2.3.1").unwrap()},
+            AvailableToolchain{version: "2.3.0".parse().unwrap(), base_url: url.join("2.3").unwrap()},
+            AvailableToolchain{version: "2.2.3".parse().unwrap(), base_url: url.join("2.2.3").unwrap()},
+            AvailableToolchain{version: "2.2.2".parse().unwrap(), base_url: url.join("2.2.2").unwrap()},
+            AvailableToolchain{version: "2.2.1".parse().unwrap(), base_url: url.join("2.2.1").unwrap()},
+            AvailableToolchain{version: "2.2.0".parse().unwrap(), base_url: url.join("2.2").unwrap()},
+            AvailableToolchain{version: "2.1.3".parse().unwrap(), base_url: url.join("2.1.3").unwrap()},
+            AvailableToolchain{version: "2.1.2".parse().unwrap(), base_url: url.join("2.1.2").unwrap()},
+            AvailableToolchain{version: "2.1.1".parse().unwrap(), base_url: url.join("2.1.1").unwrap()},
+            AvailableToolchain{version: "2.1.0".parse().unwrap(), base_url: url.join("2.1").unwrap()},
+            AvailableToolchain{version: "2.0.1".parse().unwrap(), base_url: url.join("2.0.1").unwrap()},
+            AvailableToolchain{version: "2.0.0".parse().unwrap(), base_url: url.join("2.0").unwrap()},
+        ];
+        assert_eq!(parsed, expected);
+    }
 }

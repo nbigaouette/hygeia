@@ -1,15 +1,7 @@
 use std::{
-    env,
-    fs::File,
-    io::{BufRead, BufReader, Write},
     path::{Path, PathBuf},
     str::FromStr,
 };
-
-use failure::format_err;
-use semver::VersionReq;
-
-use crate::{constants::TOOLCHAIN_FILE, toolchain::installed::InstalledToolchain, utils, Result};
 
 #[derive(Debug, PartialEq)]
 pub enum VersionOrPath {

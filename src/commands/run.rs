@@ -1,14 +1,6 @@
 use failure::format_err;
-use semver::VersionReq;
 
-use crate::{
-    shim,
-    toolchain::{
-        find_installed_toolchains, installed::InstalledToolchain, CompatibleToolchainBuilder,
-        ToolchainFile,
-    },
-    Result,
-};
+use crate::{shim, toolchain::CompatibleToolchainBuilder, Result};
 
 #[derive(Debug, failure::Fail)]
 pub enum RunError {

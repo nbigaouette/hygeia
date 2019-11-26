@@ -1,19 +1,16 @@
 use std::{
-    collections::HashMap,
-    env,
-    fs::{self, File},
+    fs::File,
     io::{BufRead, BufReader, Write},
     path::{Path, PathBuf},
 };
 
 use failure::format_err;
 use semver::{Version, VersionReq};
-use subprocess::{Exec, Redirection};
 
 use crate::{
     constants::TOOLCHAIN_FILE,
     toolchain::{get_python_versions_from_path, selected::VersionOrPath},
-    utils, Result, EXECUTABLE_NAME,
+    utils, Result,
 };
 
 #[derive(Debug, Clone, failure::Fail)]

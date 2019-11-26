@@ -201,46 +201,6 @@ pub fn active_version<'a>(
     compatible_versions.last().cloned()
 }
 
-pub fn get_interpreter_to_use<'a>(
-    selected_version: &'a Option<Result<InstalledToolchain>>,
-    installed_toolchains: &'a [InstalledToolchain],
-) -> Result<&'a InstalledToolchain> {
-    match selected_version {
-        None => {
-            log::warn!("No '.python-version' found.");
-            log::warn!("Please select a Python version to use with:");
-            log::warn!("    {} select <version>", EXECUTABLE_NAME);
-            log::warn!("");
-            log::warn!("See available versions with:");
-            log::warn!("    {} list", EXECUTABLE_NAME);
-            log::warn!("");
-            log::warn!(
-                "{} will select the highest version available.",
-                EXECUTABLE_NAME
-            );
-            installed_toolchains.last().ok_or_else(|| {
-                log::error!("No Python interpreter installed!");
-                log::error!("Please install one using:");
-                log::error!("    {} install <version>", EXECUTABLE_NAME);
-                log::error!("Were <version> is a semver version. Examples:");
-                log::error!("    ~3.7    for latest 3.7 version, f.e. 3.7.4");
-                log::error!("    =3.7.4  for an exact version");
-                log::error!("    latest  for the latest version");
-                format_err!("No Python interpreter installed!")
-            })
-        }
-        Some(selected_version) => unimplemented!()
-        // Some(selected_version) => selected_version.as_ref()
-        // Some(selected_version) => match selected_version {
-        //     Ok(selected_version) => Ok(selected_version),
-        //     Err(err) => Err(ToolchainNotInstalled {
-        //         version: err.version,
-        //     }
-        //     .into()),
-        // },
-    }
-}
-
 pub fn dir_files_set<P>(dir: P) -> Result<HashSet<PathBuf>>
 where
     P: AsRef<Path>,

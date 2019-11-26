@@ -49,7 +49,7 @@ impl FromStr for ToolchainFile {
                 log::info!("Parsed {:?} as semantic version: {}", s, version_req);
                 Ok(ToolchainFile::VersionReq(version_req))
             }
-            Err(e) => {
+            Err(_) => {
                 let path = Path::new(s);
                 log::info!("Parsed {:?} as Path: {:?}", s, path);
                 if path.exists() {
@@ -359,7 +359,7 @@ pub fn find_installed_toolchains() -> Result<Vec<InstalledToolchain>> {
                         };
 
                         // Append `bin` to the path (if it exists) since this location
-                        // will be used to call biInstalledToolchainly.
+                        // will be used.
                         let location_bin = location.join("bin");
                         let location = if location_bin.exists() {
                             location_bin
