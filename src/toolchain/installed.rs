@@ -1,17 +1,12 @@
 use std::{
     fs::File,
-    io::{BufRead, BufReader, Write},
+    io::Write,
     path::{Path, PathBuf},
 };
 
-use failure::format_err;
 use semver::{Version, VersionReq};
 
-use crate::{
-    constants::TOOLCHAIN_FILE,
-    toolchain::{get_python_versions_from_path, selected::VersionOrPath},
-    utils, Result,
-};
+use crate::{constants::TOOLCHAIN_FILE, toolchain::get_python_versions_from_path, Result};
 
 #[derive(Debug, Clone, failure::Fail)]
 #[fail(display = "Python version {} not found!", version)]
@@ -46,43 +41,6 @@ impl InstalledToolchain {
             version: highest_version.0,
             location: highest_version.1,
         })
-    }
-
-    pub fn from_select_file<P>(
-        path: P,
-        installed_toolchains: &[InstalledToolchain],
-    ) -> Result<InstalledToolchain>
-    where
-        P: AsRef<Path>,
-    {
-        let select_file = path.as_ref().join(TOOLCHAIN_FILE);
-        log::debug!("Reading configuration from file {:?}", select_file);
-
-        let input = File::open(select_file)?;
-        let buffered = BufReader::new(input);
-
-        // Read first line only
-        let line = match buffered.lines().next() {
-            None => return Err(format_err!("File does not even contains a line")),
-            Some(line_result) => line_result?,
-        };
-
-        let version_or_path: VersionOrPath = line.parse()?;
-        match version_or_path {
-            VersionOrPath::VersionReq(version_req) => {
-                match utils::active_version(&version_req, installed_toolchains) {
-                    Some(python_to_use) => Ok(python_to_use.clone()),
-                    None => {
-                        return Err(ToolchainNotInstalled {
-                            version: version_req,
-                        }
-                        .into());
-                    }
-                }
-            }
-            VersionOrPath::Path(path) => InstalledToolchain::from_path(&path)
-                .ok_or_else(|| format_err!("No Python interpreter found in {:?}!", path)),
-        }
     }
 
     pub fn is_custom_install(&self) -> bool {

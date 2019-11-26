@@ -25,7 +25,7 @@ mod shim;
 mod toolchain;
 mod utils;
 
-use crate::{commands::Command, constants::*, toolchain::installed::InstalledToolchain};
+use crate::{commands::Command, constants::*};
 
 pub type Result<T> = std::result::Result<T, failure::Error>;
 
@@ -62,13 +62,8 @@ pub enum MainError {
     Command(#[fail(cause)] failure::Error),
 }
 
-fn main() {
-    try_main().unwrap()
-}
-
-// fn main() -> Result<()> {
-fn try_main() -> Result<()> {
-    // setup_panic!();
+fn main() -> Result<()> {
+    setup_panic!();
 
     // Detect if running as shim as soon as possible
     let current_exe: PathBuf = env::current_exe().map_err(|e| MainError::Io(e))?;
