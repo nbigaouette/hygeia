@@ -1,3 +1,10 @@
+// FIXME: Replace 'format_err!()' with structs/enums
+// FIXME: Gracefully handle errors that bubble to main
+// FIXME: Re-enable 'python_shim()'
+// FIXME: Add -vvv flag to control log level
+// FIXME: Increase test coverage
+// FIXME: Implement checksum/signature validation
+
 use std::{
     env,
     ffi::{OsStr, OsString},
@@ -84,44 +91,11 @@ fn try_main() -> Result<()> {
         //     remaining_args,
         // )?;
     }
-
-    //
-    //
-    //
-    // ========================================================================
-    //
-    //
-    //
-    //
-    //
-    //
-    //
-    //
-
-    // std::env::var("RUST_LOG").or_else(|_| -> Result<String> {
-    //     let rust_log = format!("{}=warn", EXECUTABLE_NAME);
-    //     std::env::set_var("RUST_LOG", &rust_log);
-    //     Ok(rust_log)
-    // })?;
-
-    // env_logger::init();
-
-    // let installed_toolchains = find_installed_toolchains()?;
-    // // // Invert the Option<Result> to Result<Option> and use ? to unwrap the Result.
-    // // let selected_version_opt =
-    // //     load_selected_toolchain_file(&installed_toolchains).map_or(Ok(None), |v| v.map(Some))?;
-    // let selected_version_opt = load_selected_toolchain_file(&installed_toolchains);
-
-    // let arguments: Vec<_> = env::args().collect();
-    // let (_, remaining_args) = arguments.split_at(1);
 }
 
-// selected_version: &Option<Result<InstalledToolchain>>,
-// installed_toolchains: &[InstalledToolchain],
 pub fn no_shim_execution() -> Result<()> {
     let opt = Opt::from_args();
     log::debug!("{:?}", opt);
-    // FIXME: Add -vvv flag to control log level
 
     std::env::var("RUST_LOG").or_else(|_| -> Result<String> {
         let rust_log = format!("{}=info", EXECUTABLE_NAME);

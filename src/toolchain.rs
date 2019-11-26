@@ -245,13 +245,10 @@ where
         if python_path.exists() {
             let python_path = path.to_path_buf();
 
-            log::debug!("python_path: {}", python_path.display());
             if python_path.join(EXECUTABLE_NAME).exists() {
                 log::debug!("Skipping {}' shim directory.", EXECUTABLE_NAME);
                 break;
             }
-
-            log::debug!("Found python executable in {}", python_path.display());
 
             let full_executable_path = python_path.join(&executable);
             let python_version = match Exec::cmd(&full_executable_path)
@@ -283,7 +280,6 @@ where
                 }
                 Some(python_version_str) => python_version_str,
             };
-            log::debug!("    {:?}", python_version_str);
             let python_version = match Version::parse(python_version_str) {
                 Err(e) => {
                     log::error!(
@@ -295,7 +291,11 @@ where
                 }
                 Ok(python_version) => python_version,
             };
-            log::debug!("    {:?}", python_version);
+            log::debug!(
+                "Found python executable in {}: {}",
+                python_path.display(),
+                python_version
+            );
 
             other_pythons.insert(python_version, python_path);
         }
@@ -322,7 +322,6 @@ pub fn find_installed_toolchains() -> Result<Vec<InstalledToolchain>> {
     let install_dir = utils::directory::installed()?;
 
     let mut installed_python = Vec::new();
-    log::debug!("install_dir: {}", install_dir.display());
 
     match fs::read_dir(&install_dir) {
         Ok(dirs) => {

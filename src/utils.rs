@@ -18,7 +18,7 @@ use terminal_size::{terminal_size, Width};
 
 use crate::{
     constants::{home_env_variable, DEFAULT_DOT_DIR, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME},
-    toolchain::{installed::InstalledToolchain, selected::SelectedVersion},
+    toolchain::installed::InstalledToolchain,
     Result,
 };
 
