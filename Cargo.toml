@@ -1,6 +1,6 @@
 [package]
 name = "pycors"
-version = "0.1.17"
+version = "0.2.0"
 authors = ["Nicolas Bigaouette <nbigaouette@gmail.com>"]
 homepage = "https://github.com/nbigaouette/pycors"
 repository = "https://github.com/nbigaouette/pycors"
