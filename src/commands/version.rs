@@ -13,7 +13,7 @@ pub fn run(version: Option<String>) -> Result<()> {
         Some(compatible_toolchain) => println!("{}", compatible_toolchain.version),
         None => {
             log::error!("No Python interpreter found at all. Please install at least one!");
-            println!("")
+            println!()
         }
     }
 

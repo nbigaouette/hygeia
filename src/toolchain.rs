@@ -535,7 +535,7 @@ impl<'a> CompatibleToolchainBuilder<'a> {
                     };
 
                 // If none found, pick the latest (if asked for)
-                let compatible_toolchain = compatible_toolchain.or_else(|| {
+                compatible_toolchain.or_else(|| {
                     if self.pick_latest_if_none_found {
                         // We could not get a compatible version.
                         // Let's pick the latest installed one instead, if any.
@@ -548,9 +548,7 @@ impl<'a> CompatibleToolchainBuilder<'a> {
                     } else {
                         compatible_toolchain
                     }
-                });
-
-                compatible_toolchain
+                })
             },
         );
 
