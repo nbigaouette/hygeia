@@ -53,6 +53,7 @@ pub fn run(
                 TOOLCHAIN_FILE
             );
             match ToolchainFile::load()? {
+                None => Ok(selected_version_from_user_input()?),
                 Some(ToolchainFile::VersionReq(version_req)) => Ok(version_req),
                 Some(ToolchainFile::Path(path)) => {
                     log::error!(
@@ -60,10 +61,6 @@ pub fn run(
                         path
                     );
                     Err(InstallError::ToolchainFileContainsPath(path))
-                }
-                None => {
-                    //
-                    Err(InstallError::NoToolchainFile)
                 }
             }?
         }
@@ -179,7 +176,7 @@ fn install_package(
     Ok(())
 }
 
-fn selected_version_from_user_input() -> Result<SelectedVersion> {
+fn selected_version_from_user_input() -> Result<VersionReq> {
     log::debug!("Reading configuration from stdin");
 
     let stdin = io::stdin();
@@ -197,6 +194,6 @@ fn selected_version_from_user_input() -> Result<SelectedVersion> {
         Err(format_err!("Empty line provided"))
     } else {
         log::debug!("Parsed version: {}", version);
-        Ok(SelectedVersion { version })
+        Ok(version)
     }
 }
