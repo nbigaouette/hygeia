@@ -1,6 +1,5 @@
 // FIXME: Replace 'format_err!()' with structs/enums
 // FIXME: Gracefully handle errors that bubble to main
-// FIXME: Re-enable 'python_shim()'
 // FIXME: Add -vvv flag to control log level
 // FIXME: Increase test coverage
 // FIXME: Implement checksum/signature validation
@@ -83,13 +82,7 @@ fn try_main() -> Result<()> {
     if exe.starts_with(EXECUTABLE_NAME) {
         no_shim_execution().map_err(|e| MainError::Command(e).into())
     } else {
-        unimplemented!()
-        // python_shim(
-        //     exe,
-        //     &selected_version_opt,
-        //     &installed_toolchains,
-        //     remaining_args,
-        // )?;
+        python_shim(exe)
     }
 }
 
@@ -130,16 +123,13 @@ pub fn no_shim_execution() -> Result<()> {
     Ok(())
 }
 
-pub fn python_shim(
-    command: &str,
-    selected_version: &Option<Result<InstalledToolchain>>,
-    installed_toolchains: &[InstalledToolchain],
-    arguments: &[String],
-) -> Result<()> {
-    // let interpreter_to_use = utils::get_interpreter_to_use(selected_version, installed_toolchains)?;
+pub fn python_shim(command: &str) -> Result<()> {
+    env_logger::init();
 
-    // shim::run(&interpreter_to_use, command, arguments)
-    unimplemented!()
+    let arguments: Vec<_> = env::args().collect();
+    let (_, remaining_args) = arguments.split_at(1);
+
+    shim::run(command, remaining_args)
 }
 
 #[cfg(test)]

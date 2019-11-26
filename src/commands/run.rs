@@ -25,7 +25,7 @@ pub fn run(version: Option<String>, command_and_args: &str) -> Result<()> {
         .compatible_version()?;
 
     match compatible_toolchain {
-        Some(compatible_toolchain) => shim::run(&compatible_toolchain, cmd, arguments),
+        Some(compatible_toolchain) => shim::run_with(&compatible_toolchain, cmd, arguments),
         None => {
             log::error!("No Python interpreter found at all. Please install at least one!");
             Err(RunError::MissingInterpreter(command_and_args.to_string()).into())

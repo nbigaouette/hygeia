@@ -4,32 +4,55 @@ use failure::Fail;
 use subprocess::{Exec, Redirection};
 
 use crate::{
-    dir_monitor::DirectoryMonitor, os::command_with_major_version,
-    toolchain::installed::InstalledToolchain, utils, Result, EXECUTABLE_NAME,
+    dir_monitor::DirectoryMonitor,
+    os::command_with_major_version,
+    toolchain::{installed::InstalledToolchain, CompatibleToolchainBuilder},
+    utils, Result, EXECUTABLE_NAME,
 };
 
-pub fn run<S>(interpreter_to_use: &InstalledToolchain, command: &str, arguments: &[S]) -> Result<()>
+#[derive(Debug, failure::Fail)]
+pub enum ShimError {
+    #[fail(display = "No interpreter found to run command: {}", _0)]
+    MissingInterpreter(String),
+}
+
+pub fn run<S>(command: &str, arguments: &[S]) -> Result<()>
 where
     S: AsRef<str> + std::convert::AsRef<std::ffi::OsStr> + std::fmt::Debug,
 {
-    log::debug!("interpreter_to_use: {:?}", interpreter_to_use);
+    let compatible_toolchain = CompatibleToolchainBuilder::new()
+        .from_file()
+        .pick_latest_if_none_found()
+        .compatible_version()?;
 
-    let command_string_with_major_version =
-        command_with_major_version(command, interpreter_to_use)?;
+    match compatible_toolchain {
+        Some(compatible_toolchain) => run_with(&compatible_toolchain, command, arguments),
+        None => {
+            log::error!("No Python interpreter found at all. Please install at least one!");
+            Err(ShimError::MissingInterpreter(command.to_string()).into())
+        }
+    }
+}
 
-    let command_full_path = interpreter_to_use
-        .location
-        .join(command_string_with_major_version);
+pub fn run_with<S>(toolchain: &InstalledToolchain, command: &str, arguments: &[S]) -> Result<()>
+where
+    S: AsRef<str> + std::convert::AsRef<std::ffi::OsStr> + std::fmt::Debug,
+{
+    log::debug!("toolchain: {:?}", toolchain);
+
+    let command_string_with_major_version = command_with_major_version(command, toolchain)?;
+
+    let command_full_path = toolchain.location.join(command_string_with_major_version);
     let command_full_path = if command_full_path.exists() {
         command_full_path
     } else {
-        interpreter_to_use.location.join(command)
+        toolchain.location.join(command)
     };
 
     log::debug!("Command:   {:?}", command_full_path);
     log::debug!("Arguments: {:?}", arguments);
 
-    let bin_dir = interpreter_to_use.location.clone();
+    let bin_dir = toolchain.location.clone();
 
     // Prepend `bin_dir` to `PATH`
     let new_path = match env::var("PATH") {
