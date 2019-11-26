@@ -106,8 +106,8 @@ impl AvailableToolchainsCache {
 
         compatible_toolchains
             .get(0)
-            .map(|a: &&AvailableToolchain| *a) // Deref once
-            .ok_or(CacheError::NoCompatibleVersionFound.into())
+            .copied()
+            .ok_or_else(|| CacheError::NoCompatibleVersionFound.into())
     }
 }
 

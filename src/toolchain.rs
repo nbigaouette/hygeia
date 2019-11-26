@@ -68,7 +68,7 @@ impl FromStr for ToolchainFile {
 impl ToolchainFile {
     pub fn load() -> Result<Option<ToolchainFile>> {
         let mut search_path: PathBuf =
-            env::current_dir().map_err(|e| ToolchainError::FailedCurrentDir(e))?;
+            env::current_dir().map_err(ToolchainError::FailedCurrentDir)?;
         let toolchain_file: Option<PathBuf> = loop {
             let toolchain_file: PathBuf = search_path.join(TOOLCHAIN_FILE);
             if utils::path_exists(&toolchain_file) {
@@ -458,18 +458,11 @@ impl<'a> CompatibleToolchainBuilder<'a> {
             installed_toolchains: None,
         }
     }
-    // pub fn with_installed_toolchains(
-    //     mut self,
-    //     installed_toolchains: &'a [InstalledToolchain],
-    // ) -> Self {
-    //     self.installed_toolchains = Some(installed_toolchains);
-    //     self
-    // }
-    pub fn from_file(mut self) -> Self {
+    pub fn load_from_file(mut self) -> Self {
         self.load_from = CompatibleToolchainSource::File;
         self
     }
-    pub fn from_string(mut self, source: &str) -> Self {
+    pub fn load_from_string(mut self, source: &str) -> Self {
         self.load_from = CompatibleToolchainSource::String(source.to_string());
         self
     }

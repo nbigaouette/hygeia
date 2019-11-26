@@ -78,28 +78,32 @@ pub fn run(
             VersionReq::exact(&requested_version.version).matches(&installed_python.version)
                 && installed_python.is_custom_install()
         });
-    if matching_installed_version.is_none() || force_install {
-        log::info!(
-            "Installing Python {} (from {})",
-            requested_version.version,
-            requested_version.base_url
-        );
 
-        // Configure make make install
-        download_source(&requested_version.version)?;
-        // FIXME: Validate downloaded package with checksum
-        // FIXME: Validate downloaded package with signature
-        install_package(&requested_version.version, install_extra_packages)?;
-    } else {
-        log::warn!(
-            "Python version {} already installed!",
-            requested_version.version
-        );
-        log::warn!(
-            "Compatible version found: {} (in {:?})",
-            matching_installed_version.unwrap().version,
-            matching_installed_version.unwrap().location,
-        );
+    match (matching_installed_version, force_install) {
+        (Some(matching_installed_version), false) => {
+            log::warn!(
+                "Python version {} already installed!",
+                requested_version.version
+            );
+            log::warn!(
+                "Compatible version found: {} (in {:?})",
+                matching_installed_version.version,
+                matching_installed_version.location,
+            );
+        }
+        (_, true) | (None, _) => {
+            log::info!(
+                "Installing Python {} (from {})",
+                requested_version.version,
+                requested_version.base_url
+            );
+
+            // Configure make make install
+            download_source(&requested_version.version)?;
+            // FIXME: Validate downloaded package with checksum
+            // FIXME: Validate downloaded package with signature
+            install_package(&requested_version.version, install_extra_packages)?;
+        }
     }
 
     // Write .python-version file, if required
@@ -108,8 +112,8 @@ pub fn run(
 
         let version = format!("{}", VersionReq::exact(&requested_version.version));
         let mut output = File::create(&TOOLCHAIN_FILE)?;
-        output.write(version.as_bytes())?;
-        output.write(b"\n")?;
+        output.write_all(version.as_bytes())?;
+        output.write_all(b"\n")?;
     }
 
     // Install extras

@@ -2,8 +2,8 @@ use crate::{toolchain::CompatibleToolchainBuilder, Result};
 
 pub fn run(version: Option<String>) -> Result<()> {
     let compatible_toolchain_builder = match version {
-        Some(version) => CompatibleToolchainBuilder::new().from_string(&version),
-        None => CompatibleToolchainBuilder::new().from_file(),
+        Some(version) => CompatibleToolchainBuilder::new().load_from_string(&version),
+        None => CompatibleToolchainBuilder::new().load_from_file(),
     };
     let compatible_toolchain = compatible_toolchain_builder
         .pick_latest_if_none_found()

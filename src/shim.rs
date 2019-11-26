@@ -21,7 +21,7 @@ where
     S: AsRef<str> + std::convert::AsRef<std::ffi::OsStr> + std::fmt::Debug,
 {
     let compatible_toolchain = CompatibleToolchainBuilder::new()
-        .from_file()
+        .load_from_file()
         .pick_latest_if_none_found()
         .compatible_version()?;
 

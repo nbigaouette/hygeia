@@ -128,7 +128,7 @@ impl ToolChainTable {
                 &t.version
                     .as_ref()
                     .map(|t| format!("{}", t).replace("= ", ""))
-                    .unwrap_or(String::new()),
+                    .unwrap_or_default(),
                 prettytable::format::Alignment::CENTER,
             );
 
@@ -138,22 +138,23 @@ impl ToolChainTable {
                 &t.location
                     .as_ref()
                     .map(|t| format!("{}", t.display()))
-                    .unwrap_or(String::new()),
+                    .unwrap_or_default(),
                 prettytable::format::Alignment::LEFT,
             );
 
-            line_color.map(|c| {
+            if let Some(c) = line_color {
                 col_1.style(c);
                 col_2.style(c);
                 col_3.style(c);
                 col_4.style(c);
-            });
-            line_style.map(|c| {
+            }
+
+            if let Some(c) = line_style {
                 col_1.style(c);
                 col_2.style(c);
                 col_3.style(c);
                 col_4.style(c);
-            });
+            }
 
             table.add_row(Row::new(vec![col_1, col_2, col_3, col_4]));
         });

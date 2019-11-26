@@ -66,7 +66,7 @@ fn main() -> Result<()> {
     setup_panic!();
 
     // Detect if running as shim as soon as possible
-    let current_exe: PathBuf = env::current_exe().map_err(|e| MainError::Io(e))?;
+    let current_exe: PathBuf = env::current_exe().map_err(MainError::Io)?;
     let file_name: &OsStr = current_exe
         .file_name()
         .ok_or_else(|| MainError::ExecutablePath(current_exe.clone()))?;
