@@ -1,9 +1,20 @@
+use std::{
+    fs::{read_to_string, File},
+    io::{BufWriter, Write},
+    path::PathBuf,
+};
+
 use chrono::{DateTime, Utc};
 use regex::Regex;
 use semver::{SemVerError, Version, VersionReq};
+use serde::{Deserialize, Serialize};
+use serde_json;
 use url::Url;
 
-use crate::{constants::PYTHON_BASE_URL, Result};
+use crate::{
+    constants::{AVAILABLE_TOOLCHAIN_CACHE, PYTHON_BASE_URL},
+    utils, Result,
+};
 
 // FIXME: Pre-releases are available inside 'https://www.python.org/ftp/python/MAJOR.MINOR.PATCH'
 //          This means that seeing 'MAJOR.MINOR.PATCH' in the index.html does not mean a
@@ -18,22 +29,50 @@ pub enum CacheError {
     NoCompatibleVersionFound,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AvailableToolchain {
     pub version: Version,
-    pub url: Url,
+    pub base_url: Url,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AvailableToolchainsCache {
     last_updated: DateTime<Utc>,
     available: Vec<AvailableToolchain>,
 }
 
+fn cache_file() -> Result<PathBuf> {
+    Ok(utils::directory::cache()?.join(AVAILABLE_TOOLCHAIN_CACHE))
+}
+
 impl AvailableToolchainsCache {
     pub fn new() -> Result<AvailableToolchainsCache> {
-        // Load from file, etc.
         log::debug!("Initializing cache...");
+
+        let cache_file = cache_file()?;
+        let cache: AvailableToolchainsCache = if cache_file.exists() {
+            let cache_json = read_to_string(&cache_file)?;
+            let mut cache: AvailableToolchainsCache = serde_json::from_str(&cache_json)?;
+            let cache_age = Utc::now() - cache.last_updated;
+            let cache_age_days = cache_age.num_days();
+            if cache_age_days > 10 {
+                log::info!(
+                    "Cache is older than 10 days (age: {} days). Updating...",
+                    cache_age_days
+                );
+                cache.update()?;
+            } else {
+                log::info!("Using cache ({} days old)", cache_age_days);
+            }
+            cache
+        } else {
+            AvailableToolchainsCache::create()?
+        };
+
+        Ok(cache)
+    }
+
+    fn create() -> Result<AvailableToolchainsCache> {
         let mut cache = AvailableToolchainsCache {
             last_updated: Utc::now(),
             available: Vec::new(),
@@ -45,7 +84,14 @@ impl AvailableToolchainsCache {
     pub fn update(&mut self) -> Result<()> {
         let index_html = reqwest::get(PYTHON_BASE_URL)?.text()?;
 
+        self.last_updated = Utc::now();
+
         self.available = parse_index_html(&index_html)?;
+
+        let cache_json = serde_json::to_string(&self)?;
+        let cache_file = cache_file()?;
+        let mut output = BufWriter::new(File::create(&cache_file)?);
+        output.write_all(cache_json.as_bytes())?;
 
         Ok(())
     }
@@ -95,7 +141,10 @@ fn parse_index_html(index_html: &str) -> Result<Vec<AvailableToolchain>> {
             let dots = v.chars().filter(|c| *c == '.').count();
             let v = if dots == 1 { format!("{}.0", v) } else { v };
             match Version::parse(&v) {
-                Ok(version) => Some(AvailableToolchain { version, url }),
+                Ok(version) => Some(AvailableToolchain {
+                    version,
+                    base_url: url,
+                }),
                 Err(e) => {
                     log::error!("Failed to parse version ({:?}), skipping: {:?}", v, e);
                     None

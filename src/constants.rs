@@ -34,3 +34,5 @@ pub const TOOLCHAIN_FILE: &str = ".python-version";
 
 // Note: Trailing '/' is required for proper parsing
 pub const PYTHON_BASE_URL: &str = "https://www.python.org/ftp/python/";
+
+pub const AVAILABLE_TOOLCHAIN_CACHE: &str = "available_toolchains.json";
