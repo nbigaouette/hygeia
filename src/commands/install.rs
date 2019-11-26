@@ -1,5 +1,6 @@
 use std::{
-    io::{self, BufRead},
+    fs::File,
+    io::{self, BufRead, Write},
     path::PathBuf,
 };
 
@@ -8,21 +9,19 @@ use semver::{Version, VersionReq};
 
 use crate::{
     cache::AvailableToolchainsCache,
-    commands,
+    commands::{
+        self,
+        install::{download::download_source, pip::install_extra_pip_packages},
+    },
     constants::TOOLCHAIN_FILE,
-    toolchain::{installed::InstalledToolchain, selected::SelectedVersion, ToolchainFile},
-    Result,
+    toolchain::{find_installed_toolchains, installed::InstalledToolchain, ToolchainFile},
+    utils, Result,
 };
 
 mod download;
 mod pip;
 mod unix;
 mod windows;
-
-use crate::commands::install::{
-    download::{download_source, find_all_python_versions},
-    pip::install_extra_pip_packages,
-};
 
 #[derive(Debug, failure::Fail)]
 pub enum InstallError {
@@ -31,21 +30,23 @@ pub enum InstallError {
         _0
     )]
     ToolchainFileContainsPath(PathBuf),
-    #[fail(
-        display = "There is no toolchain file to install from. Please provide a specific version to install."
-    )]
-    NoToolchainFile,
 }
 
 pub fn run(
     requested_version: Option<String>,
+    force_install: bool,
     install_extra_packages: &commands::InstallExtraPackagesOptions,
     select: bool,
 ) -> Result<()> {
     let requested_version_req: VersionReq = match requested_version {
         Some(requested_version) => {
             log::debug!("Parsing string {:?} as VersionReq", requested_version);
-            requested_version.parse()?
+            if requested_version == "latest" {
+                "*"
+            } else {
+                &requested_version
+            }
+            .parse()?
         }
         None => {
             log::warn!(
@@ -70,94 +71,64 @@ pub fn run(
 
     let requested_version = cache.query(&requested_version_req)?;
 
-    log::info!(
-        "Installing Python {} (from {})",
-        requested_version.version,
-        requested_version.base_url
-    );
+    // Already installed? Force installation?
+    let installed_toolchains = find_installed_toolchains()?;
+    let matching_installed_version: Option<&InstalledToolchain> =
+        installed_toolchains.iter().find(|installed_python| {
+            VersionReq::exact(&requested_version.version).matches(&installed_python.version)
+                && installed_python.is_custom_install()
+        });
+    if matching_installed_version.is_none() || force_install {
+        log::info!(
+            "Installing Python {} (from {})",
+            requested_version.version,
+            requested_version.base_url
+        );
 
-    // Already installed?
-
-    // Force installation?
-
-    // Configure make make install
-
-    // Install extras
+        // Configure make make install
+        download_source(&requested_version.version)?;
+        // FIXME: Validate downloaded package with checksum
+        // FIXME: Validate downloaded package with signature
+        install_package(&requested_version.version, install_extra_packages)?;
+    } else {
+        log::warn!(
+            "Python version {} already installed!",
+            requested_version.version
+        );
+        log::warn!(
+            "Compatible version found: {} (in {:?})",
+            matching_installed_version.unwrap().version,
+            matching_installed_version.unwrap().location,
+        );
+    }
 
     // Write .python-version file, if required
+    if select {
+        log::info!("Writing configuration to file {:?}", TOOLCHAIN_FILE);
+
+        let version = format!("{}", VersionReq::exact(&requested_version.version));
+        let mut output = File::create(&TOOLCHAIN_FILE)?;
+        output.write(version.as_bytes())?;
+        output.write(b"\n")?;
+    }
+
+    // Install extras
+    let install_extra_flag_present = install_extra_packages.install_extra_packages
+        || install_extra_packages.install_extra_packages_from.is_some();
+
+    let install_dir = utils::directory::install_dir(&requested_version.version)?;
+
+    if install_extra_flag_present {
+        log::info!("Installing pip packages for {}", requested_version.version);
+
+        install_extra_pip_packages(
+            install_dir,
+            &requested_version.version,
+            install_extra_packages,
+        )?;
+    }
 
     Ok(())
-    //
-
-    // let version: VersionReq = match from_version {
-    //     None => match selected_version {
-    //         None => selected_version_from_user_input()?.version,
-    //         Some(selected_version) => selected_version.version.clone(),
-    //     },
-    //     Some(version) => VersionReq::parse(&version)?,
-    // };
-    // log::debug!("Installing Python {}", version);
-
-    // let matching_installed_versions: Vec<_> = installed_toolchains
-    //     .iter()
-    //     .filter(|installed_python| {
-    //         version.matches(&installed_python.version) && installed_python.is_custom_install()
-    //     })
-    //     .collect();
-
-    // if !matching_installed_versions.is_empty() {
-    //     log::info!("Python version {} already installed!", version);
-    //     log::info!(
-    //         "Compatible versions found: {:?}",
-    //         matching_installed_versions
-    //     );
-
-    //     let install_extra_flag_present = install_extra_packages.install_extra_packages
-    //         || install_extra_packages.install_extra_packages_from.is_some();
-
-    //     if install_extra_flag_present {
-    //         // Safe to use `[0]` since we know for sure that vector is not-empty
-    //         let first_matching_installed_versions = matching_installed_versions[0];
-    //         log::info!(
-    //             "Installing pip packages for toolchain {:?}",
-    //             first_matching_installed_versions
-    //         );
-
-    //         let install_dir = &first_matching_installed_versions.location;
-    //         install_extra_pip_packages(
-    //             install_dir,
-    //             &first_matching_installed_versions.version,
-    //             install_extra_packages,
-    //         )?;
-    //     }
-
-    //     if select {
-    //         // Write to `.python-version`
-    //         SelectedVersion { version }.save()?;
-    //     }
-
-    //     Ok(None)
-    // } else {
-    //     // Get the last version compatible with the given version
-    //     let versions = find_all_python_versions()?;
-    //     let version_to_install = versions
-    //         .into_iter()
-    //         .find(|available_version| version.matches(&available_version))
-    //         .ok_or_else(|| format_err!("Failed to find a compatible version to {}", version))?;
-    //     log::info!("Found Python version {}", version_to_install);
-    //     download_source(&version_to_install)?;
-    //     install_package(&version_to_install, install_extra_packages)?;
-
-    //     if select {
-    //         // Write to `.python-version`
-    //         SelectedVersion {
-    //             version: VersionReq::exact(&version_to_install),
-    //         }
-    //         .save()?;
-    //     }
-
-    //     Ok(Some(version_to_install))
-    // }
 }
 
 fn install_package(

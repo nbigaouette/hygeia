@@ -124,7 +124,7 @@ pub fn no_shim_execution() -> Result<()> {
     // FIXME: Add -vvv flag to control log level
 
     std::env::var("RUST_LOG").or_else(|_| -> Result<String> {
-        let rust_log = format!("{}=warn", EXECUTABLE_NAME);
+        let rust_log = format!("{}=info", EXECUTABLE_NAME);
         std::env::set_var("RUST_LOG", &rust_log);
         Ok(rust_log)
     })?;
@@ -142,10 +142,11 @@ pub fn no_shim_execution() -> Result<()> {
             Command::Select(version_or_path) => commands::select::run(version_or_path)?,
             Command::Install {
                 from_version,
+                force,
                 install_extra_packages,
                 select,
             } => {
-                commands::install::run(from_version, &install_extra_packages, select)?;
+                commands::install::run(from_version, force, &install_extra_packages, select)?;
             }
             Command::Run { version, command } => commands::run::run(version, &command)?,
             Command::Setup { shell } => commands::setup::run(shell)?,

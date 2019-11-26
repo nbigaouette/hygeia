@@ -30,7 +30,7 @@ impl FromStr for VersionOrPath {
 
         match semver::VersionReq::parse(s) {
             Ok(version_req) => {
-                log::info!("Parsed {:?} as semantic version : {}", s, version_req);
+                log::info!("Parsed {:?} as semantic version: {}", s, version_req);
                 Ok(VersionOrPath::VersionReq(version_req))
             }
             Err(e) => {
