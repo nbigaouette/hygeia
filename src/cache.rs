@@ -61,7 +61,7 @@ impl AvailableToolchainsCache {
         log::debug!("Compatible versions found: {:?}", compatible_toolchains);
 
         compatible_toolchains
-            .last()
+            .get(0)
             .map(|a: &&AvailableToolchain| *a) // Deref once
             .ok_or(CacheError::NoCompatibleVersionFound.into())
     }
