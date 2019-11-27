@@ -30,7 +30,7 @@ services:
       dockerfile: docker/ubuntu/Dockerfile
       args:
         OS_NAME: ubuntu
-        OS_VERSION: 19.04
+        OS_VERSION: 16.04
         RUST_VERSION: 1.39.0
     environment:
       RUST_LOG: pycors=debug
