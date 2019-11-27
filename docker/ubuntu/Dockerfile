@@ -5,6 +5,8 @@ FROM ${OS_NAME}:${OS_VERSION} as builder
 
 LABEL pycors_${OS_NAME}_${OS_VERSION}_builder=true
 
+ARG DOCKER_GID=999
+ARG DOCKER_UID=999
 ARG RUST_VERSION=1.39.0
 
 
@@ -26,8 +28,8 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
 
 
 
-RUN groupadd --system pycors && \
-    useradd --create-home --system --gid pycors pycors && \
+RUN groupadd --system pycors --gid ${DOCKER_GID} && \
+    useradd --create-home --system --gid pycors --uid ${DOCKER_UID} pycors && \
     chown pycors:pycors /home/pycors
 USER pycors
 
@@ -62,7 +64,8 @@ FROM ${OS_NAME}:${OS_VERSION}
 
 LABEL pycors_${OS_NAME}_${OS_VERSION}_builder=false
 
-ARG DOCKER_USER=pycors
+ARG DOCKER_GID=999
+ARG DOCKER_UID=999
 
 # -------------------------------------------------------------------------------
 # OS-specific
@@ -75,8 +78,8 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -y build-dep \
     && rm -rf /var/lib/apt/lists/*
 # -------------------------------------------------------------------------------
 
-RUN groupadd --system pycors && \
-    useradd --create-home --system --gid pycors pycors
+RUN groupadd --system pycors --gid ${DOCKER_GID} && \
+    useradd --create-home --system --gid pycors --uid ${DOCKER_UID} pycors
 USER pycors
 
 COPY --chown=pycors:pycors --from=builder /home/pycors/.pycors /home/pycors/.pycors
