@@ -18,8 +18,7 @@ use terminal_size::{terminal_size, Width};
 
 use crate::{
     constants::{home_env_variable, DEFAULT_DOT_DIR, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME},
-    installed::InstalledToolchain,
-    selected::SelectedVersion,
+    toolchain::installed::InstalledToolchain,
     Result,
 };
 
@@ -176,10 +175,10 @@ where
 
 pub fn active_version<'a>(
     version: &VersionReq,
-    installed_toolchain: &'a [InstalledToolchain],
+    installed_toolchains: &'a [InstalledToolchain],
 ) -> Option<&'a InstalledToolchain> {
     // Find the compatible versions from the installed list
-    let mut compatible_versions: Vec<&'a InstalledToolchain> = installed_toolchain
+    let mut compatible_versions: Vec<&'a InstalledToolchain> = installed_toolchains
         .iter()
         .filter(|installed_python| version.matches(&installed_python.version))
         .collect();
@@ -200,66 +199,6 @@ pub fn active_version<'a>(
     log::debug!("Compatible versions found: {:?}", compatible_versions);
 
     compatible_versions.last().cloned()
-}
-
-pub fn get_interpreter_to_use(
-    selected_version: &Option<SelectedVersion>,
-    installed_toolchains: &[InstalledToolchain],
-) -> Result<InstalledToolchain> {
-    if !selected_version.is_some() {
-        log::warn!("No '.python-version' found.");
-        log::warn!("Please select a Python version to use with:");
-        log::warn!("    {} select <version>", EXECUTABLE_NAME);
-        log::warn!("");
-        log::warn!("See available versions with:");
-        log::warn!("    {} list", EXECUTABLE_NAME);
-        log::warn!("");
-        log::warn!(
-            "{} will select the highest version available.",
-            EXECUTABLE_NAME
-        );
-    }
-
-    // If `selected_version` is `None`, check if there is something in `Settings`; pick the first found
-    // interpreter to construct a `selected_version`.
-    let selected_version: SelectedVersion = selected_version
-        .as_ref() // &Option<SelectedVersion> -> Option<&SelectedVersion>
-        .cloned() // Option<&SelectedVersion> -> Option<SelectedVersion>
-        .or_else(|| {
-            // Sort available versions
-            let mut installed_toolchains_cloned = installed_toolchains.to_vec();
-            installed_toolchains_cloned.sort_by_key(|python| python.version.clone());
-            installed_toolchains_cloned.reverse();
-            match installed_toolchains_cloned.get(0) {
-                None => None,
-                Some(latest_interpreter_found) => Some(SelectedVersion {
-                    version: VersionReq::exact(&latest_interpreter_found.version),
-                }),
-            }
-        })
-        .ok_or_else(|| {
-            format_err!(
-                "No Python runtime configured. Use `{} select <version> <version>`.",
-                EXECUTABLE_NAME
-            )
-        })?;
-
-    let active_python = active_version(&selected_version.version, installed_toolchains).ok_or_else(|| {
-        log::error!(
-            "Could not find Python {} as requested from the file `.python-version`.",
-            selected_version.version
-        );
-        log::error!("Either:");
-        log::error!("    1) Remove the file `.python-version` to use (one of) the interpreter(s) available in your $PATH.");
-        log::error!("    2) Edit the file to use an installed interpreter.");
-        log::error!("       For example, to list available interpreters:");
-        log::error!("           {} list", EXECUTABLE_NAME);
-        log::error!("       Then select a version to use:");
-        log::error!("           {} select <version> ~3.7", EXECUTABLE_NAME);
-        format_err!("No active Python runtime found.")
-    })?.clone();
-
-    Ok(active_python)
 }
 
 pub fn dir_files_set<P>(dir: P) -> Result<HashSet<PathBuf>>

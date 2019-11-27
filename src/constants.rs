@@ -31,3 +31,8 @@ pub const EXTRA_PACKAGES_FILENAME: &str = "extra-packages-to-install.txt";
 pub const EXTRA_PACKAGES_FILENAME_CONTENT: &str = include_str!("../extra-packages-to-install.txt");
 
 pub const TOOLCHAIN_FILE: &str = ".python-version";
+
+// Note: Trailing '/' is required for proper parsing
+pub const PYTHON_BASE_URL: &str = "https://www.python.org/ftp/python/";
+
+pub const AVAILABLE_TOOLCHAIN_CACHE: &str = "available_toolchains.json";

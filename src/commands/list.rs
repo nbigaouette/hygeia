@@ -1,94 +1,164 @@
+use std::path::PathBuf;
+
 use prettytable::{cell, row, Cell, Row, Table};
+use semver::VersionReq;
 
-use crate::{installed::InstalledToolchain, selected::SelectedVersion, utils, Result};
+use crate::{
+    toolchain::{
+        find_installed_toolchains, installed::InstalledToolchain, is_a_custom_install,
+        SelectedToolchain, ToolchainFile,
+    },
+    Result,
+};
 
-pub fn run(
-    selected_version: &Option<SelectedVersion>,
-    installed_toolchains: &[InstalledToolchain],
-) -> Result<()> {
-    let mut table = Table::new();
-    // Header
-    table.add_row(row![
-        "Active",
-        "Version",
-        &format!("Installed by {}", crate::EXECUTABLE_NAME),
-        "Location"
-    ]);
+pub fn run() -> Result<()> {
+    let installed_toolchains: Vec<InstalledToolchain> = find_installed_toolchains()?;
 
-    let active_python = match selected_version {
-        None => None,
-        Some(selected_version) => {
-            utils::active_version(&selected_version.version, installed_toolchains)
-        }
-    };
+    let mut toolchains_table = ToolChainTable::new(&installed_toolchains);
 
-    if active_python.is_none() {
-        if let Some(selected_version) = selected_version {
-            table.add_row(Row::new(vec![
-                Cell::new_align("✗", prettytable::format::Alignment::CENTER)
-                    .with_style(prettytable::Attr::Bold)
-                    .with_style(prettytable::Attr::ForegroundColor(prettytable::color::RED)),
-                Cell::new_align(
-                    &format!("{}", selected_version.version),
-                    prettytable::format::Alignment::CENTER,
-                )
-                .with_style(prettytable::Attr::Bold)
-                .with_style(prettytable::Attr::ForegroundColor(prettytable::color::RED)),
-                Cell::new_align("", prettytable::format::Alignment::CENTER),
-                Cell::new_align("Not installed", prettytable::format::Alignment::CENTER)
-                    .with_style(prettytable::Attr::Bold)
-                    .with_style(prettytable::Attr::ForegroundColor(prettytable::color::RED)),
-            ]));
-        }
+    if let Some(toolchain_file) = ToolchainFile::load()? {
+        let selected_toolchain =
+            SelectedToolchain::from_toolchain_file(&toolchain_file, &installed_toolchains);
+
+        // Information was loaded from .python-version. Mark the relevant installed toolchain
+        // as being active. If not found, add it to the list as not-installed.
+        toolchains_table.append(&selected_toolchain, true);
     }
 
-    for installed_python in installed_toolchains {
-        let alignment = prettytable::format::Alignment::CENTER;
-
-        let green = prettytable::Attr::ForegroundColor(prettytable::color::GREEN);
-
-        let mut cell_active = Cell::new_align("", alignment);
-        let mut cell_version = Cell::new_align(&format!("{}", installed_python.version), alignment);
-        let mut cell_custom_install = Cell::new_align(
-            if installed_python.is_custom_install() {
-                "✓"
-            } else {
-                ""
-            },
-            alignment,
-        );
-        let mut cell_path = Cell::new_align(
-            &format!("{}", installed_python.location.display()),
-            prettytable::format::Alignment::LEFT,
-        );
-
-        if let Some(active_python) = active_python {
-            if active_python == installed_python {
-                cell_active = Cell::new_align("✓", alignment);
-                cell_active = cell_active
-                    .with_style(prettytable::Attr::Bold)
-                    .with_style(green);
-                cell_version = cell_version
-                    .with_style(prettytable::Attr::Bold)
-                    .with_style(green);
-                cell_custom_install = cell_custom_install
-                    .with_style(prettytable::Attr::Bold)
-                    .with_style(green);
-                cell_path = cell_path
-                    .with_style(prettytable::Attr::Bold)
-                    .with_style(green);
-            }
-        }
-
-        table.add_row(Row::new(vec![
-            cell_active,
-            cell_version,
-            cell_custom_install,
-            cell_path,
-        ]));
-    }
-
-    table.printstd();
+    toolchains_table.printstd();
 
     Ok(())
+}
+
+struct ToolChainTableLine {
+    active: bool,
+    version: Option<VersionReq>,
+    custom_install: bool,
+    location: Option<PathBuf>,
+    installed: bool,
+}
+
+struct ToolChainTable(Vec<ToolChainTableLine>);
+
+impl ToolChainTable {
+    fn new(installed_toolchains: &[InstalledToolchain]) -> ToolChainTable {
+        let list: Vec<ToolChainTableLine> = installed_toolchains
+            .iter()
+            .map(|t| ToolChainTableLine {
+                active: false,
+                version: Some(VersionReq::exact(&t.version)),
+                custom_install: t.is_custom_install(),
+                location: Some(t.location.clone()),
+                installed: true,
+            })
+            .collect();
+        ToolChainTable(list)
+    }
+
+    fn append(&mut self, toolchain: &SelectedToolchain, active: bool) {
+        match self.0.iter_mut().find(|t| match (&t.version, &t.location) {
+            (None, _) => false,
+            (_, None) => false,
+            (Some(version), Some(location)) => {
+                toolchain.same_location(&location) && toolchain.same_version(&version)
+            }
+        }) {
+            Some(installed_toolchain_line) => {
+                // We found the toolchain in the list; change its properties
+                installed_toolchain_line.active = active;
+            }
+            None => {
+                // The passed toolchain was not found in the list. Append it.
+                let line: ToolChainTableLine = match toolchain {
+                    SelectedToolchain::InstalledToolchain(t) => ToolChainTableLine {
+                        active,
+                        version: Some(VersionReq::exact(&t.version)),
+                        custom_install: is_a_custom_install(&t.location),
+                        location: Some(t.location.clone()),
+                        installed: true,
+                    },
+                    SelectedToolchain::NotInstalledToolchain(t) => ToolChainTableLine {
+                        active,
+                        version: t.version.clone(),
+                        custom_install: t
+                            .location
+                            .as_ref()
+                            .map(|p| is_a_custom_install(&p))
+                            .unwrap_or(false),
+                        location: t.location.clone(),
+                        installed: false,
+                    },
+                };
+                // Insert at the top of the list
+                self.0.insert(0, line);
+            }
+        }
+    }
+}
+
+impl ToolChainTable {
+    fn printstd(&self) {
+        let mut table = Table::new();
+        // ╭──────────┬───────────┬───────────────────────┬────────────╮
+        // │ Active   │ Version   │ Installed by pycors   │ Location   │
+        // ╰──────────┴───────────┴───────────────────────┴────────────╯
+        // Header
+        table.add_row(row![
+            "Active",
+            "Version",
+            &format!("Installed by {}", crate::EXECUTABLE_NAME),
+            "Location"
+        ]);
+
+        let green = prettytable::Attr::ForegroundColor(prettytable::color::GREEN);
+        let red = prettytable::Attr::ForegroundColor(prettytable::color::RED);
+        let bold = prettytable::Attr::Bold;
+
+        self.0.iter().for_each(|t: &ToolChainTableLine| {
+            let (active_char, line_color, line_style) = match (t.active, t.installed) {
+                (true, true) => ("✓", Some(green), Some(bold)),
+                (true, false) => ("✗", Some(red), Some(bold)),
+                (false, _) => ("", None, None),
+            };
+            let custom_char = if t.custom_install { "✓" } else { "" };
+
+            let mut col_1 = Cell::new_align(active_char, prettytable::format::Alignment::CENTER);
+
+            let mut col_2 = Cell::new_align(
+                &t.version
+                    .as_ref()
+                    .map(|t| format!("{}", t).replace("= ", ""))
+                    .unwrap_or_default(),
+                prettytable::format::Alignment::CENTER,
+            );
+
+            let mut col_3 = Cell::new_align(&custom_char, prettytable::format::Alignment::CENTER);
+
+            let mut col_4 = Cell::new_align(
+                &t.location
+                    .as_ref()
+                    .map(|t| format!("{}", t.display()))
+                    .unwrap_or_default(),
+                prettytable::format::Alignment::LEFT,
+            );
+
+            if let Some(c) = line_color {
+                col_1.style(c);
+                col_2.style(c);
+                col_3.style(c);
+                col_4.style(c);
+            }
+
+            if let Some(c) = line_style {
+                col_1.style(c);
+                col_2.style(c);
+                col_3.style(c);
+                col_4.style(c);
+            }
+
+            table.add_row(Row::new(vec![col_1, col_2, col_3, col_4]));
+        });
+
+        table.printstd();
+    }
 }

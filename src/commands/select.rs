@@ -1,46 +1,50 @@
 use failure::format_err;
-use semver::VersionReq;
 
-use crate::{commands, installed::InstalledToolchain, selected::SelectedVersion, utils, Result};
+use crate::{
+    commands,
+    toolchain::{
+        find_installed_toolchains, installed::InstalledToolchain, selected::VersionOrPath,
+    },
+    utils, Result,
+};
 
-pub fn run(
-    requested_version: &str,
-    installed_toolchains: &[InstalledToolchain],
-    install_extra_packages: &commands::InstallExtraPackagesOptions,
-    install_if_not_present: bool,
-) -> Result<()> {
-    // Convert the requested version string to proper VersionReq
-    // FIXME: Should a `~` be explicitly added here if user does not provide it?
-    log::debug!("Requesting version: {}", requested_version);
-    let version: VersionReq = requested_version.parse()?;
-    log::debug!("Semantic version requirement: {}", version);
+pub fn run(requested_version_or_path: commands::VersionOrPath) -> Result<()> {
+    log::debug!("Requested version: {:?}", requested_version_or_path);
 
-    let python_to_use = match utils::active_version(&version, installed_toolchains) {
-        Some(python_to_use) => python_to_use.clone(),
-        None => {
-            if install_if_not_present {
-                let new_selected_version = Some(SelectedVersion { version });
-                let version = commands::install::run(
-                    None,
-                    &new_selected_version,
-                    installed_toolchains,
-                    install_extra_packages,
-                    false, // Don't 'select' here, will do so as last step.
-                )?
-                .ok_or_else(|| format_err!("A Python version should have been installed"))?;
-                let install_dir = utils::directory::install_dir(&version)?;
+    let installed_toolchains = find_installed_toolchains()?;
 
-                InstalledToolchain {
-                    version,
-                    location: install_dir,
+    let version_or_path: VersionOrPath = requested_version_or_path.version_or_path.parse()?;
+
+    let python_to_use: InstalledToolchain = match version_or_path {
+        VersionOrPath::VersionReq(version_req) => {
+            match utils::active_version(&version_req, &installed_toolchains) {
+                Some(python_to_use) => {
+                    // Write to `.python-version`
+                    python_to_use.save_version()?;
+
+                    python_to_use.clone()
                 }
-            } else {
-                return Err(format_err!(
-                    "Python version {} not found!",
-                    requested_version
-                ));
+                None => {
+                    return Err(format_err!(
+                        "Python version {} not found!",
+                        requested_version_or_path.version_or_path
+                    ));
+                }
             }
         }
+        VersionOrPath::Path(path) => match InstalledToolchain::from_path(&path) {
+            Some(python_to_use) => {
+                // Write to `.python-version`
+                python_to_use.save_path()?;
+                python_to_use
+            }
+            None => {
+                return Err(format_err!(
+                    "Could not find a Python interpreter under {:?}",
+                    path
+                ));
+            }
+        },
     };
 
     log::debug!(
@@ -48,12 +52,6 @@ pub fn run(
         python_to_use.version,
         python_to_use.location.display()
     );
-
-    // Write to `.python-version`
-    SelectedVersion {
-        version: VersionReq::exact(&python_to_use.version),
-    }
-    .save()?;
 
     Ok(())
 }

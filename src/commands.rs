@@ -12,6 +12,10 @@ pub mod setup;
 pub mod version;
 
 #[derive(StructOpt, Debug)]
+pub struct VersionOrPath {
+    version_or_path: String,
+}
+#[derive(StructOpt, Debug)]
 pub enum Command {
     /// Print to stdout an autocomplete script for the specified shell
     ///
@@ -30,7 +34,11 @@ pub enum Command {
     ///     pycors path
     ///     /usr/local/bin
     #[structopt(name = "path")]
-    Path,
+    Path {
+        /// Use specified interpreter version
+        #[structopt(long = "version", short = "v")]
+        version: Option<String>,
+    },
 
     /// Get version of active interpreter
     ///
@@ -38,7 +46,11 @@ pub enum Command {
     ///     pycors version
     ///     3.7.2
     #[structopt(name = "version")]
-    Version,
+    Version {
+        /// Use specified interpreter version
+        #[structopt(long = "version", short = "v")]
+        version: Option<String>,
+    },
 
     /// Select specified Python versions to use
     ///
@@ -52,22 +64,17 @@ pub enum Command {
     ///     pycors select =3.7.2
     /// will select an exact version.
     #[structopt(name = "select")]
-    Select {
-        version: String,
-
-        /// Install specified version if not already present
-        #[structopt(long = "install", short = "i")]
-        install_if_not_present: bool,
-
-        #[structopt(flatten)]
-        install_extra_packages: InstallExtraPackagesOptions,
-    },
+    Select(VersionOrPath),
 
     /// Install version, either from the provided version or from `.python-version`
     #[structopt(name = "install")]
     Install {
         /// Specified version to install
         from_version: Option<String>,
+
+        /// Force installation, even if already installed
+        #[structopt(long)]
+        force: bool,
 
         /// Write installed version to `.python-version`
         #[structopt(long = "select", short = "s")]

@@ -1,0 +1,68 @@
+digraph version {
+    node [shape="rectangle"];
+
+    exit [label="Exit", style="filled", fillcolor="lightsalmon"];
+
+    command_select [label="Command: select", shape="oval", style="filled", fillcolor="lightblue"];
+
+    decision_path_or_versionreq [label="Path or VersionReq?", shape="diamond"];
+    write_file [label="Write to .python-version"];
+    installed_toolchain [label="Installed toolchain\n(Version, Path, Source)"];
+
+    subgraph cluster_path {
+        label = "Path";
+        style = "filled";
+        shape = "rectangle";
+
+        got_path [label="Path"];
+        normalize_path [label="Normalize path"];
+        get_version_from_path [label="Get Version\nfrom executable"];
+        combined_version_path [label="Path+Version"];
+    }
+
+    subgraph cluster_version_req {
+        label = "VersionReq";
+        style = "filled";
+        shape = "rectangle";
+
+        got_versionreq [label="VersionReq"];
+        decision_parse_version [label="Version format?", shape="diamond"];
+        version_latest [label="\"latest\""];
+        version_exact [label="\"=3.7.3\""];
+        version_tilde [label="\"~3.7\""];
+        decision_available_versions [label="Which installed\nversion match?", shape="diamond"];
+        version [label="Version"];
+        decision_is_installed [label="Is installed?", shape="diamond"];
+    }
+
+    // ========================================================
+    // Transitions
+
+    command_select -> decision_path_or_versionreq;
+
+    decision_path_or_versionreq -> got_versionreq;
+    decision_path_or_versionreq -> got_path;
+    got_path -> normalize_path;
+    normalize_path -> get_version_from_path;
+    get_version_from_path -> combined_version_path;
+    normalize_path -> combined_version_path;
+    combined_version_path -> installed_toolchain
+
+    got_versionreq -> decision_parse_version;
+
+    decision_parse_version -> version_latest;
+    decision_parse_version -> version_exact;
+    decision_parse_version -> version_tilde;
+    version_tilde -> decision_available_versions
+    version_latest -> decision_available_versions
+    version_exact -> version;
+    decision_available_versions -> version [label="Match"];
+    decision_available_versions -> exit [label="No match"];
+    version -> decision_is_installed;
+    decision_is_installed -> installed_toolchain [label="Yes"];
+    decision_is_installed -> exit [label="No"];
+
+    installed_toolchain -> write_file;
+
+    write_file -> exit;
+}

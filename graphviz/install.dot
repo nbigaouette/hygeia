@@ -1,0 +1,125 @@
+digraph install {
+    node [shape="rectangle"];
+
+    subgraph cluster_install_commmand {
+        label = "";
+        color = "none";
+
+        command_install [label="Command: install", shape="oval", style="filled", fillcolor="lightblue"];
+        decision_parse_version [label="Version format?", shape="diamond"];
+        version [label = "Version"];
+
+        installed_list [label="Installed list", shape="hexagon"];
+        decision_already_installed [label="Already\ninstalled?", shape="diamond"];
+        decision_force_install [label="Force\ninstall?", shape="diamond"];
+
+        decision_write_version_file [label="Write .python-version?", shape="diamond"];
+        write_version_file [label="Write .python-version file"];
+
+        exit [label="Exit", style="filled", fillcolor="lightsalmon"];
+
+        subgraph cluster_versions {
+            color = "none";
+            label = "";
+            version_latest [label="\"latest\""];
+            version_exact [label="\"=3.7.3\""];
+            version_tilde [label="\"~3.7\""];
+        }
+
+        subgraph cluster_available_cache {
+            label = "Available Versions Cache";
+            shape = "rectangle";
+            color = "black";
+            style = "filled";
+            fillcolor = "lightgrey";
+            decision_cache_available_versions [label="Which versions\nare available?", shape="diamond"];
+            cache_query [label="Query cache"];
+            decision_cache_up_to_date [label="Up to date?", shape="diamond"];
+            cache_update [label="Update cache"];
+            cache_find_compatible [label="Found compatible\nversion?", shape="diamond"];
+        }
+
+        subgraph cluster_install {
+            label = "Installation";
+            shape = "rectangle";
+            color = "black";
+            style = "filled";
+            fillcolor = "lightgrey";
+            decision_already_downloaded [label="Already\ndownloaded?", shape="diamond"];
+            download [label="Download"];
+            decision_valid_checksum [label="Valid\nchecksum/signature?", shape="diamond"];
+            decision_already_extracted [label="Already\nextracted?", shape="diamond"];
+            extract [label="Extract"];
+            configure_make_make_install [label="configure\nmake\nmake install"];
+        }
+
+        subgraph cluster_extras_install {
+            label = "Extras Installation";
+            shape = "rectangle";
+            color = "black";
+            style = "filled";
+            fillcolor = "lightgrey";
+            decision_install_extras [label="Install\nextras?", shape="diamond"];
+            decision_extras_from_file [label="Install extras\nfrom file?", shape="diamond"];
+            extras_from_file [label="Install extras\nfrom file"];
+            extras_from_default [label="Install extras\nfrom default file"];
+        }
+    }
+
+    // ========================================================
+    // Transitions
+
+    command_install -> decision_parse_version;
+
+    decision_parse_version -> version_latest;
+    decision_parse_version -> version_exact;
+    decision_parse_version -> version_tilde;
+
+    cache_query -> decision_cache_up_to_date;
+    decision_cache_up_to_date -> cache_find_compatible [label="Yes"];
+    decision_cache_up_to_date -> cache_update [label="No"];
+    cache_update -> cache_query;
+
+    version_tilde -> decision_cache_available_versions;
+    version_latest -> decision_cache_available_versions;
+    version_exact -> decision_cache_available_versions;
+    decision_cache_available_versions -> cache_query;
+
+    cache_find_compatible -> version [label="Yes"];
+    cache_find_compatible -> exit [label="No"];
+
+    version -> decision_already_installed;
+
+    installed_list  -> decision_already_installed;
+
+    decision_already_installed -> decision_force_install [label="Yes"];
+    decision_already_installed -> decision_already_downloaded [label="No"];
+    decision_force_install -> decision_already_downloaded [label="Yes"];
+    decision_force_install -> decision_install_extras [label="No"];
+
+    decision_already_downloaded -> download [label="No"];
+    decision_already_downloaded -> decision_valid_checksum [label="Yes"];
+
+    download -> decision_valid_checksum;
+    decision_valid_checksum -> decision_already_extracted [label="Yes"];
+    decision_valid_checksum -> exit [label="No"];
+
+    decision_already_extracted -> configure_make_make_install [label="Yes"];
+    decision_already_extracted -> extract [label="No"];
+
+    extract -> configure_make_make_install;
+
+    configure_make_make_install -> decision_install_extras;
+    decision_install_extras -> decision_extras_from_file [label="Yes"];
+    decision_install_extras -> decision_write_version_file [label="No"];
+
+    decision_extras_from_file -> extras_from_file;
+    decision_extras_from_file -> extras_from_default;
+    extras_from_file -> decision_write_version_file;
+    extras_from_default -> decision_write_version_file;
+
+    decision_write_version_file -> write_version_file [label="Yes"];
+    decision_write_version_file -> exit [label="No"];
+
+    write_version_file -> exit;
+}

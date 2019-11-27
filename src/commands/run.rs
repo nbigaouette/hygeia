@@ -1,14 +1,14 @@
 use failure::format_err;
-use semver::VersionReq;
 
-use crate::{installed::InstalledToolchain, selected::SelectedVersion, shim, utils, Result};
+use crate::{shim, toolchain::CompatibleToolchainBuilder, Result};
 
-pub fn run(
-    selected_version: &Option<SelectedVersion>,
-    installed_toolchains: &[InstalledToolchain],
-    version: Option<String>,
-    command_and_args: &str,
-) -> Result<()> {
+#[derive(Debug, failure::Fail)]
+pub enum RunError {
+    #[fail(display = "No interpreter found to run command: {}", _0)]
+    MissingInterpreter(String),
+}
+
+pub fn run(version: Option<String>, command_and_args: &str) -> Result<()> {
     let s = shlex::split(&command_and_args)
         .ok_or_else(|| format_err!("Failed to split command from {:?}", command_and_args))?;
     let (cmd, arguments) = s.split_at(1);
@@ -16,15 +16,19 @@ pub fn run(
         .get(0)
         .ok_or_else(|| format_err!("Failed to extract command from {:?}", command_and_args))?;
 
-    let interpreter_to_use = match version {
-        None => utils::get_interpreter_to_use(selected_version, installed_toolchains)?,
-        Some(version) => {
-            let version_req = VersionReq::parse(&version)?;
-            utils::active_version(&version_req, installed_toolchains)
-                .ok_or_else(|| format_err!("Cannot find compatible version {}.", version))?
-                .clone()
-        }
+    let compatible_toolchain_builder = match version {
+        Some(version) => CompatibleToolchainBuilder::new().load_from_string(&version),
+        None => CompatibleToolchainBuilder::new().load_from_file(),
     };
+    let compatible_toolchain = compatible_toolchain_builder
+        .pick_latest_if_none_found()
+        .compatible_version()?;
 
-    shim::run(&interpreter_to_use, cmd, arguments)
+    match compatible_toolchain {
+        Some(compatible_toolchain) => shim::run_with(&compatible_toolchain, cmd, arguments),
+        None => {
+            log::error!("No Python interpreter found at all. Please install at least one!");
+            Err(RunError::MissingInterpreter(command_and_args.to_string()).into())
+        }
+    }
 }

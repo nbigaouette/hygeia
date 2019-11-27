@@ -1,27 +1,31 @@
-use std::env;
+// FIXME: Replace 'format_err!()' with structs/enums
+// FIXME: Gracefully handle errors that bubble to main
+// FIXME: Add -vvv flag to control log level
+// FIXME: Increase test coverage
+// FIXME: Implement checksum/signature validation
 
-use failure::format_err;
+use std::{
+    env,
+    ffi::{OsStr, OsString},
+    io,
+    path::PathBuf,
+};
+
 use git_testament::{git_testament, render_testament};
 use human_panic::setup_panic;
 use lazy_static::lazy_static;
-use log::{debug, error};
 use structopt::StructOpt;
 
+mod cache;
 mod commands;
 mod constants;
 mod dir_monitor;
-mod installed;
 mod os;
-mod selected;
 mod shim;
+mod toolchain;
 mod utils;
 
-use crate::{
-    commands::Command,
-    constants::*,
-    installed::{find_installed_toolchains, InstalledToolchain},
-    selected::{load_selected_toolchain_file, SelectedVersion},
-};
+use crate::{commands::Command, constants::*};
 
 pub type Result<T> = std::result::Result<T, failure::Error>;
 
@@ -38,122 +42,89 @@ fn git_version() -> &'static str {
 #[derive(StructOpt, Debug)]
 #[structopt(version = git_version())]
 struct Opt {
+    /// Verbose mode (-v, -vv, -vvv, etc.)
+    #[structopt(short, long, parse(from_occurrences))]
+    verbose: u8,
+
     #[structopt(subcommand)]
     subcommand: Option<commands::Command>,
+}
+
+#[derive(Debug, failure::Fail)]
+pub enum MainError {
+    #[fail(display = "Cannot get executable's path: {:?}", _0)]
+    Io(#[fail(cause)] io::Error),
+    #[fail(display = "Failed to get str representation of {:?}", _0)]
+    Str(OsString),
+    #[fail(display = "Cannot get executable's path: {:?}", _0)]
+    ExecutablePath(PathBuf),
+    #[fail(display = "Failed to execute command: {:?}", _0)]
+    Command(#[fail(cause)] failure::Error),
 }
 
 fn main() -> Result<()> {
     setup_panic!();
 
+    // Detect if running as shim as soon as possible
+    let current_exe: PathBuf = env::current_exe().map_err(MainError::Io)?;
+    let file_name: &OsStr = current_exe
+        .file_name()
+        .ok_or_else(|| MainError::ExecutablePath(current_exe.clone()))?;
+    let exe = file_name
+        .to_str()
+        .ok_or_else(|| MainError::Str(file_name.to_os_string()))?;
+
+    if exe.starts_with(EXECUTABLE_NAME) {
+        no_shim_execution().map_err(|e| MainError::Command(e).into())
+    } else {
+        python_shim(exe)
+    }
+}
+
+pub fn no_shim_execution() -> Result<()> {
+    let opt = Opt::from_args();
+    log::debug!("{:?}", opt);
+
     std::env::var("RUST_LOG").or_else(|_| -> Result<String> {
-        let rust_log = format!("{}=warn", EXECUTABLE_NAME);
+        let rust_log = format!("{}=info", EXECUTABLE_NAME);
         std::env::set_var("RUST_LOG", &rust_log);
         Ok(rust_log)
     })?;
 
     env_logger::init();
 
-    let installed_toolchains = find_installed_toolchains()?;
-    // Invert the Option<Result> to Result<Option> and use ? to unwrap the Result.
-    let selected_version_opt = load_selected_toolchain_file().map_or(Ok(None), |v| v.map(Some))?;
-
-    let arguments: Vec<_> = env::args().collect();
-    let (_, remaining_args) = arguments.split_at(1);
-
-    match env::current_exe() {
-        Err(e) => {
-            let err_message = format!("Cannot get executable's path: {:?}", e);
-            error!("{}", err_message);
-            return Err(format_err!("{}", err_message));
-        }
-        Ok(current_exe) => {
-            let exe = match current_exe.file_name() {
-                Some(file_name) => file_name.to_str().ok_or_else(|| {
-                    format_err!("Could not get str representation of {:?}", file_name)
-                })?,
-                None => {
-                    let err_message = format!("Cannot get executable's path: {:?}", current_exe);
-                    error!("{}", err_message);
-                    return Err(format_err!("{}", err_message));
-                }
-            };
-
-            if exe.starts_with(EXECUTABLE_NAME) {
-                debug!("Running {}", EXECUTABLE_NAME);
-                no_shim_execution(&selected_version_opt, &installed_toolchains)?;
-            } else {
-                debug!("Running a Python shim");
-                python_shim(
-                    exe,
-                    &selected_version_opt,
-                    &installed_toolchains,
-                    remaining_args,
-                )?;
-            }
-        }
-    }
-
-    Ok(())
-}
-
-pub fn no_shim_execution(
-    selected_version: &Option<SelectedVersion>,
-    installed_toolchains: &[InstalledToolchain],
-) -> Result<()> {
-    let opt = Opt::from_args();
-    log::debug!("{:?}", opt);
-
     if let Some(subcommand) = opt.subcommand {
         match subcommand {
             Command::Autocomplete { shell } => {
                 commands::autocomplete::run(shell, &mut std::io::stdout())?;
             }
-            Command::List => commands::list::run(selected_version, installed_toolchains)?,
-            Command::Path => commands::path::run(selected_version, installed_toolchains)?,
-            Command::Version => commands::version::run(selected_version, installed_toolchains)?,
-            Command::Select {
-                version,
-                install_extra_packages,
-                install_if_not_present,
-            } => commands::select::run(
-                &version,
-                installed_toolchains,
-                &install_extra_packages,
-                install_if_not_present,
-            )?,
+            Command::List => commands::list::run()?,
+            Command::Path { version } => commands::path::run(version)?,
+            Command::Version { version } => commands::version::run(version)?,
+            Command::Select(version_or_path) => commands::select::run(version_or_path)?,
             Command::Install {
                 from_version,
+                force,
                 install_extra_packages,
                 select,
             } => {
-                commands::install::run(
-                    from_version,
-                    selected_version,
-                    installed_toolchains,
-                    &install_extra_packages,
-                    select,
-                )?;
+                commands::install::run(from_version, force, &install_extra_packages, select)?;
             }
-            Command::Run { version, command } => {
-                commands::run::run(selected_version, installed_toolchains, version, &command)?
-            }
+            Command::Run { version, command } => commands::run::run(version, &command)?,
             Command::Setup { shell } => commands::setup::run(shell)?,
         }
-    } else {
     }
 
     Ok(())
 }
 
-pub fn python_shim(
-    command: &str,
-    selected_version: &Option<SelectedVersion>,
-    installed_toolchains: &[InstalledToolchain],
-    arguments: &[String],
-) -> Result<()> {
-    let interpreter_to_use = utils::get_interpreter_to_use(selected_version, installed_toolchains)?;
+pub fn python_shim(command: &str) -> Result<()> {
+    env_logger::init();
 
-    shim::run(&interpreter_to_use, command, arguments)
+    let arguments: Vec<_> = env::args().collect();
+    let (_, remaining_args) = arguments.split_at(1);
+
+    shim::run(command, remaining_args)
 }
 
 #[cfg(test)]
