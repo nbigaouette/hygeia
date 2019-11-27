@@ -32,6 +32,8 @@ pub enum InstallError {
     ToolchainFileContainsPath(PathBuf),
 }
 
+// FIXME: Can't install the same version as an already installed system one.
+
 pub fn run(
     requested_version: Option<String>,
     force_install: bool,
