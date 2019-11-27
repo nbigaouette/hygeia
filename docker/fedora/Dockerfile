@@ -86,3 +86,5 @@ COPY --chown=pycors:pycors --from=builder /home/pycors/docker_cargo_cache.tar.gz
 ENV PATH="/home/pycors/.pycors/shims:${PATH}"
 
 WORKDIR /home/pycors
+
+ENV PATH="/home/pycors/.pycors/shims:${PATH}"
