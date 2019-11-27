@@ -1,0 +1,57 @@
+# To build all the docker images:
+#   docker-compose build
+# or a specific one:
+#   docker-compose build ${SERVICE_NAME}
+#
+# export SERVICE_NAME=ubuntu
+#
+# To extract the cargo cache from the container:
+#   docker-compose run --rm ${SERVICE_NAME} cp docker_cargo_cache.tar.gz artifacts/
+#
+# To get a shell inside the container:
+#   docker-compose run --rm ${SERVICE_NAME}
+#
+# NOTE: The 'artifacts' directory of each container is mounted so one can copy
+#       files from inside a container.
+#
+# Install a toolchain and transfer it back:
+#   docker-compose up -d ${SERVICE_NAME}
+#   docker-compose exec ${SERVICE_NAME} mkdir .pycors/cache
+#   docker-compose exec ${SERVICE_NAME} pycors install ~3.7
+#   docker-compose exec ${SERVICE_NAME} sh -c 'cp -r ${HOME}/.pycors/installed artifacts/'
+
+version: "3.7"
+
+services:
+  ubuntu:
+    image: pycors_ubuntu
+    build:
+      context: .
+      dockerfile: docker/ubuntu/Dockerfile
+      args:
+        OS_NAME: ubuntu
+        OS_VERSION: 19.04
+        RUST_VERSION: 1.39.0
+        DOCKER_USER: pycors
+    environment:
+      RUST_LOG: pycors=debug
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./docker/ubuntu/artifacts:/home/pycors/artifacts
+  fedora:
+    image: pycors_fedora
+    build:
+      context: .
+      dockerfile: docker/fedora/Dockerfile
+      args:
+        OS_NAME: fedora
+        OS_VERSION: 31
+        RUST_VERSION: 1.39.0
+        DOCKER_USER: pycors
+    environment:
+      RUST_LOG: pycors=debug
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./docker/fedora/artifacts:/home/pycors/artifacts
