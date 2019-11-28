@@ -80,6 +80,9 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -y build-dep \
 
 RUN groupadd --system pycors --gid ${DOCKER_GID} && \
     useradd --create-home --system --gid pycors --uid ${DOCKER_UID} pycors
+# Let user run sudo without password
+RUN echo "pycors ALL=(ALL) NOPASSWD:ALL" | EDITOR='tee -a' visudo
+
 USER pycors
 
 COPY --chown=pycors:pycors --from=builder /home/pycors/.pycors /home/pycors/.pycors
