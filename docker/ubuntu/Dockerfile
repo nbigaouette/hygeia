@@ -16,7 +16,8 @@ ENV RUST_LOG=pycors=debug
 
 # -------------------------------------------------------------------------------
 # OS-specific
-RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install \
     # To download rustup
     curl \
     # pycors dependencies
@@ -73,8 +74,9 @@ ARG DOCKER_UID=999
 RUN sed -i '/deb-src/s/^# //' /etc/apt/sources.list
 # Python build dependencies
 # See https://devguide.python.org/setup/#linux
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -y build-dep \
     python3.7 \
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y build-dep \
     && rm -rf /var/lib/apt/lists/*
 # -------------------------------------------------------------------------------
 
