@@ -19,6 +19,22 @@
 #   docker-compose exec ${SERVICE_NAME} mkdir .pycors/cache
 #   docker-compose exec ${SERVICE_NAME} pycors install ~3.7 --extra
 #   docker-compose exec ${SERVICE_NAME} sh -c 'cp -r ${HOME}/.pycors/installed artifacts/'
+#
+# Delete **all** containers (loosing any built toolchains)
+#   docker-compose down
+#
+# Without docker-compose:
+# Build the image:
+#   export OS_NAME=ubuntu
+#   export OS_VERSION=16.04
+#   export RUST_VERSION=1.39.0
+#   docker build --build-arg OS_NAME=${OS_NAME} --build-arg OS_VERSION=${OS_VERSION} --build-arg DOCKER_GID=`id --group` --build-arg DOCKER_UID=`id --user` --build-arg RUST_VERSION=${RUST_VERSION} --tag pycors_${OS_NAME} --file docker/${OS_NAME}/Dockerfile .
+#   docker run --rm --detach --name pycors_${OS_NAME} --volume `pwd`/docker/${OS_NAME}/artifacts:/home/pycors/artifacts pycors_${OS_NAME} sleep 9999999
+#   docker exec -it pycors_${OS_NAME} mkdir .pycors/cache
+#   docker exec -it pycors_${OS_NAME} pycors install ~3.7 --extra
+#   docker exec -it pycors_${OS_NAME} sh -c 'cp -r ${HOME}/.pycors/installed artifacts/'
+#   docker stop pycors_${OS_NAME}
+#   docker kill pycors_${OS_NAME}
 
 version: "3.7"
 
