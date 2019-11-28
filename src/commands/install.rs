@@ -9,10 +9,7 @@ use semver::{Version, VersionReq};
 
 use crate::{
     cache::AvailableToolchainsCache,
-    commands::{
-        self,
-        install::{download::download_source, pip::install_extra_pip_packages},
-    },
+    commands::{self, install::download::download_source},
     constants::{EXECUTABLE_NAME, TOOLCHAIN_FILE},
     toolchain::{find_installed_toolchains, installed::InstalledToolchain, ToolchainFile},
     utils, Result,
@@ -100,6 +97,16 @@ pub fn run(
                 requested_version.base_url
             );
 
+            // Install extras?
+            let install_extra_packages: Option<&commands::InstallExtraPackagesOptions> =
+                if install_extra_packages.install_extra_packages
+                    || install_extra_packages.install_extra_packages_from.is_some()
+                {
+                    Some(install_extra_packages)
+                } else {
+                    None
+                };
+
             // Configure make make install
             download_source(&requested_version.version)?;
             // FIXME: Validate downloaded package with checksum
@@ -116,22 +123,6 @@ pub fn run(
         let mut output = File::create(&TOOLCHAIN_FILE)?;
         output.write_all(version.as_bytes())?;
         output.write_all(b"\n")?;
-    }
-
-    // Install extras
-    let install_extra_flag_present = install_extra_packages.install_extra_packages
-        || install_extra_packages.install_extra_packages_from.is_some();
-
-    let install_dir = utils::directory::install_dir(&requested_version.version)?;
-
-    if install_extra_flag_present {
-        log::info!("Installing pip packages for {}", requested_version.version);
-
-        install_extra_pip_packages(
-            install_dir,
-            &requested_version.version,
-            install_extra_packages,
-        )?;
     }
 
     log::info!("Installing {} succeeded!", requested_version.version);
@@ -157,7 +148,7 @@ pub fn run(
 
 fn install_package(
     version_to_install: &Version,
-    install_extra_packages: &commands::InstallExtraPackagesOptions,
+    install_extra_packages: Option<&commands::InstallExtraPackagesOptions>,
 ) -> Result<()> {
     #[cfg(not(target_os = "windows"))]
     {

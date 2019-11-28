@@ -11,7 +11,7 @@ use crate::{
 #[cfg_attr(not(windows), allow(dead_code))]
 pub fn install_package(
     version: &Version,
-    install_extra_packages: &commands::InstallExtraPackagesOptions,
+    install_extra_packages: Option<&commands::InstallExtraPackagesOptions>,
 ) -> Result<()> {
     // See https://docs.python.org/3.7/using/windows.html#installing-without-ui
 
@@ -44,7 +44,9 @@ pub fn install_package(
     // Create a file in install directory to detect if we installed it ourselves
     utils::create_info_file(&install_dir, version)?;
 
-    install_extra_pip_packages(&install_dir, &version, install_extra_packages)?;
+    if let Some(install_extra_packages) = install_extra_packages {
+        install_extra_pip_packages(&install_dir, &version, install_extra_packages)?;
+    }
 
     log::debug!(
         "Changing back current directory to {:?}",

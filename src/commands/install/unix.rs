@@ -22,7 +22,7 @@ use crate::{
 #[cfg_attr(windows, allow(dead_code))]
 pub fn install_package(
     version_to_install: &Version,
-    install_extra_packages: &commands::InstallExtraPackagesOptions,
+    install_extra_packages: Option<&commands::InstallExtraPackagesOptions>,
 ) -> Result<()> {
     extract_source(&version_to_install)?;
     compile_source(&version_to_install, install_extra_packages)?;
@@ -63,7 +63,7 @@ pub fn extract_source(version: &Version) -> Result<()> {
 #[cfg_attr(windows, allow(dead_code))]
 pub fn compile_source(
     version: &Version,
-    install_extra_packages: &commands::InstallExtraPackagesOptions,
+    install_extra_packages: Option<&commands::InstallExtraPackagesOptions>,
 ) -> Result<()> {
     // Compilation
 
@@ -139,7 +139,9 @@ pub fn compile_source(
     // Create a file in install directory to detect if we installed it ourselves
     utils::create_info_file(&install_dir, version)?;
 
-    install_extra_pip_packages(&install_dir, &version, install_extra_packages)?;
+    if let Some(install_extra_packages) = install_extra_packages {
+        install_extra_pip_packages(&install_dir, &version, install_extra_packages)?;
+    }
 
     // Create symbolic links from binaries with `3` suffix
     let bin_dir = install_dir.join("bin");
