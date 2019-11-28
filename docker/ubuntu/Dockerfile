@@ -28,7 +28,6 @@ RUN apt-get update && \
 # -------------------------------------------------------------------------------
 
 
-
 RUN groupadd --system pycors --gid ${DOCKER_GID} && \
     useradd --create-home --system --gid pycors --uid ${DOCKER_UID} pycors && \
     chown pycors:pycors /home/pycors
@@ -77,6 +76,10 @@ RUN sed -i '/deb-src/s/^# //' /etc/apt/sources.list
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y build-dep \
     python3 && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install \
+    zlib1g-dev \
+    sudo \
+    vim \
     && rm -rf /var/lib/apt/lists/*
 # -------------------------------------------------------------------------------
 
