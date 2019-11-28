@@ -17,7 +17,7 @@
 # Install a toolchain and transfer it back:
 #   docker-compose up -d ${SERVICE_NAME}
 #   docker-compose exec ${SERVICE_NAME} mkdir .pycors/cache
-#   docker-compose exec ${SERVICE_NAME} pycors install ~3.7
+#   docker-compose exec ${SERVICE_NAME} pycors install ~3.7 --extra
 #   docker-compose exec ${SERVICE_NAME} sh -c 'cp -r ${HOME}/.pycors/installed artifacts/'
 
 version: "3.7"
