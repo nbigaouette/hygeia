@@ -13,7 +13,7 @@ use crate::{
         self,
         install::{download::download_source, pip::install_extra_pip_packages},
     },
-    constants::TOOLCHAIN_FILE,
+    constants::{EXECUTABLE_NAME, TOOLCHAIN_FILE},
     toolchain::{find_installed_toolchains, installed::InstalledToolchain, ToolchainFile},
     utils, Result,
 };
@@ -31,6 +31,8 @@ pub enum InstallError {
     )]
     ToolchainFileContainsPath(PathBuf),
 }
+
+// FIXME: Can't install the same version as an already installed system one.
 
 pub fn run(
     requested_version: Option<String>,
@@ -130,6 +132,24 @@ pub fn run(
             &requested_version.version,
             install_extra_packages,
         )?;
+    }
+
+    log::info!("Installing {} succeeded!", requested_version.version);
+    if select {
+        log::info!(
+            "Version {} is selected and will be used in current directory.",
+            requested_version.version
+        );
+    } else {
+        log::info!(
+            "Version {} was installed but is not selected. Select it with:",
+            requested_version.version
+        );
+        log::info!(
+            "    {} select {}",
+            EXECUTABLE_NAME,
+            VersionReq::exact(&requested_version.version)
+        );
     }
 
     Ok(())

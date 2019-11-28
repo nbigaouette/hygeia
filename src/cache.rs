@@ -21,6 +21,8 @@ use crate::{
 //          release is available; a pre-release might have created the directory.
 // FIXME: Cache is re-created from scratch every time it is created. Save it to disk instead.
 
+// FIXME: Use https://www.python.org/downloads/source/ instead to get all links of releases!
+
 #[derive(Debug, failure::Fail)]
 pub enum CacheError {
     #[fail(display = "No compatible version found")]
@@ -46,6 +48,8 @@ fn cache_file() -> Result<PathBuf> {
 impl AvailableToolchainsCache {
     pub fn new() -> Result<AvailableToolchainsCache> {
         log::debug!("Initializing cache...");
+
+        // FIXME: This fails if ~/.pycors/cache directory does not exists
 
         let cache_file = cache_file()?;
         let cache: AvailableToolchainsCache = if cache_file.exists() {

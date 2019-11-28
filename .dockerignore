@@ -1,0 +1,16 @@
+**/target
+**/*.rs.bk
+*.zip
+*.tar.gz
+*.tgz
+*.asc
+.pycors
+cobertura.xml
+venv_pycobertura
+coverage/tarpaulin.html
+release_url*
+.git
+.DS_Store
+# Ignore the 'docker' directory containing large cargo cache.
+# Comment to send the cache file to docker context, making it available to docker build process.
+# docker/*/artifacts

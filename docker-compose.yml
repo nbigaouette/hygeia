@@ -1,0 +1,88 @@
+# To build all the docker images:
+#   docker-compose build
+# or a specific one:
+#   docker-compose build ${SERVICE_NAME}
+#
+# export SERVICE_NAME=ubuntu
+#
+# To extract the cargo cache from the container:
+#   docker-compose run --rm ${SERVICE_NAME} cp docker_cargo_cache.tar.gz artifacts/
+#
+# To get a shell inside the container:
+#   docker-compose run --rm ${SERVICE_NAME}
+#
+# NOTE: The 'artifacts' directory of each container is mounted so one can copy
+#       files from inside a container.
+#
+# Install a toolchain and transfer it back:
+#   docker-compose up -d ${SERVICE_NAME}
+#   docker-compose exec ${SERVICE_NAME} mkdir .pycors/cache
+#   docker-compose exec ${SERVICE_NAME} pycors install ~3.7 --extra
+#   docker-compose exec ${SERVICE_NAME} sh -c 'cp -r ${HOME}/.pycors/installed artifacts/'
+#
+# Delete **all** containers (loosing any built toolchains)
+#   docker-compose down
+#
+# Without docker-compose:
+# Build the image:
+#   export OS_NAME=ubuntu
+#   export OS_VERSION=16.04
+#   export RUST_VERSION=1.39.0
+#   docker build --build-arg OS_NAME=${OS_NAME} --build-arg OS_VERSION=${OS_VERSION} --build-arg DOCKER_GID=`id --group` --build-arg DOCKER_UID=`id --user` --build-arg RUST_VERSION=${RUST_VERSION} --tag pycors_${OS_NAME} --file docker/${OS_NAME}/Dockerfile .
+#   docker run --rm --detach --name pycors_${OS_NAME} --volume `pwd`/docker/${OS_NAME}/artifacts:/home/pycors/artifacts pycors_${OS_NAME} sleep 9999999
+#   docker exec -it pycors_${OS_NAME} mkdir .pycors/cache
+#   docker exec -it pycors_${OS_NAME} pycors install ~3.7 --extra
+#   docker exec -it pycors_${OS_NAME} sh -c 'cp -r ${HOME}/.pycors/installed artifacts/'
+#   docker stop pycors_${OS_NAME}
+#   docker kill pycors_${OS_NAME}
+
+version: "3.7"
+
+services:
+  ubuntu:
+    image: pycors_ubuntu
+    build:
+      context: .
+      dockerfile: docker/ubuntu/Dockerfile
+      args:
+        OS_NAME: ubuntu
+        OS_VERSION: 16.04
+        RUST_VERSION: 1.39.0
+    environment:
+      RUST_LOG: pycors=debug
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./docker/ubuntu/artifacts:/home/pycors/artifacts
+  fedora:
+    image: pycors_fedora
+    build:
+      context: .
+      dockerfile: docker/fedora/Dockerfile
+      args:
+        OS_NAME: fedora
+        OS_VERSION: 31
+        RUST_VERSION: 1.39.0
+    environment:
+      RUST_LOG: pycors=debug
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./docker/fedora/artifacts:/home/pycors/artifacts
+  alpine:
+    image: pycors_alpine
+    build:
+      context: .
+      dockerfile: docker/alpine/Dockerfile
+      args:
+        OS_NAME: alpine
+        OS_VERSION: 3.10.3
+        RUST_VERSION: 1.39.0
+        # See https://github.com/rust-lang/rust/issues/59302
+        RUSTFLAGS: -C target-feature=-crt-static
+    environment:
+      RUST_LOG: pycors=debug
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./docker/alpine/artifacts:/home/pycors/artifacts
