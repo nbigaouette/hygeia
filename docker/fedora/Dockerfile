@@ -78,6 +78,11 @@ RUN dnf --setopt=tsflags=nodocs -y install yum-utils && \
 
 
 
+
+
+
+
+
 RUN groupadd --system pycors --gid ${DOCKER_GID} && \
     useradd --create-home --system --gid pycors --uid ${DOCKER_UID} pycors
 # Let user run sudo without password
