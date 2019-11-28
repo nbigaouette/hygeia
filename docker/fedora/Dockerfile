@@ -71,11 +71,10 @@ ARG DOCKER_UID=999
 # OS-specific
 # Python build dependencies
 # See https://devguide.python.org/setup/#linux
-RUN dnf --setopt=tsflags=nodocs -y install yum-utils && \
-    dnf --setopt=tsflags=nodocs -y builddep sudo vim python3 && \
+RUN dnf --setopt=tsflags=nodocs -y install dnf-plugins-core yum-utils sudo vim && \
+    dnf --setopt=tsflags=nodocs -y builddep python3 && \
     dnf --setopt=tsflags=nodocs -y groupinstall "Development Tools"
 # -------------------------------------------------------------------------------
-
 
 
 
