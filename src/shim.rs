@@ -22,8 +22,13 @@ pub fn run<S>(command: &str, arguments: &[S]) -> Result<()>
 where
     S: AsRef<str> + std::convert::AsRef<std::ffi::OsStr> + std::fmt::Debug,
 {
+    // Try to detect if a command with a version appended is run, for example 'python2.7'
+    // or 'python3'.
+    let command_version = extract_major_version_from_executable_name(command);
+
     let compatible_toolchain = CompatibleToolchainBuilder::new()
         .load_from_file()
+        .overwrite(command_version)
         .pick_latest_if_none_found()
         .compatible_version()?;
 

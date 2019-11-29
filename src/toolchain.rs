@@ -446,6 +446,7 @@ pub enum CompatibleToolchainSource {
 pub struct CompatibleToolchainBuilder {
     pick_latest_if_none_found: bool,
     load_from: CompatibleToolchainSource,
+    overwrite: Option<VersionReq>,
 }
 
 impl CompatibleToolchainBuilder {
@@ -453,6 +454,7 @@ impl CompatibleToolchainBuilder {
         CompatibleToolchainBuilder {
             pick_latest_if_none_found: false,
             load_from: CompatibleToolchainSource::File,
+            overwrite: None,
         }
     }
     pub fn load_from_file(mut self) -> Self {
@@ -467,83 +469,101 @@ impl CompatibleToolchainBuilder {
         self.pick_latest_if_none_found = true;
         self
     }
+    pub fn overwrite(mut self, with: Option<VersionReq>) -> Self {
+        self.overwrite = with;
+        self
+    }
     pub fn compatible_version(self) -> Result<Option<InstalledToolchain>> {
         let installed_toolchains: Vec<InstalledToolchain> = find_installed_toolchains()?;
 
-        // Load requested version from either .python-version (if present) or string
-        let parsed_requested_toolchain: Option<ToolchainFile> = match &self.load_from {
-            CompatibleToolchainSource::File => {
-                let parsed: Option<ToolchainFile> = ToolchainFile::load()?.or_else(|| {
-                    // We could not load a toolchain file.
-                    log::warn!(
-                        "File {:?} does not exists and could not be loaded.",
-                        TOOLCHAIN_FILE
-                    );
-                    None
-                });
-                parsed
-            }
-            CompatibleToolchainSource::String(s) => {
-                let parsed = ToolchainFile::from_str(s)?;
-                Some(parsed)
-            }
-        };
+        let compatible = match self.overwrite {
+            Some(version_req) => {
+                log::info!("Overwriting version with {}", version_req);
 
-        let compatible: Option<&InstalledToolchain> = match parsed_requested_toolchain {
+                let search_result = find_compatible_toolchain(&version_req, &installed_toolchains);
+                log::debug!("Compatible version found: {:?}", search_result);
+                search_result
+            }
             None => {
-                log::warn!("No compatible toolchain found.");
-
-                // No requested version (.python-version flag nor --version flag)
-                // Pick up the latest installed one (if asked for).
-                if self.pick_latest_if_none_found {
-                    log::warn!("Trying latest installed...");
-                    latest_installed(&installed_toolchains)
-                } else {
-                    // We did not asked for a version (through the .python-version file
-                    // or --version flag) and we did not asked to find the latest installed.
-                    // We thus don't have any toolchain to run.
-                    None
-                }
-            }
-            Some(requested_toolchain) => {
-                log::debug!("Searching for compatible toolchain in installed list...");
-
-                let selected_toolchain: SelectedToolchain = SelectedToolchain::from_toolchain_file(
-                    &requested_toolchain,
-                    &installed_toolchains,
-                );
-
-                match selected_toolchain.version_req() {
-                    Some(version_req) => {
-                        log::debug!(
-                            "Searching for installed version compatible with: {}",
-                            version_req
-                        );
-                        let search_result =
-                            find_compatible_toolchain(&version_req, &installed_toolchains);
-                        log::debug!("Compatible version found: {:?}", search_result);
-                        search_result
+                // Load requested version from either .python-version (if present) or string
+                let parsed_requested_toolchain: Option<ToolchainFile> = match &self.load_from {
+                    CompatibleToolchainSource::File => {
+                        let parsed: Option<ToolchainFile> = ToolchainFile::load()?.or_else(|| {
+                            // We could not load a toolchain file.
+                            log::warn!(
+                                "File {:?} does not exists and could not be loaded.",
+                                TOOLCHAIN_FILE
+                            );
+                            None
+                        });
+                        parsed
                     }
+                    CompatibleToolchainSource::String(s) => {
+                        let parsed = ToolchainFile::from_str(s)?;
+                        Some(parsed)
+                    }
+                };
+
+                let compatible: Option<&InstalledToolchain> = match parsed_requested_toolchain {
                     None => {
-                        log::warn!("Cannot find a compatible toolchain since selected toolchain is not installed.");
+                        log::warn!("No compatible toolchain found.");
 
-                        // We couldn't get a VersionReq from the toolchain, because we loaded a path
-                        // from the toolchain file that does not contain a valid Python interpreter.
-                        assert!(!selected_toolchain.is_installed());
-
+                        // No requested version (.python-version flag nor --version flag)
+                        // Pick up the latest installed one (if asked for).
                         if self.pick_latest_if_none_found {
-                            log::debug!("Finding latest installed one.");
+                            log::warn!("Trying latest installed...");
                             latest_installed(&installed_toolchains)
                         } else {
-                            // We asked for a specific version but couldn't find it and we did
-                            // not asked to find the latest installed.
+                            // We did not asked for a version (through the .python-version file
+                            // or --version flag) and we did not asked to find the latest installed.
                             // We thus don't have any toolchain to run.
                             None
                         }
                     }
-                }
+                    Some(requested_toolchain) => {
+                        log::debug!("Searching for compatible toolchain in installed list...");
+
+                        let selected_toolchain: SelectedToolchain =
+                            SelectedToolchain::from_toolchain_file(
+                                &requested_toolchain,
+                                &installed_toolchains,
+                            );
+
+                        match selected_toolchain.version_req() {
+                            Some(version_req) => {
+                                log::debug!(
+                                    "Searching for installed version compatible with: {}",
+                                    version_req
+                                );
+                                let search_result =
+                                    find_compatible_toolchain(&version_req, &installed_toolchains);
+                                log::debug!("Compatible version found: {:?}", search_result);
+                                search_result
+                            }
+                            None => {
+                                log::warn!("Cannot find a compatible toolchain since selected toolchain is not installed.");
+
+                                // We couldn't get a VersionReq from the toolchain, because we loaded a path
+                                // from the toolchain file that does not contain a valid Python interpreter.
+                                assert!(!selected_toolchain.is_installed());
+
+                                if self.pick_latest_if_none_found {
+                                    log::debug!("Finding latest installed one.");
+                                    latest_installed(&installed_toolchains)
+                                } else {
+                                    // We asked for a specific version but couldn't find it and we did
+                                    // not asked to find the latest installed.
+                                    // We thus don't have any toolchain to run.
+                                    None
+                                }
+                            }
+                        }
+                    }
+                };
+                compatible
             }
         };
+
         Ok(compatible.cloned())
     }
 }
