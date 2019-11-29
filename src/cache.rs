@@ -1,5 +1,5 @@
 use std::{
-    fs::{read_to_string, File},
+    fs::{create_dir_all, read_to_string, File},
     io::{BufWriter, Write},
     path::PathBuf,
 };
@@ -49,7 +49,10 @@ impl AvailableToolchainsCache {
     pub fn new() -> Result<AvailableToolchainsCache> {
         log::debug!("Initializing cache...");
 
-        // FIXME: This fails if ~/.pycors/cache directory does not exists
+        let cache_dir = utils::directory::cache()?;
+        if !cache_dir.exists() {
+            create_dir_all(&cache_dir)?
+        }
 
         let cache_file = cache_file()?;
         let cache: AvailableToolchainsCache = if cache_file.exists() {

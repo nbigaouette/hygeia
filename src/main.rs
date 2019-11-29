@@ -1,3 +1,4 @@
+// FIXME: Running '/usr/bin/python2 -V' returns Python 2.7.15+, which fails parsing: ERROR pycors::settings] Failed to parse version string "2.7.15+": ParseError("Error parsing prerelease")
 // FIXME: Replace 'format_err!()' with structs/enums
 // FIXME: Gracefully handle errors that bubble to main
 // FIXME: Add -vvv flag to control log level
