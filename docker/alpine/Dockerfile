@@ -5,8 +5,8 @@ FROM ${OS_NAME}:${OS_VERSION} as builder
 
 LABEL pycors_${OS_NAME}_${OS_VERSION}_builder=true
 
-ARG DOCKER_GID=101
-ARG DOCKER_UID=100
+ARG DOCKER_GID=7926
+ARG DOCKER_UID=7926
 ARG RUST_VERSION=1.39.0
 ARG RUSTFLAGS
 
@@ -64,8 +64,8 @@ FROM ${OS_NAME}:${OS_VERSION}
 
 LABEL pycors_${OS_NAME}_${OS_VERSION}_builder=false
 
-ARG DOCKER_GID=101
-ARG DOCKER_UID=100
+ARG DOCKER_GID=7926
+ARG DOCKER_UID=7926
 
 # -------------------------------------------------------------------------------
 # OS-specific
