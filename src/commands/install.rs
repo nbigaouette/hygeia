@@ -12,7 +12,7 @@ use crate::{
     commands::{self, install::download::download_source},
     constants::{EXECUTABLE_NAME, TOOLCHAIN_FILE},
     toolchain::{find_installed_toolchains, installed::InstalledToolchain, ToolchainFile},
-    utils, Result,
+    Result,
 };
 
 mod download;
