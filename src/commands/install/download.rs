@@ -4,12 +4,12 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use failure::format_err;
+use anyhow::{anyhow, Result};
 use indicatif::{ProgressBar, ProgressStyle};
 use semver::Version;
 use url::Url;
 
-use crate::{os::build_filename, utils, Result};
+use crate::{os::build_filename, utils};
 
 pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()> {
     let line_header = "[1/15] Download";
@@ -23,9 +23,9 @@ pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()
 
     let filename = url
         .path_segments()
-        .ok_or_else(|| format_err!("Could not extract filename from url"))?
+        .ok_or_else(|| anyhow!("Could not extract filename from url"))?
         .last()
-        .ok_or_else(|| format_err!("Could not get last segment from url path"))?
+        .ok_or_else(|| anyhow!("Could not get last segment from url path"))?
         .to_string();
 
     let mut file_path = PathBuf::new();
@@ -87,7 +87,7 @@ pub fn download_from_url<P: AsRef<Path>>(url: &Url, download_to: P) -> Result<()
             log::error!("Failed to download {}: {:?}", resp.url(), resp.status());
             let res = resp.error_for_status();
             res.map(|_| ())
-                .map_err(|e| format_err!("Failed to download file: {:?}", e))
+                .map_err(|e| anyhow!("Failed to download file: {:?}", e))
         }
     }
 }

@@ -1,21 +1,24 @@
 use std::{env, ffi::OsString};
 
-use failure::Fail;
+use anyhow::{Context, Result};
 use regex::Regex;
 use semver::VersionReq;
-use subprocess::{Exec, Redirection};
+use subprocess::{self, Exec, Redirection};
+use thiserror::Error;
 
 use crate::{
     dir_monitor::DirectoryMonitor,
     os::command_with_major_version,
     toolchain::{installed::InstalledToolchain, CompatibleToolchainBuilder},
-    utils, Result, EXECUTABLE_NAME,
+    utils, EXECUTABLE_NAME,
 };
 
-#[derive(Debug, failure::Fail)]
+#[derive(Debug, Error)]
 pub enum ShimError {
-    #[fail(display = "No interpreter found to run command: {}", _0)]
+    #[error("No interpreter found to run command: {0:?}")]
     MissingInterpreter(String),
+    #[error("subprocess::PopenError: {0:?}")]
+    PopenError(subprocess::PopenError),
 }
 
 pub fn run<S>(command: &str, arguments: &[S]) -> Result<()>
@@ -82,8 +85,9 @@ where
         .stdout(Redirection::None)
         .stderr(Redirection::None)
         .join()
-        .map_err(|err| {
-            err.context(format!(
+        .map_err(ShimError::PopenError)
+        .with_context(|| {
+            format!(
                 "Failed command: {} {}",
                 command_full_path.display(),
                 arguments
@@ -91,7 +95,7 @@ where
                     .map(|s| s.as_ref())
                     .collect::<Vec<&str>>()
                     .join(" ")
-            ))
+            )
         })?;
 
     let new_bin_files: Vec<_> = bin_dir_monitor.check()?.collect();

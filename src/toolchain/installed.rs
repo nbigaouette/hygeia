@@ -4,12 +4,14 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use anyhow::Result;
 use semver::{Version, VersionReq};
+use thiserror::Error;
 
-use crate::{constants::TOOLCHAIN_FILE, toolchain::get_python_versions_from_path, Result};
+use crate::{constants::TOOLCHAIN_FILE, toolchain::get_python_versions_from_path};
 
-#[derive(Debug, Clone, failure::Fail)]
-#[fail(display = "Python version {} not found!", version)]
+#[derive(Debug, Clone, Error)]
+#[error("Python version {version} not found!")]
 pub struct ToolchainNotInstalled {
     version: VersionReq,
 }

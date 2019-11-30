@@ -5,7 +5,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use failure::format_err;
+use anyhow::{anyhow, Result};
 use flate2::read::GzDecoder;
 use semver::Version;
 #[cfg(target_os = "macos")]
@@ -16,7 +16,6 @@ use crate::{
     commands::{self, install::pip::install_extra_pip_packages},
     os::build_filename,
     utils::{self, SpinnerMessage},
-    Result,
 };
 
 #[cfg_attr(windows, allow(dead_code))]
@@ -55,7 +54,7 @@ pub fn extract_source(version: &Version) -> Result<()> {
 
     child
         .join()
-        .map_err(|e| format_err!("Failed to join threads: {:?}", e))?;
+        .map_err(|e| anyhow!("Failed to join threads: {:?}", e))?;
 
     Ok(())
 }
@@ -76,7 +75,7 @@ pub fn compile_source(
         "--prefix".to_string(),
         install_dir
             .to_str()
-            .ok_or_else(|| format_err!("Error converting install dir {:?} to `str`", install_dir))?
+            .ok_or_else(|| anyhow!("Error converting install dir {:?} to `str`", install_dir))?
             .to_string(),
         "--enable-optimizations".to_string(),
     ];

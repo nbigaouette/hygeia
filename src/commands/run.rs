@@ -1,20 +1,21 @@
-use failure::format_err;
+use anyhow::{anyhow, Result};
+use thiserror::Error;
 
-use crate::{shim, toolchain::CompatibleToolchainBuilder, Result};
+use crate::{shim, toolchain::CompatibleToolchainBuilder};
 
-#[derive(Debug, failure::Fail)]
+#[derive(Debug, Error)]
 pub enum RunError {
-    #[fail(display = "No interpreter found to run command: {}", _0)]
+    #[error("No interpreter found to run command: {0}")]
     MissingInterpreter(String),
 }
 
 pub fn run(version: Option<String>, command_and_args: &str) -> Result<()> {
     let s = shlex::split(&command_and_args)
-        .ok_or_else(|| format_err!("Failed to split command from {:?}", command_and_args))?;
+        .ok_or_else(|| anyhow!("Failed to split command from {:?}", command_and_args))?;
     let (cmd, arguments) = s.split_at(1);
     let cmd = cmd
         .get(0)
-        .ok_or_else(|| format_err!("Failed to extract command from {:?}", command_and_args))?;
+        .ok_or_else(|| anyhow!("Failed to extract command from {:?}", command_and_args))?;
 
     let compatible_toolchain_builder = match version {
         Some(version) => CompatibleToolchainBuilder::new().load_from_string(&version),
