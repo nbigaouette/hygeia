@@ -4,15 +4,15 @@ use std::{
     path::PathBuf,
 };
 
-use failure::format_err;
+use anyhow::{anyhow, Result};
 use semver::{Version, VersionReq};
+use thiserror::Error;
 
 use crate::{
     cache::AvailableToolchainsCache,
     commands::{self, install::download::download_source},
     constants::{EXECUTABLE_NAME, TOOLCHAIN_FILE},
     toolchain::{find_installed_toolchains, installed::InstalledToolchain, ToolchainFile},
-    Result,
 };
 
 mod download;
@@ -20,12 +20,9 @@ mod pip;
 mod unix;
 mod windows;
 
-#[derive(Debug, failure::Fail)]
+#[derive(Debug, Error)]
 pub enum InstallError {
-    #[fail(
-        display = "Cannot install toolchain from file when specified as path ({:?})",
-        _0
-    )]
+    #[error("Cannot install toolchain from file when specified as path ({0:?})")]
     ToolchainFileContainsPath(PathBuf),
 }
 
@@ -168,7 +165,7 @@ fn selected_version_from_user_input() -> Result<VersionReq> {
     let stdin = io::stdin();
     println!("Please type the Python version to use in this directory:");
     let line = match stdin.lock().lines().next() {
-        None => return Err(format_err!("Standard input did not contain a single line")),
+        None => return Err(anyhow!("Standard input did not contain a single line")),
         Some(line_result) => line_result?,
     };
     log::debug!("Given: {}", line);
@@ -177,7 +174,7 @@ fn selected_version_from_user_input() -> Result<VersionReq> {
 
     if line.is_empty() {
         log::error!("Empty line given as input.");
-        Err(format_err!("Empty line provided"))
+        Err(anyhow!("Empty line provided"))
     } else {
         log::debug!("Parsed version: {}", version);
         Ok(version)

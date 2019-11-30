@@ -8,22 +8,24 @@ use std::{
     str::FromStr,
 };
 
+use anyhow::Result;
 use semver::{Version, VersionReq};
 use subprocess::{Exec, Redirection};
+use thiserror::Error;
 use which::which_in;
 
-use crate::{constants::TOOLCHAIN_FILE, utils, Result, EXECUTABLE_NAME};
+use crate::{constants::TOOLCHAIN_FILE, utils, EXECUTABLE_NAME};
 
 pub mod installed;
 pub mod selected;
 
 use installed::{InstalledToolchain, NotInstalledToolchain};
 
-#[derive(Debug, failure::Fail)]
+#[derive(Debug, Error)]
 pub enum ToolchainError {
-    #[fail(display = "Failed to get working current directory: {:?}", _0)]
-    FailedCurrentDir(#[fail(cause)] io::Error),
-    #[fail(display = "Toolchain file {:?} is empty", _0)]
+    #[error("Failed to get working current directory: {:?}", _0)]
+    FailedCurrentDir(#[from] io::Error),
+    #[error("Toolchain file {:?} is empty", _0)]
     EmptyToolchainFile(PathBuf),
 }
 

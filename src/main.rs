@@ -28,7 +28,8 @@ mod utils;
 
 use crate::{commands::Command, constants::*};
 
-pub type Result<T> = std::result::Result<T, failure::Error>;
+use anyhow::Result;
+use thiserror::Error;
 
 git_testament!(GIT_TESTAMENT);
 
@@ -51,16 +52,14 @@ struct Opt {
     subcommand: Option<commands::Command>,
 }
 
-#[derive(Debug, failure::Fail)]
+#[derive(Debug, Error)]
 pub enum MainError {
-    #[fail(display = "Cannot get executable's path: {:?}", _0)]
-    Io(#[fail(cause)] io::Error),
-    #[fail(display = "Failed to get str representation of {:?}", _0)]
+    #[error("Cannot get executable's path: {0:?}")]
+    Io(#[from] io::Error),
+    #[error("Failed to get str representation of {0:?}")]
     Str(OsString),
-    #[fail(display = "Cannot get executable's path: {:?}", _0)]
+    #[error("Cannot get executable's path: {0:?}")]
     ExecutablePath(PathBuf),
-    #[fail(display = "Failed to execute command: {:?}", _0)]
-    Command(#[fail(cause)] failure::Error),
 }
 
 fn main() -> Result<()> {
@@ -76,7 +75,7 @@ fn main() -> Result<()> {
         .ok_or_else(|| MainError::Str(file_name.to_os_string()))?;
 
     if exe.starts_with(EXECUTABLE_NAME) {
-        no_shim_execution().map_err(|e| MainError::Command(e).into())
+        no_shim_execution()
     } else {
         python_shim(exe)
     }

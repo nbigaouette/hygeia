@@ -1,7 +1,7 @@
-use failure::format_err;
+use anyhow::{anyhow, Result};
 use semver::Version;
 
-use crate::{toolchain::installed::InstalledToolchain, utils, Result};
+use crate::{toolchain::installed::InstalledToolchain, utils};
 
 #[cfg_attr(windows, allow(dead_code))]
 pub fn build_filename_tgz(version: &Version) -> Result<String> {
@@ -22,7 +22,7 @@ pub fn command_with_major_version(
         command
             .chars()
             .last()
-            .ok_or_else(|| format_err!("Cannot get last character from command {:?}", command))?
+            .ok_or_else(|| anyhow!("Cannot get last character from command {:?}", command))?
     );
 
     let command_string_with_major_version = {

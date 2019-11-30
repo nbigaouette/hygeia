@@ -9,8 +9,8 @@ use std::{
     time::Duration,
 };
 
+use anyhow::{anyhow, Result};
 use dirs::home_dir;
-use failure::format_err;
 use indicatif::{ProgressBar, ProgressStyle};
 use semver::{Version, VersionReq};
 use subprocess::{Exec, Redirection};
@@ -19,7 +19,6 @@ use terminal_size::{terminal_size, Width};
 use crate::{
     constants::{home_env_variable, DEFAULT_DOT_DIR, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME},
     toolchain::installed::InstalledToolchain,
-    Result,
 };
 
 pub fn path_exists<P: AsRef<Path>>(path: P) -> bool {
@@ -28,7 +27,7 @@ pub fn path_exists<P: AsRef<Path>>(path: P) -> bool {
 
 pub fn copy_file<P1: AsRef<Path>, P2: AsRef<Path>>(from: P1, to: P2) -> Result<u64> {
     if from.as_ref() == to.as_ref() {
-        Err(format_err!(
+        Err(anyhow!(
             "Will not copy {:?} unto {:?} as this would probably truncate it.",
             from.as_ref(),
             to.as_ref()
@@ -59,10 +58,7 @@ pub mod directory {
         let default_dot_dir = dot_dir(&DEFAULT_DOT_DIR);
 
         let home = match config_home_from_env.or(default_dot_dir) {
-            None => Err(format_err!(
-                "Cannot find {}' home directory",
-                EXECUTABLE_NAME
-            )),
+            None => Err(anyhow!("Cannot find {}' home directory", EXECUTABLE_NAME)),
             Some(home) => Ok(home),
         }?;
 
@@ -287,7 +283,7 @@ where
     let mut stdout: Option<File> = None;
     std::mem::swap(&mut process.stdout, &mut stdout);
 
-    let br = BufReader::new(stdout.ok_or_else(|| format_err!("Got none"))?);
+    let br = BufReader::new(stdout.ok_or_else(|| anyhow!("Got none"))?);
 
     let message_width = if let Some((Width(width), _)) = terminal_size() {
         // There is two characters before the message: the spinner and a space
@@ -306,7 +302,7 @@ where
                     e
                 )))?;
                 tx.send(SpinnerMessage::Stop)?;
-                return Err(format_err!("Error reading stdout: {:?}", e));
+                return Err(anyhow!("Error reading stdout: {:?}", e));
             }
             Ok(line) => {
                 log_line(&line, &mut log_file);
@@ -331,12 +327,12 @@ where
 
     child
         .join()
-        .map_err(|e| format_err!("Failed to join threads: {:?}", e))?;
+        .map_err(|e| anyhow!("Failed to join threads: {:?}", e))?;
 
     match exit_status {
         subprocess::ExitStatus::Exited(code) => match code {
             0 => Ok(()),
-            _ => Err(format_err!(
+            _ => Err(anyhow!(
                 "Command {} with arguments {:?} failed! Exit status: {} (see log file {})",
                 cmd,
                 args,
@@ -344,14 +340,14 @@ where
                 log_filepath.display()
             )),
         },
-        subprocess::ExitStatus::Signaled(signal) => Err(format_err!(
+        subprocess::ExitStatus::Signaled(signal) => Err(anyhow!(
             "Command {} with arguments {:?} failed due to it being sent signal {} (see log file {})",
             cmd,
             args,
             signal,
                 log_filepath.display()
         )),
-        subprocess::ExitStatus::Other(unknown_code) => Err(format_err!(
+        subprocess::ExitStatus::Other(unknown_code) => Err(anyhow!(
             "Command {} with arguments {:?} failed with an unknown exit status {} (see log file {})",
             cmd,
             args,
@@ -360,7 +356,7 @@ where
         )),
         subprocess::ExitStatus::Undetermined => {
             log::error!("Could not get process exit status code.");
-            Err(format_err!("Could not get process exit status code."))
+            Err(anyhow!("Could not get process exit status code."))
         }
     }
 }

@@ -1,11 +1,11 @@
-use failure::format_err;
+use anyhow::{anyhow, Result};
 
 use crate::{
     commands,
     toolchain::{
         find_installed_toolchains, installed::InstalledToolchain, selected::VersionOrPath,
     },
-    utils, Result,
+    utils,
 };
 
 pub fn run(requested_version_or_path: commands::VersionOrPath) -> Result<()> {
@@ -25,7 +25,7 @@ pub fn run(requested_version_or_path: commands::VersionOrPath) -> Result<()> {
                     python_to_use.clone()
                 }
                 None => {
-                    return Err(format_err!(
+                    return Err(anyhow!(
                         "Python version {} not found!",
                         requested_version_or_path.version_or_path
                     ));
@@ -39,7 +39,7 @@ pub fn run(requested_version_or_path: commands::VersionOrPath) -> Result<()> {
                 python_to_use
             }
             None => {
-                return Err(format_err!(
+                return Err(anyhow!(
                     "Could not find a Python interpreter under {:?}",
                     path
                 ));

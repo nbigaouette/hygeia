@@ -4,16 +4,18 @@ use std::{
     path::PathBuf,
 };
 
+use anyhow::Result;
 use chrono::{DateTime, Utc};
 use regex::Regex;
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use serde_json;
+use thiserror::Error;
 use url::Url;
 
 use crate::{
     constants::{AVAILABLE_TOOLCHAIN_CACHE, PYTHON_BASE_URL},
-    utils, Result,
+    utils,
 };
 
 // FIXME: Pre-releases are available inside 'https://www.python.org/ftp/python/MAJOR.MINOR.PATCH'
@@ -23,9 +25,9 @@ use crate::{
 
 // FIXME: Use https://www.python.org/downloads/source/ instead to get all links of releases!
 
-#[derive(Debug, failure::Fail)]
+#[derive(Debug, Error)]
 pub enum CacheError {
-    #[fail(display = "No compatible version found")]
+    #[error("No compatible version found")]
     NoCompatibleVersionFound,
 }
 

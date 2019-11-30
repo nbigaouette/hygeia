@@ -4,10 +4,10 @@ use std::{
     io::{BufRead, BufReader, Write},
 };
 
-use failure::format_err;
+use anyhow::{anyhow, Result};
 use structopt::clap::Shell;
 
-use crate::{commands, utils, Result, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME_CONTENT};
+use crate::{commands, utils, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME_CONTENT};
 
 pub fn run(shell: Shell) -> Result<()> {
     log::debug!("Setting up the shim...");
@@ -67,8 +67,7 @@ pub fn run(shell: Shell) -> Result<()> {
     // Add ~/.EXECUTABLE_NAME/bin to $PATH in ~/.bashrc and install autocomplete
     match shell {
         structopt::clap::Shell::Bash => {
-            let home =
-                dirs::home_dir().ok_or_else(|| format_err!("Error getting home directory"))?;
+            let home = dirs::home_dir().ok_or_else(|| anyhow!("Error getting home directory"))?;
             let bashrc = home.join(".bashrc");
 
             // Add the autocomplete too
@@ -145,6 +144,6 @@ pub fn run(shell: Shell) -> Result<()> {
 
             Ok(())
         }
-        _ => Err(format_err!("Unsupported shell: {}", shell)),
+        _ => Err(anyhow!("Unsupported shell: {}", shell)),
     }
 }
