@@ -13,7 +13,6 @@ use std::{
 };
 
 use git_testament::{git_testament, render_testament};
-use human_panic::setup_panic;
 use lazy_static::lazy_static;
 use structopt::StructOpt;
 
@@ -63,8 +62,6 @@ pub enum MainError {
 }
 
 fn main() -> Result<()> {
-    setup_panic!();
-
     // Detect if running as shim as soon as possible
     let current_exe: PathBuf = env::current_exe().map_err(MainError::Io)?;
     let file_name: &OsStr = current_exe
