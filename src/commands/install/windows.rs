@@ -1,10 +1,14 @@
-use std::env;
+use std::{
+    env,
+    fs::{create_dir_all, File},
+    io::{self, BufReader},
+};
 
 use semver::Version;
 
 use crate::{
     commands::{self, install::pip::install_extra_pip_packages},
-    os::windows::build_filename_exe,
+    os::windows::build_filename_zip,
     utils, Result,
 };
 
@@ -13,33 +17,41 @@ pub fn install_package(
     version: &Version,
     install_extra_packages: Option<&commands::InstallExtraPackagesOptions>,
 ) -> Result<()> {
-    // See https://docs.python.org/3.7/using/windows.html#installing-without-ui
-
     let original_current_dir = env::current_dir()?;
 
     let install_dir = utils::directory::install_dir(version)?;
-    let target_dir_opt = format!("TargetDir={}", install_dir.display());
-
-    let unattended_arguments = vec![
-        "/quiet",
-        "InstallAllUsers=0",
-        &target_dir_opt,
-        "Shortcuts=0",
-        "Include_launcher=0",
-        "InstallLauncherAllUsers=0",
-        "Include_pip=1",
-    ];
 
     let cwd = utils::directory::downloaded()?;
-    let exe = format!("./{}", build_filename_exe(version)?);
+    let archive = build_filename_zip(version)?;
 
-    utils::run_cmd_template(
-        &version,
-        "[3/15] Unattended install",
-        &exe,
-        &unattended_arguments,
-        cwd,
-    )?;
+    let file = BufReader::new(File::open(cwd.join(archive)).unwrap());
+    let mut archive = zip::ZipArchive::new(file).unwrap();
+
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i).unwrap();
+        let filename = file.sanitized_name();
+
+        if (&*file.name()).ends_with('/') {
+            let outpath = install_dir.join(&filename);
+            log::debug!("{:?} --> \"{}\"", filename, outpath.as_path().display());
+            create_dir_all(&outpath).unwrap();
+        } else {
+            let outpath = install_dir.join(&filename);
+            log::debug!(
+                "{:?} --> \"{}\" ({} bytes)",
+                filename,
+                outpath.as_path().display(),
+                file.size()
+            );
+            if let Some(p) = outpath.parent() {
+                if !p.exists() {
+                    create_dir_all(&p).unwrap();
+                }
+            }
+            let mut outfile = File::create(&outpath).unwrap();
+            io::copy(&mut file, &mut outfile).unwrap();
+        }
+    }
 
     // Create a file in install directory to detect if we installed it ourselves
     utils::create_info_file(&install_dir, version)?;

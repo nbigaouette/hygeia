@@ -12,7 +12,7 @@ pub fn build_filename(version: &Version) -> Result<String> {
     }
     #[cfg(target_os = "windows")]
     {
-        windows::build_filename_exe(version)
+        windows::build_filename_zip(version)
     }
 }
 
