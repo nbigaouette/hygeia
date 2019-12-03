@@ -10,12 +10,12 @@ use thiserror::Error;
 
 use crate::{
     cache::AvailableToolchainsCache,
-    commands::{self, install::download::download_source},
+    commands,
     constants::{EXECUTABLE_NAME, TOOLCHAIN_FILE},
+    download::download_source,
     toolchain::{find_installed_toolchains, installed::InstalledToolchain, ToolchainFile},
 };
 
-mod download;
 mod pip;
 mod unix;
 mod windows;
@@ -105,7 +105,8 @@ pub fn run(
                 };
 
             // Configure make make install
-            download_source(&requested_version.version)?;
+            let rt = tokio::runtime::Runtime::new()?;
+            rt.block_on(download_source(&requested_version.version))?;
             // FIXME: Validate downloaded package with checksum
             // FIXME: Validate downloaded package with signature
             install_package(&requested_version.version, install_extra_packages)?;

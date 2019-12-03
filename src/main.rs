@@ -20,6 +20,7 @@ mod cache;
 mod commands;
 mod constants;
 mod dir_monitor;
+mod download;
 mod os;
 mod shim;
 mod toolchain;
