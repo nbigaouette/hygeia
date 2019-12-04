@@ -10,7 +10,7 @@ use structopt::clap::Shell;
 use crate::{commands, utils, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME_CONTENT};
 
 pub fn run(shell: Shell) -> Result<()> {
-    log::debug!("Setting up the shim...");
+    log::info!("Setting up the shim...");
 
     // Copy itself into ~/.EXECUTABLE_NAME/shim
     let config_home_dir = utils::directory::config_home()?;
