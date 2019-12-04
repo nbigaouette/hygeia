@@ -1,6 +1,6 @@
 use std::{
     env, fs,
-    fs::File,
+    fs::{create_dir_all, File, OpenOptions},
     io::{BufRead, BufReader, Write},
 };
 
@@ -158,9 +158,39 @@ pub fn run(shell: Shell) -> Result<()> {
                     writeln!(file, "{}", line)?;
                 }
             }
-
-            Ok(())
         }
-        _ => Err(anyhow!("Unsupported shell: {}", shell)),
+        structopt::clap::Shell::PowerShell => {
+            // Add the autocomplete too
+            let autocomplete_file = config_home_dir.join(&format!("_{}.ps1", EXECUTABLE_NAME));
+            let mut f = fs::File::create(&autocomplete_file)?;
+            commands::autocomplete::run(shell, &mut f)?;
+
+            match dirs::document_dir() {
+                None => {
+                    anyhow::bail!("Could not get Document directory");
+                }
+                Some(document_dir) => {
+                    let ps_dir = document_dir.join("WindowsPowerShell");
+                    if !ps_dir.exists() {
+                        create_dir_all(&ps_dir)?;
+                    }
+                    // Should match the value of PowerShell's '$profile' automatic variable
+                    let profile = ps_dir.join("Microsoft.PowerShell_profile.ps1");
+
+                    let mut file = OpenOptions::new()
+                        .create(true)
+                        .write(true)
+                        .append(true)
+                        .open(&profile)?;
+                    // FIXME: This appends, we want prepends
+                    writeln!(file, r#"$env:Path += ";{}""#, shims_dir.display())?;
+                    writeln!(file, ". {}", autocomplete_file.display())?;
+                }
+            }
+        }
+        _ => anyhow::bail!("Unsupported shell: {}", shell),
     }
+
+    log::info!("Done!");
+    Ok(())
 }
