@@ -20,35 +20,52 @@ pub fn run(shell: Shell) -> Result<()> {
         fs::create_dir_all(&shims_dir)?;
     }
     let copy_from = env::current_exe()?;
-    let copy_to = shims_dir.join(EXECUTABLE_NAME);
+    let copy_to = {
+        #[cfg_attr(not(windows), allow(unused_mut))]
+        let mut tmp = shims_dir.join(EXECUTABLE_NAME);
+
+        #[cfg(windows)]
+        tmp.set_extension("exe");
+
+        tmp
+    };
     log::debug!("Copying {:?} into {:?}...", copy_from, copy_to);
     utils::copy_file(&copy_from, &copy_to)?;
 
+    #[cfg(windows)]
+    let bin_extension = ".exe";
+    #[cfg(not(windows))]
+    let bin_extension = "";
+
     // Once the shim is in place, create hard links to it.
     let hardlinks_version_suffix = &[
-        "python###",
-        "idle###",
-        "pip###",
-        "pydoc###",
+        format!("python###{}", bin_extension),
+        format!("idle###{}", bin_extension),
+        format!("pip###{}", bin_extension),
+        format!("pydoc###{}", bin_extension),
         // Internals
-        "python###-config",
-        "python###dm-config",
+        format!("python###-config{}", bin_extension),
+        format!("python###dm-config{}", bin_extension),
         // Extras
-        "pipenv###",
-        "poetry###",
-        "pytest###",
+        format!("pipenv###{}", bin_extension),
+        format!("poetry###{}", bin_extension),
+        format!("pytest###{}", bin_extension),
     ];
-    let hardlinks_dash_version_suffix = &["2to3###", "easy_install###", "pyvenv###"];
+    let hardlinks_dash_version_suffix = &[
+        format!("2to3###{}", bin_extension),
+        format!("easy_install###{}", bin_extension),
+        format!("pyvenv###{}", bin_extension),
+    ];
 
     // Create simple hardlinks: `EXECUTABLE_NAME` --> `bin`
-    utils::create_hard_links(&copy_from, hardlinks_version_suffix, &shims_dir, "")?;
-    utils::create_hard_links(&copy_from, hardlinks_dash_version_suffix, &shims_dir, "")?;
+    utils::create_hard_links(&copy_to, hardlinks_version_suffix, &shims_dir, "")?;
+    utils::create_hard_links(&copy_to, hardlinks_dash_version_suffix, &shims_dir, "")?;
 
     // Create major version hardlinks: `EXECUTABLE_NAME` --> `bin3` and `EXECUTABLE_NAME` --> `bin2`
     for major in &["2", "3"] {
-        utils::create_hard_links(&copy_from, hardlinks_version_suffix, &shims_dir, major)?;
+        utils::create_hard_links(&copy_to, hardlinks_version_suffix, &shims_dir, major)?;
         utils::create_hard_links(
-            &copy_from,
+            &copy_to,
             hardlinks_dash_version_suffix,
             &shims_dir,
             &format!("-{}", major),
