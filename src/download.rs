@@ -89,7 +89,7 @@ async fn download(url: &Url) -> Result<Vec<u8>> {
         .last()
         .ok_or_else(|| anyhow::anyhow!("cannot extract filename from {:?}", url))? {
             "" => url.as_str(),
-            filename @ _ => filename,
+            filename => filename,
         };
 
     let mut response = client.get(uri).await?;
