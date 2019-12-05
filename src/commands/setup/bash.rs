@@ -24,7 +24,7 @@ pub fn setup_bash(home: &Path, config_home_dir: &Path, shims_dir: &Path) -> Resu
         String::from(r#"# Add the shims directory to path, removing all other"#),
         String::from(r#"# occurrences of it from current $PATH."#),
         String::from(r#"if [ -z ${PYCORS_INITIALIZED+x} ]; then"#),
-        String::from(r#"    # Setup pycors: prepend the shims directory to PATH"#),
+        String::from(r#"    # Setup pycors: prepends the shims directory to PATH"#),
         String::from(r#"    export PATH="${PYCORS_HOME}/shims:${PATH//${PYCORS_HOME}/}""#),
         String::from(r#"    export PYCORS_INITIALIZED=1"#),
         String::from(r#"else"#),
