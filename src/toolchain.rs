@@ -397,7 +397,7 @@ pub fn find_installed_toolchains() -> Result<Vec<InstalledToolchain>> {
 
                         // Append `bin` to the path (if it exists) since this location
                         // will be used.
-                        let location_bin = location.join("bin");
+                        let location_bin = utils::directory::bin_dir(&version)?;
                         let location = if location_bin.exists() {
                             location_bin
                         } else {
@@ -609,7 +609,13 @@ fn latest_installed(installed_toolchains: &[InstalledToolchain]) -> Option<&Inst
     // We could not get a compatible version.
     // Let's pick the latest installed one instead, if any.
     let latest_toolchain: Option<&InstalledToolchain> = installed_toolchains.get(0);
-    log::debug!("Latest installed: {:?}", latest_toolchain);
+    log::debug!(
+        "Latest installed: {}",
+        match latest_toolchain {
+            None => String::from("None"),
+            Some(t) => format!("{}", t),
+        }
+    );
     latest_toolchain
 }
 

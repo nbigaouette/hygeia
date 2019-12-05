@@ -1,24 +1,24 @@
 use std::{
-    env,
-    fs::{create_dir_all, File},
-    io::{self, BufReader},
+    fs::{self, File, OpenOptions},
+    io::{self, BufReader, Write},
 };
 
 use semver::Version;
 
 use crate::{
     commands::{self, install::pip::install_extra_pip_packages},
+    download::download_to_path,
     os::windows::build_filename_zip,
     utils, Result,
 };
+
+const GET_PIP_URL: &str = "https://bootstrap.pypa.io/get-pip.py";
 
 #[cfg_attr(not(windows), allow(dead_code))]
 pub fn install_package(
     version: &Version,
     install_extra_packages: Option<&commands::InstallExtraPackagesOptions>,
 ) -> Result<()> {
-    let original_current_dir = env::current_dir()?;
-
     let install_dir = utils::directory::install_dir(version)?;
 
     let cwd = utils::directory::downloaded()?;
@@ -34,18 +34,18 @@ pub fn install_package(
         if (&*file.name()).ends_with('/') {
             let outpath = install_dir.join(&filename);
             log::debug!("{:?} --> \"{}\"", filename, outpath.as_path().display());
-            create_dir_all(&outpath).unwrap();
+            fs::create_dir_all(&outpath).unwrap();
         } else {
             let outpath = install_dir.join(&filename);
             log::debug!(
-                "{:?} --> \"{}\" ({} bytes)",
+                "Extracting {:?} --> \"{}\" ({} bytes)",
                 filename,
                 outpath.as_path().display(),
                 file.size()
             );
             if let Some(p) = outpath.parent() {
                 if !p.exists() {
-                    create_dir_all(&p).unwrap();
+                    fs::create_dir_all(&p).unwrap();
                 }
             }
             let mut outfile = File::create(&outpath).unwrap();
@@ -56,15 +56,46 @@ pub fn install_package(
     // Create a file in install directory to detect if we installed it ourselves
     utils::create_info_file(&install_dir, version)?;
 
-    if let Some(install_extra_packages) = install_extra_packages {
-        install_extra_pip_packages(&install_dir, &version, install_extra_packages)?;
+    let python_major_exe = install_dir.join(format!("python{}.exe", version.major));
+    let python_exe = install_dir.join("python.exe");
+
+    // Install pip
+    let cache_dir = utils::directory::cache()?;
+    let get_pip_py = cache_dir.join("get-pip.py");
+    let rt = tokio::runtime::Runtime::new()?;
+    rt.block_on(download_to_path(GET_PIP_URL, &cache_dir))?;
+    utils::run_cmd_template(
+        &version,
+        "Install pip",
+        &python_exe.to_string_lossy().into_owned(),
+        &[
+            get_pip_py.to_string_lossy().into_owned(),
+            "--no-warn-script-location".to_string(),
+        ],
+        &install_dir,
+    )?;
+
+    // Make sure we have a binary 'python<MAJOR>.exe', which the zip file doesn't include
+    if !python_major_exe.exists() {
+        log::debug!("Copying {:?} to {:?}...", python_exe, python_major_exe);
+        fs::copy(python_exe, python_major_exe)?;
     }
 
-    log::debug!(
-        "Changing back current directory to {:?}",
-        original_current_dir
-    );
-    env::set_current_dir(&original_current_dir)?;
+    // Make sure we can import pip
+    // https://michlstechblog.info/blog/python-install-python-with-pip-on-windows-by-the-embeddable-zip-file/
+    let mut file = OpenOptions::new()
+        .write(true)
+        .append(true)
+        .open(install_dir.join(format!("python{}{}._pth", version.major, version.minor)))?;
+    writeln!(
+        file,
+        "{}",
+        install_dir.join("Lib").join("site-packages").display()
+    )?;
+
+    if let Some(install_extra_packages) = install_extra_packages {
+        install_extra_pip_packages(&version, install_extra_packages)?;
+    }
 
     Ok(())
 }

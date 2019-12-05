@@ -138,11 +138,11 @@ pub fn compile_source(
     utils::create_info_file(&install_dir, version)?;
 
     if let Some(install_extra_packages) = install_extra_packages {
-        install_extra_pip_packages(&install_dir, &version, install_extra_packages)?;
+        install_extra_pip_packages(&version, install_extra_packages)?;
     }
 
     // Create symbolic links from binaries with `3` suffix
-    let bin_dir = install_dir.join("bin");
+    let bin_dir = utils::directory::bin_dir(&version)?;
     let basenames_to_link = &[
         "easy_install-###",
         "idle###",

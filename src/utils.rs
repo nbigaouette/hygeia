@@ -17,6 +17,7 @@ use terminal_size::{terminal_size, Width};
 
 use crate::{
     constants::{home_env_variable, DEFAULT_DOT_DIR, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME},
+    os,
     toolchain::installed::InstalledToolchain,
 };
 
@@ -35,6 +36,26 @@ pub fn copy_file<P1: AsRef<Path>, P2: AsRef<Path>>(from: P1, to: P2) -> Result<u
         let number_of_bytes_copied = fs::copy(from, to)?;
         Ok(number_of_bytes_copied)
     }
+}
+
+#[cfg(windows)]
+pub fn bin_extension() -> &'static str {
+    "exe"
+}
+
+#[cfg(not(windows))]
+pub fn bin_extension() -> &'static str {
+    ""
+}
+
+#[cfg(windows)]
+pub fn extension_sep() -> &'static str {
+    "."
+}
+
+#[cfg(not(windows))]
+pub fn extension_sep() -> &'static str {
+    ""
 }
 
 pub mod directory {
@@ -90,6 +111,15 @@ pub mod directory {
 
     pub fn install_dir(version: &Version) -> Result<PathBuf> {
         Ok(installed()?.join(format!("{}", version)))
+    }
+
+    #[cfg(not(windows))]
+    pub fn bin_dir(version: &Version) -> Result<PathBuf> {
+        Ok(install_dir(version)?.join("bin"))
+    }
+    #[cfg(windows)]
+    pub fn bin_dir(version: &Version) -> Result<PathBuf> {
+        Ok(install_dir(version)?)
     }
 }
 

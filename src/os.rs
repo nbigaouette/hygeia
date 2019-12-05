@@ -1,6 +1,8 @@
+use std::path::PathBuf;
+
 use semver::Version;
 
-use crate::{toolchain::installed::InstalledToolchain, Result};
+use crate::{toolchain::installed::InstalledToolchain, utils, Result};
 
 pub mod unix;
 pub mod windows;
@@ -14,6 +16,21 @@ pub fn build_filename(version: &Version) -> Result<String> {
     {
         windows::build_filename_zip(version)
     }
+}
+
+pub fn paths_to_prepends(version: &Version) -> Result<Vec<PathBuf>> {
+    let bin_dir = utils::directory::bin_dir(version)?;
+
+    let mut paths = Vec::new();
+
+    paths.push(bin_dir.clone());
+
+    #[cfg(windows)]
+    {
+        paths.push(bin_dir.join("Scripts"));
+    }
+
+    Ok(paths)
 }
 
 pub fn command_with_major_version(

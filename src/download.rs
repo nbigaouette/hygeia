@@ -4,14 +4,13 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{anyhow, Result};
 use hyper::{Client, Uri};
 use hyper_tls::HttpsConnector;
 use indicatif::{ProgressBar, ProgressStyle};
 use semver::Version;
 use url::Url;
 
-use crate::{os::build_filename, utils};
+use crate::{os::build_filename, utils, Result};
 
 pub async fn download_to_string<S>(url: S) -> Result<String>
 where
@@ -45,9 +44,9 @@ async fn _download_to_path(url: &str, download_to: &Path) -> Result<()> {
 
     let filename = url
         .path_segments()
-        .ok_or_else(|| anyhow!("Could not extract filename from url"))?
+        .ok_or_else(|| anyhow::anyhow!("Could not extract filename from url"))?
         .last()
-        .ok_or_else(|| anyhow!("Could not get last segment from url path"))?
+        .ok_or_else(|| anyhow::anyhow!("Could not get last segment from url path"))?
         .to_string();
 
     let mut file_path = PathBuf::new();
@@ -87,10 +86,11 @@ async fn download(url: &Url) -> Result<Vec<u8>> {
         .path_segments()
         .ok_or_else(|| anyhow::anyhow!("cannot extract path segments from {:?}", url))?
         .last()
-        .ok_or_else(|| anyhow::anyhow!("cannot extract filename from {:?}", url))? {
-            "" => url.as_str(),
-            filename => filename,
-        };
+        .ok_or_else(|| anyhow::anyhow!("cannot extract filename from {:?}", url))?
+    {
+        "" => url.as_str(),
+        filename => filename,
+    };
 
     let mut response = client.get(uri).await?;
 

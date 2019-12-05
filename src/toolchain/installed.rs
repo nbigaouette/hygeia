@@ -1,4 +1,5 @@
 use std::{
+    fmt,
     fs::File,
     io::Write,
     path::{Path, PathBuf},
@@ -20,6 +21,12 @@ pub struct ToolchainNotInstalled {
 pub struct InstalledToolchain {
     pub location: PathBuf,
     pub version: Version,
+}
+
+impl fmt::Display for InstalledToolchain {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Python {} ({})", self.version, self.location.display())
+    }
 }
 
 #[derive(Debug)]
