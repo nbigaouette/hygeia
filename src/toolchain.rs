@@ -10,7 +10,6 @@ use std::{
 
 use anyhow::Result;
 use semver::{Version, VersionReq};
-use subprocess::{Exec, Redirection};
 use thiserror::Error;
 use which::which_in;
 
@@ -253,24 +252,60 @@ where
             }
 
             let full_executable_path = python_path.join(&executable);
-            let python_version = match Exec::cmd(&full_executable_path)
+
+            let python_version: String = match std::process::Command::new(&full_executable_path)
                 .arg("-V")
-                .stdout(Redirection::Pipe)
-                // Python 2 outputs its version to stderr, while python 3 to stdout.
-                .stderr(Redirection::Merge)
-                .capture()
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped())
+                .output()
             {
+                Ok(output) => {
+                    let combined_output = match (
+                        String::from_utf8(output.stdout),
+                        String::from_utf8(output.stderr),
+                    ) {
+                        (Ok(stdout), Ok(stderr)) => {
+                            // Python 2 outputs its version to stderr, while python 3 to stdout.
+                            format!("{}{}", stdout, stderr)
+                        }
+                        (Err(e), _) => {
+                            log::error!(
+                                "Stdout of `{} -V` is not Utf-8: {:?}",
+                                full_executable_path.display(),
+                                e
+                            );
+                            continue;
+                        }
+                        (_, Err(e)) => {
+                            log::error!(
+                                "Stderr of `{} -V` is not Utf-8: {:?}",
+                                full_executable_path.display(),
+                                e
+                            );
+                            continue;
+                        }
+                    };
+                    if output.status.success() {
+                        combined_output
+                    } else {
+                        log::error!(
+                            "Failed to execute`{} -V` (exit code: {:?})",
+                            full_executable_path.display(),
+                            output.status.code()
+                        );
+                        continue;
+                    }
+                }
                 Err(e) => {
                     log::error!(
-                        "Failed to capture stdout from `{}`: {:?}",
+                        "Failed to execute `{} -V`: {:?}",
                         full_executable_path.display(),
                         e
                     );
                     continue;
                 }
-                Ok(python_version) => python_version,
-            }
-            .stdout_str();
+            };
+
             let python_version_str = match python_version.split_whitespace().nth(1) {
                 None => {
                     log::error!(

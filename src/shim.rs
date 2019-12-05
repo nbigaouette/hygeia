@@ -3,7 +3,6 @@ use std::{env, ffi::OsString};
 use anyhow::{Context, Result};
 use regex::Regex;
 use semver::VersionReq;
-use subprocess::{self, Exec, Redirection};
 use thiserror::Error;
 
 use crate::{
@@ -17,8 +16,6 @@ use crate::{
 pub enum ShimError {
     #[error("No interpreter found to run command: {0:?}")]
     MissingInterpreter(String),
-    #[error("subprocess::PopenError: {0:?}")]
-    PopenError(subprocess::PopenError),
 }
 
 pub fn run<S>(command: &str, arguments: &[S]) -> Result<()>
@@ -79,24 +76,11 @@ where
 
     let mut bin_dir_monitor = DirectoryMonitor::new(&bin_dir)?;
 
-    Exec::cmd(&command_full_path)
+    let status = std::process::Command::new(&command_string_with_major_version)
         .args(arguments)
-        .env("PATH", new_path)
-        .stdout(Redirection::None)
-        .stderr(Redirection::None)
-        .join()
-        .map_err(ShimError::PopenError)
-        .with_context(|| {
-            format!(
-                "Failed command: {} {}",
-                command_full_path.display(),
-                arguments
-                    .iter()
-                    .map(|s| s.as_ref())
-                    .collect::<Vec<&str>>()
-                    .join(" ")
-            )
-        })?;
+        // Replace it with our update
+        .env("PATH", &new_path)
+        .status()?;
 
     let new_bin_files: Vec<_> = bin_dir_monitor.check()?.collect();
 
