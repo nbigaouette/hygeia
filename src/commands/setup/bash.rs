@@ -62,28 +62,7 @@ pub fn setup_bash(home: &Path, config_home_dir: &Path, shims_dir: &Path) -> Resu
             //        to make sure the shims path appear first in PATH.
             let f = fs::File::open(&bash_config_file)?;
             let f = BufReader::new(f);
-            let mut line_found = false;
-            for line in f.lines() {
-                match line {
-                    Err(e) => log::error!(
-                        "Failed to read line from file {:?}: {:?}",
-                        bash_config_file,
-                        e,
-                    ),
-                    Ok(line) => {
-                        if line == lines_to_append[0] {
-                            log::debug!(
-                                "File {:?} already contains pycors setup. Skipping.",
-                                bash_config_file
-                            );
-                            line_found = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            !line_found
+            !file_contains(f, &lines_to_append[0])?
         };
 
         if do_edit_file {
@@ -114,4 +93,27 @@ pub fn setup_bash(home: &Path, config_home_dir: &Path, shims_dir: &Path) -> Resu
     }
 
     Ok(())
+}
+
+fn file_contains<R, S>(f: R, line_to_check: S) -> Result<bool>
+where
+    R: BufRead,
+    S: AsRef<str>,
+{
+    Ok(f.lines()
+        .find(|line| match line {
+            Err(e) => {
+                log::error!("Failed to read line: {:?}", e,);
+                false
+            }
+            Ok(line) => {
+                if line == line_to_check.as_ref() {
+                    log::debug!("File already contains pycors setup. Skipping.",);
+                    true
+                } else {
+                    false
+                }
+            }
+        })
+        .is_some())
 }
