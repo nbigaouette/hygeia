@@ -115,7 +115,10 @@ where
         format!("# These lines were added by {}.", EXECUTABLE_NAME),
         format!("# See {}", env!("CARGO_PKG_HOMEPAGE")),
         format!("# WARNING: Those lines _need_ to be at the end of"),
-        format!("#          the file: pycors needs to appear as soon"),
+        format!(
+            "#          the file: {} needs to appear as soon",
+            EXECUTABLE_NAME
+        ),
         format!("#          as possible in the $PATH environment"),
         format!("#          variable to function properly."),
         lines_to_append
