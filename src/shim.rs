@@ -59,6 +59,10 @@ where
     let new_paths: Vec<PathBuf> = {
         let mut tmp = os::paths_to_prepends(&toolchain.version)?;
         tmp.extend_from_slice(&current_paths);
+        // Delete the shims path from the list
+        // This should prevent calling our shims by accident.
+        let shims_dir = utils::directory::shims()?;
+        tmp.retain(|x| *x != shims_dir);
         tmp
     };
     let new_path = env::join_paths(new_paths.iter())?;
