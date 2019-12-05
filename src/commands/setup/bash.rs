@@ -1,6 +1,6 @@
 use std::{
     fs,
-    io::{BufRead, BufReader, Write},
+    io::{BufRead, BufReader, BufWriter, Write},
     path::Path,
 };
 
@@ -65,27 +65,13 @@ pub fn setup_bash(home: &Path, config_home_dir: &Path, shims_dir: &Path) -> Resu
         };
 
         if do_edit_file {
-            let mut file = fs::OpenOptions::new()
-                .append(true)
-                .create(true)
-                .open(&bash_config_file)?;
-            let lines = &[
-                String::from(""),
-                String::from("#################################################"),
-                format!("# These lines were added by {}.", EXECUTABLE_NAME),
-                format!("# See {}", env!("CARGO_PKG_HOMEPAGE")),
-                format!("# WARNING: Those lines _need_ to be at the end of"),
-                format!("#          the file: pycors needs to appear as soon"),
-                format!("#          as possible in the $PATH environment"),
-                format!("#          variable to function properly."),
-                lines_to_append.join("\n"),
-                format!(r#"source "{}""#, autocomplete_file.display()),
-                String::from("#################################################"),
-            ];
-            for line in lines {
-                // debug!("    {}", line);
-                writeln!(file, "{}", line)?;
-            }
+            let file = BufWriter::new(
+                fs::OpenOptions::new()
+                    .append(true)
+                    .create(true)
+                    .open(&bash_config_file)?,
+            );
+            append_to(file, &lines_to_append, &autocomplete_file)?;
         } else {
             log::warn!("Skipping since file already modified.");
         }
@@ -115,4 +101,34 @@ where
             }
         })
         .is_some())
+}
+
+fn append_to<W, S>(mut f: W, lines_to_append: &[S], autocomplete_file: &Path) -> Result<()>
+where
+    W: Write,
+    S: AsRef<str>,
+{
+    let lines = &[
+        String::from(""),
+        String::from("#################################################"),
+        format!("# These lines were added by {}.", EXECUTABLE_NAME),
+        format!("# See {}", env!("CARGO_PKG_HOMEPAGE")),
+        format!("# WARNING: Those lines _need_ to be at the end of"),
+        format!("#          the file: pycors needs to appear as soon"),
+        format!("#          as possible in the $PATH environment"),
+        format!("#          variable to function properly."),
+        lines_to_append
+            .iter()
+            .map(|s| s.as_ref())
+            .collect::<Vec<_>>()
+            .join("\n"),
+        format!(r#"source "{}""#, autocomplete_file.display()),
+        String::from("#################################################"),
+    ];
+    for line in lines {
+        // debug!("    {}", line);
+        writeln!(f, "{}", line)?;
+    }
+
+    Ok(())
 }
