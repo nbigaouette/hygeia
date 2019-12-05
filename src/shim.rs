@@ -45,8 +45,6 @@ pub fn run_with<S>(toolchain: &InstalledToolchain, command: &str, arguments: &[S
 where
     S: AsRef<str> + std::convert::AsRef<std::ffi::OsStr> + std::fmt::Debug,
 {
-    let command_string_with_major_version = os::command_with_major_version(command, toolchain)?;
-
     let bin_dir = toolchain.location.clone();
 
     let current_paths: Vec<PathBuf> = match env::var("PATH") {
@@ -68,13 +66,13 @@ where
     let new_path = env::join_paths(new_paths.iter())?;
 
     log::debug!("Toolchain: {}", toolchain);
-    log::debug!("Command:   {:?}", command_string_with_major_version);
+    log::debug!("Command:   {:?}", command);
     log::debug!("Arguments: {:?}", arguments);
     log::debug!("Path:      {}", new_path.to_string_lossy());
 
     let mut bin_dir_monitor = DirectoryMonitor::new(&bin_dir)?;
 
-    let status = std::process::Command::new(&command_string_with_major_version)
+    let status = std::process::Command::new(&command)
         .args(arguments)
         // Replace it with our update
         .env("PATH", &new_path)
@@ -105,7 +103,7 @@ where
         Err(anyhow::anyhow!(
             "Failed to execute command (exit code: {:?}): {} {}\nPATH: \"{}\"",
             status.code(),
-            command_string_with_major_version,
+            command,
             arguments
                 .iter()
                 .map(|s| s.as_ref())
