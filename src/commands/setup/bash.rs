@@ -60,8 +60,7 @@ pub fn setup_bash(home: &Path, config_home_dir: &Path, shims_dir: &Path) -> Resu
             // Verify that file does not contain a line `export PYCORS_HOME=...`
             // FIXME: Don't just skip; remove it and append *at the end*
             //        to make sure the shims path appear first in PATH.
-            let f = fs::File::open(&bash_config_file)?;
-            let f = BufReader::new(f);
+            let f = BufReader::new(fs::File::open(&bash_config_file)?);
             !file_contains(f, &lines_to_append[0])?
         };
 
