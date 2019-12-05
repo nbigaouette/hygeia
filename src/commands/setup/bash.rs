@@ -8,6 +8,27 @@ use structopt::clap::Shell;
 
 use crate::{commands, constants::EXECUTABLE_NAME, utils, Result};
 
+const BASH_TEMPLATE: &str = r#"# Add the shims directory to path, removing all other
+# occurrences of it from current $PATH.
+if [ -z ${PYCORS_INITIALIZED+x} ]; then
+    # Setup pycors: prepends the shims directory to PATH
+    export PATH="${PYCORS_HOME}/shims:${PATH//${PYCORS_HOME}/}"
+    export PYCORS_INITIALIZED=1
+else
+    # Shell already setup for pycors.
+    # Disable in case we enter a 'poetry shell'
+    if [ -z ${POETRY_ACTIVE+x} ]; then
+        # Not in a 'poetry shell', activating.
+        export PATH="${PYCORS_HOME}/shims:${PATH//${PYCORS_HOME}/}"
+    else
+        # Poetry is active; disable the shim
+        echo "Pycors detected an active poetry shell, disabling the shim."
+        export PATH="${PATH//${PYCORS_HOME}/}"
+    fi
+fi
+source "${PYCORS_HOME}/pycors.bash-completion"
+source "/Users/nbigaouette/.pycors/pycors.bash-completion""#;
+
 pub fn setup_bash(home: &Path, config_home_dir: &Path, shims_dir: &Path) -> Result<()> {
     let bash_config_files = &[home.join(".bashrc"), home.join(".bash_profile")];
 
@@ -16,34 +37,12 @@ pub fn setup_bash(home: &Path, config_home_dir: &Path, shims_dir: &Path) -> Resu
     let mut f = fs::File::create(&autocomplete_file)?;
     commands::autocomplete::run(Shell::Bash, &mut f)?;
 
-    let lines_to_append: Vec<String> = vec![
-        format!(
-            r#"export PYCORS_HOME="{}""#,
-            utils::directory::config_home()?.display()
-        ),
-        String::from(r#"# Add the shims directory to path, removing all other"#),
-        String::from(r#"# occurrences of it from current $PATH."#),
-        String::from(r#"if [ -z ${PYCORS_INITIALIZED+x} ]; then"#),
-        String::from(r#"    # Setup pycors: prepends the shims directory to PATH"#),
-        String::from(r#"    export PATH="${PYCORS_HOME}/shims:${PATH//${PYCORS_HOME}/}""#),
-        String::from(r#"    export PYCORS_INITIALIZED=1"#),
-        String::from(r#"else"#),
-        String::from(r#"    # Shell already setup for pycors."#),
-        String::from(r#"    # Disable in case we enter a 'poetry shell'"#),
-        String::from(r#"    if [ -z ${POETRY_ACTIVE+x} ]; then"#),
-        String::from(r#"        # Not in a 'poetry shell', activating."#),
-        String::from(r#"        export PATH="${PYCORS_HOME}/shims:${PATH//${PYCORS_HOME}/}""#),
-        String::from(r#"    else"#),
-        String::from(r#"        # Poetry is active; disable the shim"#),
-        String::from(
-            r#"        echo "Pycors detected an active poetry shell, disabling the shim.""#,
-        ),
-        String::from(r#"        export PATH="${PATH//${PYCORS_HOME}/}""#),
-        String::from(r#"    fi"#),
-        String::from(r#"fi"#),
-        String::from(r#"source "${PYCORS_HOME}/pycors.bash-completion""#),
-        String::from(r#"source "/Users/nbigaouette/.pycors/pycors.bash-completion""#),
-    ];
+    let export_home_line = format!(
+        r#"export PYCORS_HOME="{}""#,
+        utils::directory::config_home()?.display()
+    );
+
+    let lines_to_append: Vec<&str> = vec![&export_home_line, BASH_TEMPLATE];
 
     // FIXME: Don't append the same content in two files; save the content to a file and
     //        add a 'source ...' to the two files.
@@ -61,7 +60,7 @@ pub fn setup_bash(home: &Path, config_home_dir: &Path, shims_dir: &Path) -> Resu
             // FIXME: Don't just skip; remove it and append *at the end*
             //        to make sure the shims path appear first in PATH.
             let f = BufReader::new(fs::File::open(&bash_config_file)?);
-            !file_contains(f, &lines_to_append[0])?
+            !file_contains(f, &export_home_line)?
         };
 
         if do_edit_file {
@@ -110,7 +109,9 @@ where
 {
     let lines = &[
         String::from(""),
-        String::from("#################################################"),
+        String::from(
+            "#############################################################################",
+        ),
         format!("# These lines were added by {}.", EXECUTABLE_NAME),
         format!("# See {}", env!("CARGO_PKG_HOMEPAGE")),
         format!("# WARNING: Those lines _need_ to be at the end of"),
@@ -123,7 +124,9 @@ where
             .collect::<Vec<_>>()
             .join("\n"),
         format!(r#"source "{}""#, autocomplete_file.display()),
-        String::from("#################################################"),
+        String::from(
+            "#############################################################################",
+        ),
     ];
     for line in lines {
         // debug!("    {}", line);
