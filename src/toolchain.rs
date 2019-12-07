@@ -648,6 +648,12 @@ fn latest_installed(installed_toolchains: &[InstalledToolchain]) -> Option<&Inst
 mod tests {
     use super::*;
 
+    #[cfg(not(windows))]
+    use std::os::unix::process::ExitStatusExt;
+    #[cfg(windows)]
+    use std::os::windows::process::ExitStatusExt;
+    use std::process::{ExitStatus, Output};
+
     #[test]
     fn version_or_path_from_str_success_major_minor_patch() {
         let v = "3.7.4";
@@ -685,5 +691,31 @@ mod tests {
             vop,
             ToolchainFile::VersionReq(VersionReq::parse(v).unwrap())
         );
+    }
+
+    #[test]
+    fn extract_version_from_command_success_py3() {
+        let expected_version = String::from("Python 3.7.5");
+        let output = Output {
+            status: ExitStatus::from_raw(0),
+            stdout: expected_version.as_bytes().to_vec(),
+            stderr: b"".to_vec(),
+        };
+        let python_path = Path::new("/usr/local/python");
+        let extracted_version = extract_version_from_command(&python_path, Ok(output)).unwrap();
+        assert_eq!(extracted_version, expected_version);
+    }
+
+    #[test]
+    fn extract_version_from_command_success_py2() {
+        let expected_version = String::from("Python 2.7.10");
+        let output = Output {
+            status: ExitStatus::from_raw(0),
+            stdout: b"".to_vec(),
+            stderr: expected_version.as_bytes().to_vec(),
+        };
+        let python_path = Path::new("/usr/local/python2");
+        let extracted_version = extract_version_from_command(&python_path, Ok(output)).unwrap();
+        assert_eq!(extracted_version, expected_version);
     }
 }
