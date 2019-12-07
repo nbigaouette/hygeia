@@ -65,17 +65,15 @@ pub fn setup_bash(home: &Path, config_home_dir: &Path) -> Result<()> {
     write_config_to(f, &config_lines, &autocomplete_file)?;
 
     for bash_config_file in &[".bashrc", ".bash_profile"] {
-        let tmp_file = utils::directory::cache()?.join(bash_config_file);
+        let tmp_file_path = utils::directory::cache()?.join(bash_config_file);
         let bash_config_file = home.join(bash_config_file);
         log::info!("Adding configuration to {:?}...", bash_config_file);
-        log::info!("tmp_file: {:?}...", tmp_file);
 
-        let mut tmp_file = BufWriter::new(fs::File::create(tmp_file)?);
+        let mut tmp_file = BufWriter::new(fs::File::create(&tmp_file_path)?);
         let mut config_reader = BufReader::new(fs::File::open(&bash_config_file)?);
         remove_block(&mut config_reader, &mut tmp_file)?;
         // Make sure we close the file
         std::mem::drop(config_reader);
-        // std::mem::drop(tmp_file);
 
         write_header_to(&mut tmp_file)?;
         writeln!(
@@ -98,6 +96,10 @@ pub fn setup_bash(home: &Path, config_home_dir: &Path) -> Result<()> {
             )
         )?;
         write_footer_to(&mut tmp_file)?;
+        std::mem::drop(tmp_file);
+
+        // Move tmp file back atomically
+        fs::rename(&tmp_file_path, &bash_config_file)?;
     }
 
     Ok(())
