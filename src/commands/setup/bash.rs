@@ -193,41 +193,48 @@ where
     W: Write,
     R: BufRead,
 {
-    let mut copy_line = true;
-
-    let mut lines_iter = f_in.lines();
-    let mut line_opt: Option<std::result::Result<String, _>> = lines_iter.next();
-    let mut current_line_is_last = false;
-    while line_opt.is_some() {
-        let line = line_opt.unwrap()?;
-
-        let next_line: String = match lines_iter.next() {
-            None => {
-                current_line_is_last = true;
-                String::new()
-            }
-            Some(next_line) => next_line.unwrap_or_else(|e| {
-                log::error!("Failed to read a line: {:?}", e);
-                String::new()
-            }),
-        };
-
-        if next_line.contains(&SHELL_CONFIG_IDENTIFYING_PATTERN_START) {
-            copy_line = false;
-        }
-        if copy_line {
-            writeln!(f_out, "{}", line)?;
-        }
-        line_opt = if line.contains(&SHELL_CONFIG_IDENTIFYING_PATTERN_END) {
-            copy_line = true;
-            lines_iter.next()
-        } else {
-            if current_line_is_last {
+    let original_content: Vec<String> = f_in
+        .lines()
+        .filter_map(|line| match line {
+            Err(e) => {
+                log::error!("Error reading line: {:?}", e);
                 None
-            } else {
-                Some(Ok(next_line))
             }
-        };
+            Ok(line) => Some(line),
+        })
+        .collect();
+
+    let mut idx = 0;
+    let mut outside_block = true;
+    while idx < original_content.len() {
+        let current_line = &original_content[idx];
+        match original_content.get(idx + 1) {
+            None => {
+                // There is no next line; 'original_content[idx]' is the last line.
+                if outside_block {
+                    writeln!(f_out, "{}", current_line)?;
+                }
+            }
+            Some(next_line) => {
+                if next_line.contains(&SHELL_CONFIG_IDENTIFYING_PATTERN_START) {
+                    // Next line is the start of our block pattern.
+                    // This means the current line is the '############...' header.
+                    outside_block = false;
+                } else if current_line.contains(&SHELL_CONFIG_IDENTIFYING_PATTERN_END) {
+                    // Current line is the end of our block pattern.
+                    // This means the next line is the '############...' footer.
+                    // We thus want to advance the line index two times
+                    outside_block = true;
+                    idx += 1;
+                } else {
+                    if outside_block {
+                        writeln!(f_out, "{}", current_line)?;
+                    } else {
+                    }
+                }
+            }
+        }
+        idx += 1;
     }
 
     Ok(())
@@ -273,7 +280,7 @@ mod tests {
     #[test]
     fn remove_block_from_string() {
         let input = format!(
-            "line 1\n# {}\nbla bla bla\n# {}\nline 5",
+            "line 1\n#### Header\n# {}\nbla bla bla\n# {}\n### Footer\nline 5",
             SHELL_CONFIG_IDENTIFYING_PATTERN_START, SHELL_CONFIG_IDENTIFYING_PATTERN_END
         );
         let expected = "line 1\nline 5\n";
