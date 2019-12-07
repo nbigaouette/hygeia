@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use semver::Version;
 
-use crate::{toolchain::installed::InstalledToolchain, utils, Result};
+use crate::{utils, Result};
 
 pub mod unix;
 pub mod windows;
@@ -33,20 +33,6 @@ pub fn paths_to_prepends(version: &Version) -> Result<Vec<PathBuf>> {
     Ok(paths)
 }
 
-pub fn command_with_major_version(
-    command: &str,
-    interpreter_to_use: &InstalledToolchain,
-) -> Result<String> {
-    #[cfg(not(target_os = "windows"))]
-    {
-        unix::command_with_major_version(command, interpreter_to_use)
-    }
-    #[cfg(target_os = "windows")]
-    {
-        windows::command_with_major_version(command, interpreter_to_use)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -64,15 +50,5 @@ mod tests {
         let version = Version::parse("3.7.2-rc1").unwrap();
         let filename = build_filename(&version).unwrap();
         assert!(filename == "Python-3.7.2rc1.tgz" || filename == "python-3.7.2rc1-embed-amd64.zip");
-    }
-
-    #[test]
-    fn append_version_to_command_success() {
-        let interpreter = InstalledToolchain {
-            location: Path::new("/usr/bin").into(),
-            version: Version::parse("3.7.3").unwrap(),
-        };
-        let cmd = command_with_major_version("python", &interpreter).unwrap();
-        assert_eq!(cmd, "python3");
     }
 }

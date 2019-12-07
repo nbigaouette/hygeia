@@ -107,30 +107,6 @@ pub fn setup_bash(home: &Path, config_home_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-fn file_contains<R, S>(f: R, line_to_check: S) -> Result<bool>
-where
-    R: BufRead,
-    S: AsRef<str>,
-{
-    let line_to_check = line_to_check.as_ref().trim_start_matches("#").trim();
-    Ok(f.lines()
-        .find(|line| match line {
-            Err(e) => {
-                log::error!("Failed to read line: {:?}", e,);
-                false
-            }
-            Ok(line) => {
-                if line.trim_start_matches("# ") == line_to_check {
-                    log::debug!("File already contains pycors setup. Skipping.",);
-                    true
-                } else {
-                    false
-                }
-            }
-        })
-        .is_some())
-}
-
 fn write_header_to<W>(f: &mut W) -> Result<()>
 where
     W: Write,
@@ -249,22 +225,6 @@ mod tests {
     use std::io::Cursor;
 
     use super::*;
-
-    #[test]
-    fn file_contains_success() {
-        let pattern_to_match = "Pattern to find";
-        let file_content = format!("Line 1\nLine 2\n{}\nLine 4", pattern_to_match);
-        assert!(file_contains(file_content.as_bytes(), &pattern_to_match).unwrap());
-        let file_content = format!("Line 1\nLine 2\n# {}\nLine 4", pattern_to_match);
-        assert!(file_contains(file_content.as_bytes(), &pattern_to_match).unwrap());
-    }
-
-    #[test]
-    fn file_contains_failure() {
-        let pattern_to_match = "Pattern to find";
-        let file_content = format!("Line 1\nLine 2\nDoes not contain pattern\nLine 4");
-        assert!(!file_contains(file_content.as_bytes(), &pattern_to_match).unwrap());
-    }
 
     #[test]
     fn write_config_to_string() {
