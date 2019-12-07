@@ -206,11 +206,10 @@ where
                     // We thus want to advance the line index two times
                     outside_block = true;
                     idx += 1;
+                } else if outside_block {
+                    writeln!(f_out, "{}", current_line)?;
                 } else {
-                    if outside_block {
-                        writeln!(f_out, "{}", current_line)?;
-                    } else {
-                    }
+                    assert!(!outside_block);
                 }
             }
         }
