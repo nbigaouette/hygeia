@@ -56,14 +56,14 @@ mod tests {
     fn build_filename_from_version_372() {
         let version = Version::parse("3.7.2").unwrap();
         let filename = build_filename(&version).unwrap();
-        assert!(filename == "Python-3.7.2.tgz" || filename == "python-3.7.2-amd64.exe");
+        assert!(filename == "Python-3.7.2.tgz" || filename == "python-3.7.2-embed-amd64.zip");
     }
 
     #[test]
     fn build_filename_from_version_372rc1() {
         let version = Version::parse("3.7.2-rc1").unwrap();
         let filename = build_filename(&version).unwrap();
-        assert!(filename == "Python-3.7.2rc1.tgz" || filename == "python-3.7.2rc1-amd64.exe");
+        assert!(filename == "Python-3.7.2rc1.tgz" || filename == "python-3.7.2rc1-embed-amd64.zip");
     }
 
     #[test]
