@@ -36,7 +36,6 @@ pub fn paths_to_prepends(version: &Version) -> Result<Vec<PathBuf>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::Path;
 
     #[test]
     fn build_filename_from_version_372() {
