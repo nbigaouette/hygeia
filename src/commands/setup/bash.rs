@@ -24,8 +24,8 @@ pub fn setup_bash(home: &Path, config_home_dir: &Path) -> Result<()> {
     commands::autocomplete::run(Shell::Bash, &mut f)?;
 
     let config_lines: Vec<String> = vec![
-        format!(r#"# Add the shims directory to path, removing all other"#,),
-        format!(r#"# occurrences of it from current $PATH."#,),
+        String::from(r#"# Add the shims directory to path, removing all other"#),
+        String::from(r#"# occurrences of it from current $PATH."#),
         format!(
             r#"if [ -z ${{{}_INITIALIZED+x}} ]; then"#,
             exec_name_capital
@@ -39,24 +39,26 @@ pub fn setup_bash(home: &Path, config_home_dir: &Path) -> Result<()> {
             exec_name_capital, exec_name_capital
         ),
         format!(r#"    export {}_INITIALIZED=1"#, exec_name_capital),
-        format!(r#"else"#,),
-        format!(r#"    # Shell already setup for pycors."#,),
-        format!(r#"    # Disable in case we enter a 'poetry shell'"#,),
-        format!(r#"    if [ -z ${{POETRY_ACTIVE+x}} ]; then"#,),
-        format!(r#"        # Not in a 'poetry shell', activating."#,),
+        String::from(r#"else"#),
+        String::from(r#"    # Shell already setup for pycors."#),
+        String::from(r#"    # Disable in case we enter a 'poetry shell'"#),
+        String::from(r#"    if [ -z ${{POETRY_ACTIVE+x}} ]; then"#),
+        String::from(r#"        # Not in a 'poetry shell', activating."#),
         format!(
             r#"        export PATH="${{{}_HOME}}/shims:${{PATH//${{{}_HOME}}/}}""#,
             exec_name_capital, exec_name_capital
         ),
-        format!(r#"    else"#,),
-        format!(r#"        # Poetry is active; disable the shim"#,),
-        format!(r#"        echo "Pycors detected an active poetry shell, disabling the shim.""#,),
+        String::from(r#"    else"#),
+        String::from(r#"        # Poetry is active; disable the shim"#),
+        String::from(
+            r#"        echo "Pycors detected an active poetry shell, disabling the shim.""#,
+        ),
         format!(
             r#"        export PATH="${{PATH//${{{}_HOME}}/}}""#,
             exec_name_capital
         ),
-        format!(r#"    fi"#,),
-        format!(r#"fi"#,),
+        String::from(r#"    fi"#),
+        String::from(r#"fi"#),
     ];
 
     let config_file = utils::directory::shell::bash::config::file_absolute()?;
@@ -144,14 +146,14 @@ where
             "# These lines were added by {} and are required for it to function",
             EXECUTABLE_NAME
         ),
-        format!("# properly (including the comments!)"),
+        String::from("# properly (including the comments!)"),
         format!("# See {}", env!("CARGO_PKG_HOMEPAGE")),
         format!(
             "# WARNING: Those lines _need_ to be at the end of the file: {} needs to",
             EXECUTABLE_NAME
         ),
-        format!("#          appear as soon as possible in the $PATH environment variable to",),
-        format!("#          to function properly."),
+        String::from("#          appear as soon as possible in the $PATH environment variable to"),
+        String::from("#          to function properly."),
     ];
     for line in lines {
         writeln!(f, "{}", line)?;
