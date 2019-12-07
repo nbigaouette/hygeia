@@ -12,11 +12,9 @@ pub const EXECUTABLE_NAME: &str = executable_name_from_env!();
 /// Default hidden configuration directory.
 pub const DEFAULT_DOT_DIR: &str = concat!(".", executable_name_from_env!());
 
-pub const SHELL_CONFIG_IDENTIFYING_PATTERN_START: &str = concat!(
-    "These lines were added by ",
-    executable_name_from_env!(),
-    " and are required for it to function (including this comment!)"
-);
+pub const SHELL_CONFIG_IDENTIFYING_PATTERN_START: &str =
+    concat!("Start of ", executable_name_from_env!(), " config block.");
+
 pub const SHELL_CONFIG_IDENTIFYING_PATTERN_END: &str =
     concat!("End of ", executable_name_from_env!(), " config block.");
 

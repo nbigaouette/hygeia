@@ -121,6 +121,34 @@ pub mod directory {
     pub fn bin_dir(version: &Version) -> Result<PathBuf> {
         Ok(install_dir(version)?)
     }
+
+    pub mod shell {
+        pub mod bash {
+            pub mod config {
+                use std::path::{Path, PathBuf};
+
+                use super::super::super::config_home;
+
+                use crate::Result;
+
+                pub fn dir_relative() -> PathBuf {
+                    Path::new("shell").join("bash")
+                }
+
+                pub fn dir_absolute() -> Result<PathBuf> {
+                    Ok(config_home()?.join(dir_relative()))
+                }
+
+                pub fn file_name() -> &'static str {
+                    "config.sh"
+                }
+
+                pub fn file_absolute() -> Result<PathBuf> {
+                    Ok(dir_absolute()?.join(file_name()))
+                }
+            }
+        }
+    }
 }
 
 pub fn default_extra_package_file() -> Result<PathBuf> {

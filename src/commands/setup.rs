@@ -88,7 +88,7 @@ pub fn run(shell: Shell) -> Result<()> {
             let home =
                 dirs::home_dir().ok_or_else(|| anyhow::anyhow!("Error getting home directory"))?;
 
-            bash::setup_bash(&home, &config_home_dir, &shims_dir)?;
+            bash::setup_bash(&home, &config_home_dir)?;
         }
         Shell::PowerShell => {
             // Add the autocomplete too
