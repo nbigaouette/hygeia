@@ -6,7 +6,14 @@ use std::{
 
 use structopt::clap::Shell;
 
-use crate::{commands, constants::EXECUTABLE_NAME, utils, Result};
+use crate::{
+    commands,
+    constants::{
+        EXECUTABLE_NAME, SHELL_CONFIG_IDENTIFYING_PATTERN_END,
+        SHELL_CONFIG_IDENTIFYING_PATTERN_START,
+    },
+    utils, Result,
+};
 
 const BASH_TEMPLATE: &str = r#"# Add the shims directory to path, removing all other
 # occurrences of it from current $PATH.
@@ -25,9 +32,7 @@ else
         echo "Pycors detected an active poetry shell, disabling the shim."
         export PATH="${PATH//${PYCORS_HOME}/}"
     fi
-fi
-source "${PYCORS_HOME}/pycors.bash-completion"
-source "/Users/nbigaouette/.pycors/pycors.bash-completion""#;
+fi"#;
 
 pub fn setup_bash(home: &Path, config_home_dir: &Path, shims_dir: &Path) -> Result<()> {
     let bash_config_files = &[home.join(".bashrc"), home.join(".bash_profile")];
@@ -112,7 +117,7 @@ where
         String::from(
             "#############################################################################",
         ),
-        format!("# These lines were added by {}.", EXECUTABLE_NAME),
+        format!("# {}", SHELL_CONFIG_IDENTIFYING_PATTERN_START),
         format!("# See {}", env!("CARGO_PKG_HOMEPAGE")),
         format!("# WARNING: Those lines _need_ to be at the end of"),
         format!(
@@ -127,6 +132,7 @@ where
             .collect::<Vec<_>>()
             .join("\n"),
         format!(r#"source "{}""#, autocomplete_file.display()),
+        format!("# {}", SHELL_CONFIG_IDENTIFYING_PATTERN_END),
         String::from(
             "#############################################################################",
         ),
@@ -137,4 +143,56 @@ where
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn file_contains_success() {
+        let pattern_to_match = "Pattern to find";
+        let file_content = format!("Line 1\nLine 2\n{}\nLine 4", pattern_to_match);
+        assert!(file_contains(file_content.as_bytes(), &pattern_to_match).unwrap());
+    }
+
+    #[test]
+    fn file_contains_failure() {
+        let pattern_to_match = "Pattern to find";
+        let file_content = format!("Line 1\nLine 2\nDoes not contain pattern\nLine 4");
+        assert!(!file_contains(file_content.as_bytes(), &pattern_to_match).unwrap());
+    }
+
+    #[test]
+    fn append_to_string() {
+        let mut writer: Vec<u8> = Vec::new();
+        let lines_to_append = vec![String::from("# Line to append")];
+
+        let autocomplete_file = Path::new("foo.sh");
+
+        append_to(&mut writer, &lines_to_append, &autocomplete_file).unwrap();
+
+        let expected = format!(
+            r#"
+#############################################################################
+# {}
+# See {}
+# WARNING: Those lines _need_ to be at the end of
+#          the file: {} needs to appear as soon
+#          as possible in the $PATH environment
+#          variable to function properly.
+# Line to append
+source "foo.sh"
+# {}
+#############################################################################
+"#,
+            SHELL_CONFIG_IDENTIFYING_PATTERN_START,
+            env!("CARGO_PKG_HOMEPAGE"),
+            EXECUTABLE_NAME,
+            SHELL_CONFIG_IDENTIFYING_PATTERN_END
+        );
+        let written = String::from_utf8(writer).unwrap();
+
+        assert_eq!(written, expected);
+    }
 }
