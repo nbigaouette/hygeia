@@ -65,49 +65,39 @@ pub fn setup_bash(home: &Path, config_home_dir: &Path) -> Result<()> {
     write_config_to(f, &config_lines, &autocomplete_file)?;
 
     for bash_config_file in &[".bashrc", ".bash_profile"] {
+        let tmp_file = utils::directory::cache()?.join(bash_config_file);
         let bash_config_file = home.join(bash_config_file);
         log::info!("Adding configuration to {:?}...", bash_config_file);
+        log::info!("tmp_file: {:?}...", tmp_file);
 
-        let do_edit_file = if !bash_config_file.exists() {
-            true
-        } else {
-            // Verify that file does not contain 'SHELL_CONFIG_IDENTIFYING_PATTERN_START'
-            // FIXME: Don't just skip; remove it and append *at the end*
-            //        to make sure the shims path appear first in PATH.
-            let f = BufReader::new(fs::File::open(&bash_config_file)?);
-            !file_contains(f, SHELL_CONFIG_IDENTIFYING_PATTERN_START)?
-        };
-        if do_edit_file {
-            let mut file = BufWriter::new(
-                fs::OpenOptions::new()
-                    .append(true)
-                    .create(true)
-                    .open(&bash_config_file)?,
-            );
-            write_header_to(&mut file)?;
-            writeln!(
-                &mut file,
-                "{}",
-                format!(
-                    r#"export {}_HOME="{}""#,
-                    exec_name_capital,
-                    utils::directory::config_home()?.display()
-                )
-            )?;
-            writeln!(
-                &mut file,
-                "{}",
-                format!(
-                    r#"source ${{{}_HOME}}/{}/{}"#,
-                    exec_name_capital,
-                    utils::directory::shell::bash::config::dir_relative().display(),
-                    utils::directory::shell::bash::config::file_name(),
-                )
-            )?;
-            write_footer_to(&mut file)?;
-        } else {
-            log::warn!("Skipping since file already modified.");
-        }
+        let mut tmp_file = BufWriter::new(fs::File::create(tmp_file)?);
+        let mut config_reader = BufReader::new(fs::File::open(&bash_config_file)?);
+        remove_block(&mut config_reader, &mut tmp_file)?;
+        // Make sure we close the file
+        std::mem::drop(config_reader);
+        // std::mem::drop(tmp_file);
+
+        write_header_to(&mut tmp_file)?;
+        writeln!(
+            &mut tmp_file,
+            "{}",
+            format!(
+                r#"export {}_HOME="{}""#,
+                exec_name_capital,
+                utils::directory::config_home()?.display()
+            )
+        )?;
+        writeln!(
+            &mut tmp_file,
+            "{}",
+            format!(
+                r#"source ${{{}_HOME}}/{}/{}"#,
+                exec_name_capital,
+                utils::directory::shell::bash::config::dir_relative().display(),
+                utils::directory::shell::bash::config::file_name(),
+            )
+        )?;
+        write_footer_to(&mut tmp_file)?;
     }
 
     Ok(())
@@ -198,8 +188,55 @@ where
     Ok(())
 }
 
+fn remove_block<R, W>(f_in: &mut R, f_out: &mut W) -> Result<()>
+where
+    W: Write,
+    R: BufRead,
+{
+    let mut copy_line = true;
+
+    let mut lines_iter = f_in.lines();
+    let mut line_opt: Option<std::result::Result<String, _>> = lines_iter.next();
+    let mut current_line_is_last = false;
+    while line_opt.is_some() {
+        let line = line_opt.unwrap()?;
+
+        let next_line: String = match lines_iter.next() {
+            None => {
+                current_line_is_last = true;
+                String::new()
+            }
+            Some(next_line) => next_line.unwrap_or_else(|e| {
+                log::error!("Failed to read a line: {:?}", e);
+                String::new()
+            }),
+        };
+
+        if next_line.contains(&SHELL_CONFIG_IDENTIFYING_PATTERN_START) {
+            copy_line = false;
+        }
+        if copy_line {
+            writeln!(f_out, "{}", line)?;
+        }
+        line_opt = if line.contains(&SHELL_CONFIG_IDENTIFYING_PATTERN_END) {
+            copy_line = true;
+            lines_iter.next()
+        } else {
+            if current_line_is_last {
+                None
+            } else {
+                Some(Ok(next_line))
+            }
+        };
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
+    use std::io::Cursor;
+
     use super::*;
 
     #[test]
@@ -228,6 +265,24 @@ mod tests {
         write_config_to(&mut writer, &lines_to_append, &autocomplete_file).unwrap();
 
         let expected = "# Line to append\nsource \"foo.sh\"\n";
+        let written = String::from_utf8(writer).unwrap();
+
+        assert_eq!(written, expected);
+    }
+
+    #[test]
+    fn remove_block_from_string() {
+        let input = format!(
+            "line 1\n# {}\nbla bla bla\n# {}\nline 5",
+            SHELL_CONFIG_IDENTIFYING_PATTERN_START, SHELL_CONFIG_IDENTIFYING_PATTERN_END
+        );
+        let expected = "line 1\nline 5\n";
+
+        let mut writer: Vec<u8> = Vec::new();
+        let mut reader = Cursor::new(input);
+
+        remove_block(&mut reader, &mut writer).unwrap();
+
         let written = String::from_utf8(writer).unwrap();
 
         assert_eq!(written, expected);
