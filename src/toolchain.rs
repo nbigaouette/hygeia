@@ -8,12 +8,12 @@ use std::{
     str::FromStr,
 };
 
-use anyhow::Result;
+use anyhow::Context;
 use semver::{Version, VersionReq};
 use thiserror::Error;
 use which::which_in;
 
-use crate::{constants::TOOLCHAIN_FILE, utils, EXECUTABLE_NAME};
+use crate::{constants::TOOLCHAIN_FILE, utils, Result, EXECUTABLE_NAME};
 
 pub mod installed;
 pub mod selected;
@@ -232,113 +232,139 @@ where
     let mut other_pythons: HashMap<Version, PathBuf> = HashMap::new();
     let versions_suffix = &["", "2", "3"];
 
+    if !path.exists() {
+        log::debug!("Skipping non-existing directory {}", path.display());
+        return other_pythons;
+    }
+
+    let path = match path.canonicalize() {
+        Ok(path) => path,
+        Err(e) => {
+            log::error!("Failed to canonicalize path: {:?}", e);
+            return other_pythons;
+        }
+    };
+
+    let shims_dir = match utils::directory::shims() {
+        Ok(shims_dir) => shims_dir,
+        Err(e) => {
+            log::error!("Failed to get shims directory: {:?}", e);
+            return other_pythons;
+        }
+    };
+    let shims_dir = match shims_dir.canonicalize() {
+        Ok(shims_dir) => shims_dir,
+        Err(e) => {
+            log::error!("Failed to canonicalize shims directory: {:?}", e);
+            return other_pythons;
+        }
+    };
+    if path == shims_dir {
+        log::debug!("Skipping shims directory");
+        return other_pythons;
+    }
+
     for version_suffix in versions_suffix {
         let executable = format!("python{}", version_suffix);
 
-        let python_path = match which_in(&executable, Some(&path), "/") {
+        let full_executable_path = match which_in(&executable, Some(&path), "/") {
             Err(_) => {
                 // log::debug!("Executable '{}' not found in {:?}", executable, path);
                 continue;
             }
             Ok(python_path) => python_path,
         };
+        let python_path = path.to_path_buf();
 
-        if python_path.exists() {
-            let python_path = path.to_path_buf();
-
-            if python_path.join(EXECUTABLE_NAME).exists() {
-                log::debug!("Skipping {}' shim directory.", EXECUTABLE_NAME);
-                break;
-            }
-
-            let full_executable_path = python_path.join(&executable);
-
-            let python_version: String = match std::process::Command::new(&full_executable_path)
-                .arg("-V")
-                .stdout(std::process::Stdio::piped())
-                .stderr(std::process::Stdio::piped())
-                .output()
-            {
-                Ok(output) => {
-                    let combined_output = match (
-                        String::from_utf8(output.stdout),
-                        String::from_utf8(output.stderr),
-                    ) {
-                        (Ok(stdout), Ok(stderr)) => {
-                            // Python 2 outputs its version to stderr, while python 3 to stdout.
-                            format!("{}{}", stdout, stderr)
-                        }
-                        (Err(e), _) => {
-                            log::error!(
-                                "Stdout of `{} -V` is not Utf-8: {:?}",
-                                full_executable_path.display(),
-                                e
-                            );
-                            continue;
-                        }
-                        (_, Err(e)) => {
-                            log::error!(
-                                "Stderr of `{} -V` is not Utf-8: {:?}",
-                                full_executable_path.display(),
-                                e
-                            );
-                            continue;
-                        }
-                    };
-                    if output.status.success() {
-                        combined_output
-                    } else {
-                        log::error!(
-                            "Failed to execute`{} -V` (exit code: {:?})",
-                            full_executable_path.display(),
-                            output.status.code()
-                        );
-                        continue;
-                    }
-                }
-                Err(e) => {
-                    log::error!(
-                        "Failed to execute `{} -V`: {:?}",
-                        full_executable_path.display(),
-                        e
-                    );
-                    continue;
-                }
-            };
-
-            let python_version_str = match python_version.split_whitespace().nth(1) {
-                None => {
-                    log::error!(
-                        "Failed to parse output from `{} -V`: {}",
-                        full_executable_path.display(),
-                        python_version
-                    );
-                    continue;
-                }
-                Some(python_version_str) => python_version_str,
-            };
-            let python_version = match Version::parse(python_version_str) {
-                Err(e) => {
-                    log::error!(
-                        "Failed to parse version string {:?}: {:?}",
-                        python_version_str,
-                        e
-                    );
-                    continue;
-                }
+        let cmd_output = std::process::Command::new(&full_executable_path)
+            .arg("-V")
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .output()
+            .with_context(|| format!("Failed to execute command: {:?}", full_executable_path));
+        let python_version: String =
+            match extract_version_from_command(&full_executable_path, cmd_output) {
                 Ok(python_version) => python_version,
+                Err(e) => {
+                    log::error!("extract_version_from_command() failed: {:?}", e);
+                    continue;
+                }
             };
-            log::debug!(
-                "Found python executable in {}: {}",
-                python_path.display(),
-                python_version
-            );
 
-            other_pythons.insert(python_version, python_path);
-        }
+        let python_version_str = match python_version.split_whitespace().nth(1) {
+            None => {
+                log::error!(
+                    "Failed to parse output from `{} -V`: {}",
+                    full_executable_path.display(),
+                    python_version
+                );
+                continue;
+            }
+            Some(python_version_str) => python_version_str,
+        };
+        let python_version = match Version::parse(python_version_str) {
+            Err(e) => {
+                log::error!(
+                    "Failed to parse version string {:?}: {:?}",
+                    python_version_str,
+                    e
+                );
+                continue;
+            }
+            Ok(python_version) => python_version,
+        };
+        log::debug!(
+            "Found python executable in {}: {}",
+            python_path.display(),
+            python_version
+        );
+
+        other_pythons.insert(python_version, python_path);
     }
 
     other_pythons
+}
+
+fn extract_version_from_command(
+    full_executable_path: &Path,
+    output: Result<std::process::Output>,
+) -> Result<String> {
+    match output {
+        Ok(output) => {
+            if !output.status.success() {
+                Err(anyhow::anyhow!(
+                    "Failed to execute`{} -V` (exit code: {:?})",
+                    full_executable_path.display(),
+                    output.status.code()
+                ))
+            } else {
+                match (
+                    String::from_utf8(output.stdout),
+                    String::from_utf8(output.stderr),
+                ) {
+                    (Ok(stdout), Ok(stderr)) => {
+                        // Python 2 outputs its version to stderr, while python 3 to stdout.
+                        Ok(format!("{}{}", stdout, stderr))
+                    }
+                    (Err(e), _) => Err(anyhow::anyhow!(
+                        "Stdout of `{} -V` is not Utf-8: {:?}",
+                        full_executable_path.display(),
+                        e
+                    )),
+                    (_, Err(e)) => Err(anyhow::anyhow!(
+                        "Stderr of `{} -V` is not Utf-8: {:?}",
+                        full_executable_path.display(),
+                        e
+                    )),
+                }
+            }
+        }
+        Err(e) => Err(anyhow::anyhow!(
+            "Failed to execute `{} -V`: {:?}",
+            full_executable_path.display(),
+            e
+        )),
+    }
 }
 
 pub fn is_a_custom_install<P>(path: P) -> bool
@@ -431,8 +457,7 @@ fn get_python_versions_from_paths(original_path: &str) -> Vec<InstalledToolchain
     let mut other_pythons: HashMap<Version, PathBuf> = HashMap::new();
 
     if !original_path.is_empty() {
-        let paths = original_path.split(':');
-        for path in paths {
+        for path in env::split_paths(&original_path) {
             other_pythons.extend(get_python_versions_from_path(&path));
         }
     }
