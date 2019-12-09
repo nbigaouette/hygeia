@@ -25,9 +25,9 @@
 #
 # Without docker-compose:
 # Build the image:
-#   export OS_NAME=ubuntu
-#   export OS_VERSION=16.04
-#   export RUST_VERSION=1.39.0
+#   export OS_NAME="ubuntu"
+#   export OS_VERSION="16.04"
+#   export RUST_VERSION="1.39.0"
 #   docker build --build-arg OS_NAME=${OS_NAME} --build-arg OS_VERSION=${OS_VERSION} --build-arg DOCKER_GID=`id --group` --build-arg DOCKER_UID=`id --user` --build-arg RUST_VERSION=${RUST_VERSION} --tag pycors_${OS_NAME} --file docker/${OS_NAME}/Dockerfile .
 #   docker run --rm --detach --name pycors_${OS_NAME} --volume `pwd`/docker/${OS_NAME}/artifacts:/home/pycors/artifacts pycors_${OS_NAME} sleep 9999999
 #   docker exec -it pycors_${OS_NAME} pycors install ~3.7 --extra
@@ -44,9 +44,9 @@ services:
       context: .
       dockerfile: docker/ubuntu/Dockerfile
       args:
-        OS_NAME: ubuntu
-        OS_VERSION: 16.04
-        RUST_VERSION: 1.39.0
+        OS_NAME: "ubuntu"
+        OS_VERSION: "16.04"
+        RUST_VERSION: "1.39.0"
     environment:
       RUST_LOG: pycors=debug
     stdin_open: true
@@ -59,9 +59,9 @@ services:
       context: .
       dockerfile: docker/fedora/Dockerfile
       args:
-        OS_NAME: fedora
-        OS_VERSION: 31
-        RUST_VERSION: 1.39.0
+        OS_NAME: "fedora"
+        OS_VERSION: "31"
+        RUST_VERSION: "1.39.0"
     environment:
       RUST_LOG: pycors=debug
     stdin_open: true
@@ -74,9 +74,9 @@ services:
       context: .
       dockerfile: docker/alpine/Dockerfile
       args:
-        OS_NAME: alpine
-        OS_VERSION: 3.10.3
-        RUST_VERSION: 1.39.0
+        OS_NAME: "alpine"
+        OS_VERSION: "3.10.3"
+        RUST_VERSION: "1.39.0"
         # See https://github.com/rust-lang/rust/issues/59302
         RUSTFLAGS: -C target-feature=-crt-static
     environment:
