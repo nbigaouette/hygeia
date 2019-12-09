@@ -565,6 +565,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn home_from_env_variable() {
         let tmp_dir = env::temp_dir();
         env::set_var(home_env_variable(), &tmp_dir);
