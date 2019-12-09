@@ -17,6 +17,8 @@ ENV RUSTFLAGS=${RUSTFLAGS}
 # -------------------------------------------------------------------------------
 # OS-specific
 RUN apk add --no-cache \
+    vim \
+    sudo \
     # To download rustup
     curl \
     # cargo dependencies
@@ -30,6 +32,9 @@ RUN apk add --no-cache \
 
 RUN addgroup -g ${DOCKER_GID} -S pycors && adduser -u ${DOCKER_UID} -S pycors -G pycors && \
     chown pycors:pycors /home/pycors
+
+# Let user run sudo without password
+RUN echo "pycors ALL=(ALL) NOPASSWD:ALL" | EDITOR='tee -a' visudo
 
 USER pycors
 
@@ -51,11 +56,12 @@ COPY --chown=pycors:pycors extra-packages-to-install.txt ./extra-packages-to-ins
 
 RUN tar -zxf docker_cargo_cache.tar.gz || echo " ---> Cache file not found, skipping (please ignore tar error)."
 
-RUN cargo build && \
-    cargo run -- setup bash
+RUN cargo build
 
 # Create cache archive
 RUN tar -zcf docker_cargo_cache.tar.gz .cargo target
+
+RUN cargo run -- setup bash
 # -------------------------------------------------------------------------------
 
 

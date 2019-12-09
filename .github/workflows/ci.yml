@@ -6,7 +6,7 @@
 #   * Possible to centralize OS versions into env variable?
 #     https://stackoverflow.com/questions/58981442/how-can-i-centralize-dry-a-string-in-github-actions-config-yaml
 
-on: [push, pull_request]
+on: [push]
 
 name: CI
 

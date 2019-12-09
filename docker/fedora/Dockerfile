@@ -19,6 +19,8 @@ ENV RUST_LOG=pycors=debug
 # SEE https://docs.fedoraproject.org/en-US/containers/guidelines/creation/
 RUN dnf --setopt=tsflags=nodocs -y groupinstall "Development Tools" && \
     dnf --setopt=tsflags=nodocs -y install \
+    vim \
+    sudo \
     # To download rustup
     curl \
     # pycors dependencies
@@ -31,6 +33,9 @@ RUN dnf --setopt=tsflags=nodocs -y groupinstall "Development Tools" && \
 RUN groupadd --system pycors --gid ${DOCKER_GID} && \
     useradd --create-home --system --gid pycors --uid ${DOCKER_UID} pycors && \
     chown pycors:pycors /home/pycors
+# Let user run sudo without password
+RUN echo "pycors ALL=(ALL) NOPASSWD:ALL" | EDITOR='tee -a' visudo
+
 USER pycors
 
 WORKDIR /home/pycors
@@ -51,11 +56,12 @@ COPY --chown=pycors:pycors extra-packages-to-install.txt ./extra-packages-to-ins
 
 RUN tar -zxf docker_cargo_cache.tar.gz || echo " ---> Cache file not found, skipping (please ignore tar error)."
 
-RUN cargo build && \
-    cargo run -- setup bash
+RUN cargo build
 
 # Create cache archive
 RUN tar -zcf docker_cargo_cache.tar.gz .cargo target
+
+RUN cargo run -- setup bash
 # -------------------------------------------------------------------------------
 
 

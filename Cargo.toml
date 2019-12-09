@@ -43,3 +43,11 @@ tokio = "0.2.0-alpha.6"
 
 # On Windows
 zip = {version = "0.5", default-features = false, features = ["deflate"]}
+
+# On Linux (musl), use the openssl 'vendored' feature to build a static version of OpenSSL.
+# See:
+#   https://docs.rs/openssl/0.10.26/openssl/#vendored
+#   https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#platform-specific-dependencies
+#   https://doc.rust-lang.org/reference/conditional-compilation.html#target_env
+[target.'cfg(all(target_os = "linux", target_env = "musl"))'.dependencies]
+openssl = { version = "0.10", features = ["vendored"] }
