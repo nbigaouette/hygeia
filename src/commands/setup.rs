@@ -6,7 +6,14 @@ use std::{
 
 use structopt::clap::Shell;
 
-use crate::{commands, utils, Result, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME_CONTENT};
+use crate::{
+    commands,
+    utils::{
+        self,
+        directory::{PycorsPaths, PycorsPathsFromEnv},
+    },
+    Result, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME_CONTENT,
+};
 
 pub mod bash;
 
@@ -15,10 +22,10 @@ pub fn run(shell: Shell) -> Result<()> {
 
     // Create all required directories
     for dir in &[
-        utils::directory::cache()?,
-        utils::directory::installed()?,
-        utils::directory::shell::bash::config::dir_absolute()?,
-        utils::directory::shims()?,
+        PycorsPathsFromEnv::cache()?,
+        PycorsPathsFromEnv::installed()?,
+        utils::directory::shell::bash::config::dir_absolute::<PycorsPathsFromEnv>()?,
+        PycorsPathsFromEnv::shims()?,
     ] {
         if !utils::path_exists(&dir) {
             log::debug!("Directory {:?} does not exists, creating.", dir);
@@ -27,8 +34,8 @@ pub fn run(shell: Shell) -> Result<()> {
     }
 
     // Copy itself into ~/.EXECUTABLE_NAME/shim
-    let config_home_dir = utils::directory::config_home()?;
-    let shims_dir = utils::directory::shims()?;
+    let config_home_dir = PycorsPathsFromEnv::config_home()?;
+    let shims_dir = PycorsPathsFromEnv::shims()?;
     let copy_from = env::current_exe()?;
     let copy_to = {
         #[cfg_attr(not(windows), allow(unused_mut))]
@@ -83,7 +90,7 @@ pub fn run(shell: Shell) -> Result<()> {
     }
 
     let extra_packages_file_default_content = EXTRA_PACKAGES_FILENAME_CONTENT;
-    let output_filename = utils::default_extra_package_file()?;
+    let output_filename = PycorsPathsFromEnv::default_extra_package_file()?;
     log::debug!(
         "Writing list of default packages to install to {:?}",
         output_filename

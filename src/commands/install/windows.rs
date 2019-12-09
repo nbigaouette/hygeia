@@ -9,7 +9,11 @@ use crate::{
     commands::{self, install::pip::install_extra_pip_packages},
     download::download_to_path,
     os::windows::build_filename_zip,
-    utils, Result,
+    utils::{
+        self,
+        directory::{PycorsPaths, PycorsPathsFromEnv},
+    },
+    Result,
 };
 
 const GET_PIP_URL: &str = "https://bootstrap.pypa.io/get-pip.py";
@@ -19,9 +23,9 @@ pub fn install_package(
     version: &Version,
     install_extra_packages: Option<&commands::InstallExtraPackagesOptions>,
 ) -> Result<()> {
-    let install_dir = utils::directory::install_dir(version)?;
+    let install_dir = PycorsPathsFromEnv::install_dir(version)?;
 
-    let cwd = utils::directory::downloaded()?;
+    let cwd = PycorsPathsFromEnv::downloaded()?;
     let archive = build_filename_zip(version)?;
 
     let file = BufReader::new(File::open(cwd.join(archive)).unwrap());
@@ -60,7 +64,7 @@ pub fn install_package(
     let python_exe = install_dir.join("python.exe");
 
     // Install pip
-    let cache_dir = utils::directory::cache()?;
+    let cache_dir = PycorsPathsFromEnv::cache()?;
     let get_pip_py = cache_dir.join("get-pip.py");
     let rt = tokio::runtime::Runtime::new()?;
     rt.block_on(download_to_path(GET_PIP_URL, &cache_dir))?;

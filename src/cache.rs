@@ -16,7 +16,7 @@ use url::Url;
 use crate::{
     constants::{AVAILABLE_TOOLCHAIN_CACHE, PYTHON_BASE_URL},
     download::download_to_string,
-    utils,
+    utils::directory::{PycorsPaths, PycorsPathsFromEnv},
 };
 
 // FIXME: Pre-releases are available inside 'https://www.python.org/ftp/python/MAJOR.MINOR.PATCH'
@@ -45,14 +45,14 @@ pub struct AvailableToolchainsCache {
 }
 
 fn cache_file() -> Result<PathBuf> {
-    Ok(utils::directory::cache()?.join(AVAILABLE_TOOLCHAIN_CACHE))
+    Ok(PycorsPathsFromEnv::cache()?.join(AVAILABLE_TOOLCHAIN_CACHE))
 }
 
 impl AvailableToolchainsCache {
     pub fn new() -> Result<AvailableToolchainsCache> {
         log::debug!("Initializing cache...");
 
-        let cache_dir = utils::directory::cache()?;
+        let cache_dir = PycorsPathsFromEnv::cache()?;
         if !cache_dir.exists() {
             create_dir_all(&cache_dir)?
         }

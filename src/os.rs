@@ -2,7 +2,10 @@ use std::path::PathBuf;
 
 use semver::Version;
 
-use crate::{utils, Result};
+use crate::{
+    utils::directory::{PycorsPaths, PycorsPathsFromEnv},
+    Result,
+};
 
 pub mod unix;
 pub mod windows;
@@ -19,7 +22,7 @@ pub fn build_filename(version: &Version) -> Result<String> {
 }
 
 pub fn paths_to_prepends(version: &Version) -> Result<Vec<PathBuf>> {
-    let bin_dir = utils::directory::bin_dir(version)?;
+    let bin_dir = PycorsPathsFromEnv::bin_dir(version)?;
 
     let mut paths = Vec::new();
 

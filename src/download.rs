@@ -10,7 +10,14 @@ use indicatif::{ProgressBar, ProgressStyle};
 use semver::Version;
 use url::Url;
 
-use crate::{os::build_filename, utils, Result};
+use crate::{
+    os::build_filename,
+    utils::{
+        self,
+        directory::{PycorsPaths, PycorsPathsFromEnv},
+    },
+    Result,
+};
 
 pub async fn download_to_string<S>(url: S) -> Result<String>
 where
@@ -22,7 +29,7 @@ where
 
 pub async fn download_source(version: &Version) -> Result<()> {
     let url = build_url(&version)?;
-    let download_dir = utils::directory::downloaded()?;
+    let download_dir = PycorsPathsFromEnv::downloaded()?;
     download_to_path(&url, download_dir).await
 }
 
