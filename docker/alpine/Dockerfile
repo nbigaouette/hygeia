@@ -17,6 +17,8 @@ ENV RUSTFLAGS=${RUSTFLAGS}
 # -------------------------------------------------------------------------------
 # OS-specific
 RUN apk add --no-cache \
+    vim \
+    sudo \
     # To download rustup
     curl \
     # cargo dependencies
@@ -30,6 +32,9 @@ RUN apk add --no-cache \
 
 RUN addgroup -g ${DOCKER_GID} -S pycors && adduser -u ${DOCKER_UID} -S pycors -G pycors && \
     chown pycors:pycors /home/pycors
+
+# Let user run sudo without password
+RUN echo "pycors ALL=(ALL) NOPASSWD:ALL" | EDITOR='tee -a' visudo
 
 USER pycors
 

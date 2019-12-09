@@ -18,6 +18,8 @@ ENV RUST_LOG=pycors=debug
 # OS-specific
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install \
+    vim \
+    sudo \
     # To download rustup
     curl \
     # pycors dependencies
@@ -31,6 +33,9 @@ RUN apt-get update && \
 RUN groupadd --system pycors --gid ${DOCKER_GID} && \
     useradd --create-home --system --gid pycors --uid ${DOCKER_UID} pycors && \
     chown pycors:pycors /home/pycors
+# Let user run sudo without password
+RUN echo "pycors ALL=(ALL) NOPASSWD:ALL" | EDITOR='tee -a' visudo
+
 USER pycors
 
 WORKDIR /home/pycors
