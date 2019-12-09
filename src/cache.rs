@@ -45,14 +45,16 @@ pub struct AvailableToolchainsCache {
 }
 
 fn cache_file() -> Result<PathBuf> {
-    Ok(PycorsPathsFromEnv::cache()?.join(AVAILABLE_TOOLCHAIN_CACHE))
+    Ok(PycorsPathsFromEnv::new()
+        .cache()?
+        .join(AVAILABLE_TOOLCHAIN_CACHE))
 }
 
 impl AvailableToolchainsCache {
     pub fn new() -> Result<AvailableToolchainsCache> {
         log::debug!("Initializing cache...");
 
-        let cache_dir = PycorsPathsFromEnv::cache()?;
+        let cache_dir = PycorsPathsFromEnv::new().cache()?;
         if !cache_dir.exists() {
             create_dir_all(&cache_dir)?
         }

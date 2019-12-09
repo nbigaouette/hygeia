@@ -29,7 +29,7 @@ where
 
 pub async fn download_source(version: &Version) -> Result<()> {
     let url = build_url(&version)?;
-    let download_dir = PycorsPathsFromEnv::downloaded()?;
+    let download_dir = PycorsPathsFromEnv::new().downloaded()?;
     download_to_path(&url, download_dir).await
 }
 

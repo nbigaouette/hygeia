@@ -12,10 +12,14 @@ pub fn dot_dir(name: &str) -> Option<PathBuf> {
 }
 
 pub trait PycorsPaths {
-    fn home_env_variable() -> Option<OsString>;
+    fn new() -> Self
+    where
+        Self: Sized;
 
-    fn config_home() -> Result<PathBuf> {
-        let env_var = Self::home_env_variable();
+    fn home_env_variable(&self) -> Option<OsString>;
+
+    fn config_home(&self) -> Result<PathBuf> {
+        let env_var = self.home_env_variable();
 
         let config_home_from_env = if env_var.is_some() {
             let cwd = env::current_dir()?;
@@ -37,52 +41,59 @@ pub trait PycorsPaths {
         Ok(home)
     }
 
-    fn cache() -> Result<PathBuf> {
-        Ok(Self::config_home()?.join("cache"))
+    fn cache(&self) -> Result<PathBuf> {
+        Ok(self.config_home()?.join("cache"))
     }
 
-    fn downloaded() -> Result<PathBuf> {
-        Ok(Self::cache()?.join("downloaded"))
+    fn downloaded(&self) -> Result<PathBuf> {
+        Ok(self.cache()?.join("downloaded"))
     }
 
-    fn extracted() -> Result<PathBuf> {
-        Ok(Self::cache()?.join("extracted"))
+    fn extracted(&self) -> Result<PathBuf> {
+        Ok(self.cache()?.join("extracted"))
     }
 
-    fn installed() -> Result<PathBuf> {
-        Ok(Self::config_home()?.join("installed"))
+    fn installed(&self) -> Result<PathBuf> {
+        Ok(self.config_home()?.join("installed"))
     }
 
-    fn shims() -> Result<PathBuf> {
-        Ok(Self::config_home()?.join("shims"))
+    fn shims(&self) -> Result<PathBuf> {
+        Ok(self.config_home()?.join("shims"))
     }
 
-    fn logs() -> Result<PathBuf> {
-        Ok(Self::config_home()?.join("logs"))
+    fn logs(&self) -> Result<PathBuf> {
+        Ok(self.config_home()?.join("logs"))
     }
 
-    fn install_dir(version: &Version) -> Result<PathBuf> {
-        Ok(Self::installed()?.join(format!("{}", version)))
+    fn install_dir(&self, version: &Version) -> Result<PathBuf> {
+        Ok(self.installed()?.join(format!("{}", version)))
     }
 
-    fn default_extra_package_file() -> Result<PathBuf> {
-        Ok(Self::config_home()?.join(EXTRA_PACKAGES_FILENAME))
+    fn default_extra_package_file(&self) -> Result<PathBuf> {
+        Ok(self.config_home()?.join(EXTRA_PACKAGES_FILENAME))
     }
 
     #[cfg(not(windows))]
-    fn bin_dir(version: &Version) -> Result<PathBuf> {
-        Ok(Self::install_dir(version)?.join("bin"))
+    fn bin_dir(&self, version: &Version) -> Result<PathBuf> {
+        Ok(self.install_dir(version)?.join("bin"))
     }
     #[cfg(windows)]
-    fn bin_dir(version: &Version) -> Result<PathBuf> {
-        Ok(Self::install_dir(version)?)
+    fn bin_dir(&self, version: &Version) -> Result<PathBuf> {
+        Ok(self.install_dir(version)?)
     }
 }
 
 pub struct PycorsPathsFromEnv;
 
 impl PycorsPaths for PycorsPathsFromEnv {
-    fn home_env_variable() -> Option<OsString> {
+    fn new() -> Self
+    where
+        Self: Sized,
+    {
+        PycorsPathsFromEnv {}
+    }
+
+    fn home_env_variable(&self) -> Option<OsString> {
         env::var_os(constants::home_env_variable())
     }
 }
@@ -92,36 +103,107 @@ pub mod shell {
         pub mod config {
             use std::path::{Path, PathBuf};
 
-            use crate::{utils::directory::PycorsPaths, Result};
-
             pub fn dir_relative() -> PathBuf {
                 Path::new("shell").join("bash")
             }
 
-            pub fn dir_absolute<P>() -> Result<PathBuf>
-            where
-                P: PycorsPaths,
-            {
-                Ok(P::config_home()?.join(dir_relative()))
+            pub fn file_path() -> PathBuf {
+                dir_relative().join("config.sh")
             }
 
-            pub fn file_name() -> &'static str {
-                "config.sh"
-            }
-
-            pub fn file_absolute<P>() -> Result<PathBuf>
-            where
-                P: PycorsPaths,
-            {
-                Ok(dir_absolute::<P>()?.join(file_name()))
-            }
-
-            pub fn autocomplete<P>() -> Result<PathBuf>
-            where
-                P: PycorsPaths,
-            {
-                Ok(dir_absolute::<P>()?.join("completion.sh"))
+            pub fn autocomplete() -> PathBuf {
+                dir_relative().join("completion.sh")
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use super::*;
+
+    pub struct PycorsPathsFromFakeEnv {
+        pub value: Option<OsString>,
+    }
+
+    impl PycorsPaths for PycorsPathsFromFakeEnv {
+        fn new() -> Self
+        where
+            Self: Sized,
+        {
+            PycorsPathsFromFakeEnv { value: None }
+        }
+
+        fn home_env_variable(&self) -> Option<OsString> {
+            self.value.clone()
+        }
+    }
+
+    #[test]
+    fn home_default() {
+        let paths_provider = PycorsPathsFromFakeEnv::new();
+        let default_home = paths_provider.config_home().unwrap();
+        let expected = home_dir().unwrap().join(DEFAULT_DOT_DIR);
+        assert_eq!(default_home, expected);
+    }
+
+    #[test]
+    fn home_from_env_variable() {
+        let mut paths_provider = PycorsPathsFromFakeEnv::new();
+        let tmp_dir = env::temp_dir();
+        paths_provider.value = Some(tmp_dir.clone().into_os_string());
+        let tmp_home = paths_provider.config_home().unwrap();
+        assert_eq!(tmp_home, Path::new(&tmp_dir));
+    }
+
+    #[test]
+    fn dot_dir_success() {
+        let mut paths_provider = PycorsPathsFromFakeEnv::new();
+        let dir = dot_dir(".dummy").unwrap();
+        let expected = home_dir().unwrap().join(".dummy");
+        assert_eq!(dir, expected);
+    }
+
+    #[test]
+    fn directories() {
+        let mut paths_provider = PycorsPathsFromFakeEnv::new();
+        let dir = paths_provider.cache().unwrap();
+        let expected = home_dir().unwrap().join(DEFAULT_DOT_DIR).join("cache");
+        assert_eq!(dir, expected);
+
+        let dir = paths_provider.downloaded().unwrap();
+        let expected = home_dir()
+            .unwrap()
+            .join(DEFAULT_DOT_DIR)
+            .join("cache")
+            .join("downloaded");
+        assert_eq!(dir, expected);
+
+        let dir = paths_provider.extracted().unwrap();
+        let expected = home_dir()
+            .unwrap()
+            .join(DEFAULT_DOT_DIR)
+            .join("cache")
+            .join("extracted");
+        assert_eq!(dir, expected);
+
+        let dir = paths_provider.installed().unwrap();
+        let expected = home_dir().unwrap().join(DEFAULT_DOT_DIR).join("installed");
+        assert_eq!(dir, expected);
+    }
+
+    #[test]
+    fn install_dir_version() {
+        let mut paths_provider = PycorsPathsFromFakeEnv::new();
+        let version = Version::parse("3.7.2").unwrap();
+        let dir = paths_provider.install_dir(&version).unwrap();
+        let expected = home_dir()
+            .unwrap()
+            .join(DEFAULT_DOT_DIR)
+            .join("installed")
+            .join("3.7.2");
+        assert_eq!(dir, expected);
     }
 }

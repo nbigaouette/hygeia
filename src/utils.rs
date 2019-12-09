@@ -234,7 +234,7 @@ where
     S: AsRef<std::ffi::OsStr> + std::fmt::Debug,
     P: AsRef<Path>,
 {
-    let logs_dir = PycorsPathsFromEnv::logs()?;
+    let logs_dir = PycorsPathsFromEnv::new().logs()?;
 
     if !logs_dir.exists() {
         fs::create_dir_all(&logs_dir)?;
@@ -453,7 +453,6 @@ mod tests {
     fn copy_file_overwrite() {
         copy_file("LICENSE-APACHE", "LICENSE-APACHE").unwrap_err();
     }
-
 
     #[test]
     fn build_basename_from_version_372() {

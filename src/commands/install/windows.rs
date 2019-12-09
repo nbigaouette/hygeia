@@ -23,9 +23,9 @@ pub fn install_package(
     version: &Version,
     install_extra_packages: Option<&commands::InstallExtraPackagesOptions>,
 ) -> Result<()> {
-    let install_dir = PycorsPathsFromEnv::install_dir(version)?;
+    let install_dir = PycorsPathsFromEnv::new().install_dir(version)?;
 
-    let cwd = PycorsPathsFromEnv::downloaded()?;
+    let cwd = PycorsPathsFromEnv::new().downloaded()?;
     let archive = build_filename_zip(version)?;
 
     let file = BufReader::new(File::open(cwd.join(archive)).unwrap());
@@ -64,7 +64,7 @@ pub fn install_package(
     let python_exe = install_dir.join("python.exe");
 
     // Install pip
-    let cache_dir = PycorsPathsFromEnv::cache()?;
+    let cache_dir = PycorsPathsFromEnv::new().cache()?;
     let get_pip_py = cache_dir.join("get-pip.py");
     let rt = tokio::runtime::Runtime::new()?;
     rt.block_on(download_to_path(GET_PIP_URL, &cache_dir))?;
