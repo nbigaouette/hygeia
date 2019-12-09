@@ -15,12 +15,12 @@ use crate::{
     utils, Result,
 };
 
-pub fn setup_bash(home: &Path, config_home_dir: &Path) -> Result<()> {
+pub fn setup_bash(home: &Path) -> Result<()> {
     let exec_name_capital = EXECUTABLE_NAME.to_uppercase();
 
     // Add the autocomplete too
-    let autocomplete_file = config_home_dir.join(&format!("{}.bash-completion", EXECUTABLE_NAME));
     let mut f = fs::File::create(&autocomplete_file)?;
+    let autocomplete_file = utils::directory::shell::bash::config::autocomplete()?;
     commands::autocomplete::run(Shell::Bash, &mut f)?;
 
     let config_lines: Vec<String> = vec![
