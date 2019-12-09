@@ -13,13 +13,22 @@ pub mod bash;
 pub fn run(shell: Shell) -> Result<()> {
     log::info!("Setting up the shim...");
 
+    // Create all required directories
+    for dir in &[
+        utils::directory::cache()?,
+        utils::directory::installed()?,
+        utils::directory::shell::bash::config::dir_absolute()?,
+        utils::directory::shims()?,
+    ] {
+        if !utils::path_exists(&dir) {
+            log::debug!("Directory {:?} does not exists, creating.", dir);
+            fs::create_dir_all(&dir)?;
+        }
+    }
+
     // Copy itself into ~/.EXECUTABLE_NAME/shim
     let config_home_dir = utils::directory::config_home()?;
     let shims_dir = utils::directory::shims()?;
-    if !utils::path_exists(&shims_dir) {
-        log::debug!("Directory {:?} does not exists, creating.", shims_dir);
-        fs::create_dir_all(&shims_dir)?;
-    }
     let copy_from = env::current_exe()?;
     let copy_to = {
         #[cfg_attr(not(windows), allow(unused_mut))]
@@ -88,7 +97,7 @@ pub fn run(shell: Shell) -> Result<()> {
             let home =
                 dirs::home_dir().ok_or_else(|| anyhow::anyhow!("Error getting home directory"))?;
 
-            bash::setup_bash(&home, &config_home_dir)?;
+            bash::setup_bash(&home)?;
         }
         Shell::PowerShell => {
             // Add the autocomplete too

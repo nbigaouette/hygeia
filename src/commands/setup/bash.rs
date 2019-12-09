@@ -4,6 +4,7 @@ use std::{
     path::Path,
 };
 
+use anyhow::Context;
 use structopt::clap::Shell;
 
 use crate::{
@@ -15,12 +16,13 @@ use crate::{
     utils, Result,
 };
 
-pub fn setup_bash(home: &Path, config_home_dir: &Path) -> Result<()> {
+pub fn setup_bash(home: &Path) -> Result<()> {
     let exec_name_capital = EXECUTABLE_NAME.to_uppercase();
 
     // Add the autocomplete too
-    let autocomplete_file = config_home_dir.join(&format!("{}.bash-completion", EXECUTABLE_NAME));
-    let mut f = fs::File::create(&autocomplete_file)?;
+    let autocomplete_file = utils::directory::shell::bash::config::autocomplete()?;
+    let mut f = fs::File::create(&autocomplete_file)
+        .with_context(|| format!("Failed creating file {:?}", autocomplete_file))?;
     commands::autocomplete::run(Shell::Bash, &mut f)?;
 
     let config_lines: Vec<String> = vec![
@@ -42,7 +44,7 @@ pub fn setup_bash(home: &Path, config_home_dir: &Path) -> Result<()> {
         String::from(r#"else"#),
         String::from(r#"    # Shell already setup for pycors."#),
         String::from(r#"    # Disable in case we enter a 'poetry shell'"#),
-        String::from(r#"    if [ -z ${{POETRY_ACTIVE+x}} ]; then"#),
+        String::from(r#"    if [ -z ${POETRY_ACTIVE+x} ]; then"#),
         String::from(r#"        # Not in a 'poetry shell', activating."#),
         format!(
             r#"        export PATH="${{{}_HOME}}/shims:${{PATH//${{{}_HOME}}/}}""#,
@@ -62,7 +64,6 @@ pub fn setup_bash(home: &Path, config_home_dir: &Path) -> Result<()> {
     ];
 
     let config_file = utils::directory::shell::bash::config::file_absolute()?;
-    fs::create_dir_all(utils::directory::shell::bash::config::dir_absolute()?)?;
     let f = BufWriter::new(fs::File::create(&config_file)?);
     write_config_to(f, &config_lines, &autocomplete_file)?;
 
@@ -71,13 +72,25 @@ pub fn setup_bash(home: &Path, config_home_dir: &Path) -> Result<()> {
         let bash_config_file = home.join(bash_config_file);
         log::info!("Adding configuration to {:?}...", bash_config_file);
 
-        let mut tmp_file = BufWriter::new(fs::File::create(&tmp_file_path)?);
-        let mut config_reader = BufReader::new(fs::File::open(&bash_config_file)?);
-        remove_block(&mut config_reader, &mut tmp_file)?;
+        let mut tmp_file =
+            BufWriter::new(fs::File::create(&tmp_file_path).with_context(|| {
+                format!("Failed to create temporary fille {:?}", tmp_file_path)
+            })?);
+        let mut config_reader = BufReader::new(
+            fs::File::open(&bash_config_file)
+                .with_context(|| format!("Failed to open file {:?}", bash_config_file))?,
+        );
+        remove_block(&mut config_reader, &mut tmp_file).with_context(|| {
+            format!(
+                "Failed to remove custom config block from {:?}",
+                bash_config_file
+            )
+        })?;
         // Make sure we close the file
         std::mem::drop(config_reader);
 
-        write_header_to(&mut tmp_file)?;
+        write_header_to(&mut tmp_file)
+            .with_context(|| format!("Failed to write block header to {:?}", tmp_file_path))?;
         writeln!(
             &mut tmp_file,
             "{}",
@@ -86,7 +99,8 @@ pub fn setup_bash(home: &Path, config_home_dir: &Path) -> Result<()> {
                 exec_name_capital,
                 utils::directory::config_home()?.display()
             )
-        )?;
+        )
+        .with_context(|| format!("Failed to export line to {:?}", tmp_file_path))?;
         writeln!(
             &mut tmp_file,
             "{}",
@@ -96,12 +110,19 @@ pub fn setup_bash(home: &Path, config_home_dir: &Path) -> Result<()> {
                 utils::directory::shell::bash::config::dir_relative().display(),
                 utils::directory::shell::bash::config::file_name(),
             )
-        )?;
-        write_footer_to(&mut tmp_file)?;
+        )
+        .with_context(|| format!("Failed to write source line to {:?}", tmp_file_path))?;
+        write_footer_to(&mut tmp_file)
+            .with_context(|| format!("Failed to write block footer to {:?}", tmp_file_path))?;
         std::mem::drop(tmp_file);
 
         // Move tmp file back atomically
-        fs::rename(&tmp_file_path, &bash_config_file)?;
+        fs::rename(&tmp_file_path, &bash_config_file).with_context(|| {
+            format!(
+                "Failed to rename temporary file {:?} to {:?}",
+                tmp_file_path, bash_config_file
+            )
+        })?;
     }
 
     Ok(())

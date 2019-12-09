@@ -146,6 +146,10 @@ pub mod directory {
                 pub fn file_absolute() -> Result<PathBuf> {
                     Ok(dir_absolute()?.join(file_name()))
                 }
+
+                pub fn autocomplete() -> Result<PathBuf> {
+                    Ok(dir_absolute()?.join("completion.sh"))
+                }
             }
         }
     }
