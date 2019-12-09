@@ -70,6 +70,12 @@ pub fn setup_bash(home: &Path) -> Result<()> {
     for bash_config_file in &[".bashrc", ".bash_profile"] {
         let tmp_file_path = utils::directory::cache()?.join(bash_config_file);
         let bash_config_file = home.join(bash_config_file);
+
+        if !bash_config_file.exists() {
+            log::debug!("File {:?} does not exists, skipping.", bash_config_file);
+            continue;
+        }
+
         log::info!("Adding configuration to {:?}...", bash_config_file);
 
         let mut tmp_file =
