@@ -1,14 +1,13 @@
-use std::{env, ffi::OsString};
+use std::{env, path::PathBuf};
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use regex::Regex;
 use semver::VersionReq;
-use subprocess::{self, Exec, Redirection};
 use thiserror::Error;
 
 use crate::{
     dir_monitor::DirectoryMonitor,
-    os::command_with_major_version,
+    os,
     toolchain::{installed::InstalledToolchain, CompatibleToolchainBuilder},
     utils, EXECUTABLE_NAME,
 };
@@ -17,8 +16,6 @@ use crate::{
 pub enum ShimError {
     #[error("No interpreter found to run command: {0:?}")]
     MissingInterpreter(String),
-    #[error("subprocess::PopenError: {0:?}")]
-    PopenError(subprocess::PopenError),
 }
 
 pub fn run<S>(command: &str, arguments: &[S]) -> Result<()>
@@ -48,55 +45,38 @@ pub fn run_with<S>(toolchain: &InstalledToolchain, command: &str, arguments: &[S
 where
     S: AsRef<str> + std::convert::AsRef<std::ffi::OsStr> + std::fmt::Debug,
 {
-    log::debug!("toolchain: {:?}", toolchain);
-
-    let command_string_with_major_version = command_with_major_version(command, toolchain)?;
-
-    let command_full_path = toolchain.location.join(command_string_with_major_version);
-    let command_full_path = if command_full_path.exists() {
-        command_full_path
-    } else {
-        toolchain.location.join(command)
-    };
-
-    log::debug!("Command:   {:?}", command_full_path);
-    log::debug!("Arguments: {:?}", arguments);
-
     let bin_dir = toolchain.location.clone();
 
-    // Prepend `bin_dir` to `PATH`
-    let new_path = match env::var("PATH") {
-        Ok(path) => {
-            let mut paths = env::split_paths(&path).collect::<Vec<_>>();
-            paths.push(bin_dir.clone());
-            env::join_paths(paths)?
-        }
+    let current_paths: Vec<PathBuf> = match env::var("PATH") {
+        Ok(path) => env::split_paths(&path).collect(),
         Err(err) => {
             log::error!("Failed to get environment variable PATH: {:?}", err);
-            OsString::new()
+            vec![PathBuf::new()]
         }
     };
+    let new_paths: Vec<PathBuf> = {
+        let mut tmp = os::paths_to_prepends(&toolchain.version)?;
+        tmp.extend_from_slice(&current_paths);
+        // Delete the shims path from the list
+        // This should prevent calling our shims by accident.
+        let shims_dir = utils::directory::shims()?;
+        tmp.retain(|x| *x != shims_dir);
+        tmp
+    };
+    let new_path = env::join_paths(new_paths.iter())?;
+
+    log::debug!("Toolchain: {}", toolchain);
+    log::debug!("Command:   {:?}", command);
+    log::debug!("Arguments: {:?}", arguments);
+    log::debug!("Path:      {}", new_path.to_string_lossy());
 
     let mut bin_dir_monitor = DirectoryMonitor::new(&bin_dir)?;
 
-    Exec::cmd(&command_full_path)
+    let status = std::process::Command::new(&command)
         .args(arguments)
-        .env("PATH", new_path)
-        .stdout(Redirection::None)
-        .stderr(Redirection::None)
-        .join()
-        .map_err(ShimError::PopenError)
-        .with_context(|| {
-            format!(
-                "Failed command: {} {}",
-                command_full_path.display(),
-                arguments
-                    .iter()
-                    .map(|s| s.as_ref())
-                    .collect::<Vec<&str>>()
-                    .join(" ")
-            )
-        })?;
+        // Replace it with our update
+        .env("PATH", &new_path)
+        .status()?;
 
     let new_bin_files: Vec<_> = bin_dir_monitor.check()?.collect();
 
@@ -106,6 +86,7 @@ where
     for new_bin_file_path in new_bin_files {
         match new_bin_file_path.file_name() {
             Some(new_bin_filename) => {
+                log::debug!("Creating a hardlink for {:?}", new_bin_file_path);
                 let new_bin_path = shim_dir.join(new_bin_filename);
                 utils::create_hard_link(&executable_path, new_bin_path)?;
             }
@@ -115,7 +96,22 @@ where
         }
     }
 
-    Ok(())
+    if status.success() {
+        log::debug!("Success!");
+        Ok(())
+    } else {
+        Err(anyhow::anyhow!(
+            "Failed to execute command (exit code: {:?}): {} {}\nPATH: \"{}\"",
+            status.code(),
+            command,
+            arguments
+                .iter()
+                .map(|s| s.as_ref())
+                .collect::<Vec<&str>>()
+                .join(" "),
+            new_path.to_string_lossy()
+        ))
+    }
 }
 
 fn extract_major_version_from_executable_name(exe: &str) -> Option<VersionReq> {

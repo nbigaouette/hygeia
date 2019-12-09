@@ -55,7 +55,8 @@ TBD
 
 ### Windows
 
-TBD
+Nothing (expect pycors itself) is required to install a Python toolchain under Windows; pre-built
+binaries are used.
 
 ## Installation
 

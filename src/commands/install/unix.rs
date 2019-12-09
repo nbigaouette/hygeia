@@ -8,8 +8,6 @@ use std::{
 use anyhow::{anyhow, Result};
 use flate2::read::GzDecoder;
 use semver::Version;
-#[cfg(target_os = "macos")]
-use subprocess::{Exec, Redirection};
 use tar::Archive;
 
 use crate::{
@@ -102,11 +100,12 @@ pub fn compile_source(
 
         // Make sure compilation can find zlib
         // See https://github.com/pyenv/pyenv/wiki/common-build-problems#build-failed-error-the-python-zlib-extension-was-not-compiled-missing-the-zlib
-        let macos_sdk_path = Exec::cmd("xcrun")
-            .arg("--show-sdk-path")
-            .stdout(Redirection::Pipe)
-            .capture()?
-            .stdout_str();
+        let macos_sdk_path = String::from_utf8(
+            std::process::Command::new("xcrun")
+                .arg("--show-sdk-path")
+                .output()?
+                .stdout,
+        )?;
         cflags.push(format!("-I{}/usr/include", macos_sdk_path.trim()));
 
         cppflags.push("-I/opt/X11/include".into());
@@ -139,11 +138,11 @@ pub fn compile_source(
     utils::create_info_file(&install_dir, version)?;
 
     if let Some(install_extra_packages) = install_extra_packages {
-        install_extra_pip_packages(&install_dir, &version, install_extra_packages)?;
+        install_extra_pip_packages(&version, install_extra_packages)?;
     }
 
     // Create symbolic links from binaries with `3` suffix
-    let bin_dir = install_dir.join("bin");
+    let bin_dir = utils::directory::bin_dir(&version)?;
     let basenames_to_link = &[
         "easy_install-###",
         "idle###",

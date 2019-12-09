@@ -9,14 +9,10 @@ use semver::Version;
 
 use crate::{commands, dir_monitor::DirectoryMonitor, utils, Result, EXECUTABLE_NAME};
 
-pub fn install_extra_pip_packages<P>(
-    install_dir: P,
+pub fn install_extra_pip_packages(
     version: &Version,
     install_extra_packages: &commands::InstallExtraPackagesOptions,
-) -> Result<()>
-where
-    P: AsRef<Path>,
-{
+) -> Result<()> {
     let install_extra_flag_present = install_extra_packages.install_extra_packages
         || install_extra_packages.install_extra_packages_from.is_some();
 
@@ -29,7 +25,7 @@ where
     {
         let mut to_pip_installs: Vec<String> = Vec::new();
 
-        let bin_dir = install_dir.as_ref().join("bin");
+        let bin_dir = utils::directory::bin_dir(&version)?;
         let mut bin_dir_monitor = DirectoryMonitor::new(&bin_dir)?;
 
         if install_extra_packages.install_extra_packages {
@@ -78,20 +74,20 @@ where
             .show_defaults()
             .confirm()
         {
-            let pip = install_dir
-                .as_ref()
-                .join("bin")
-                .join(format!("python{}", version.major));
-            log::debug!("pip: {:?}", pip);
-            if let Some(pip) = pip.to_str() {
-                let basename = utils::build_basename(&version)?;
-                let extract_dir = utils::directory::extracted()?.join(&basename);
-
+            let install_dir = utils::directory::install_dir(version)?;
+            let python_major_bin = install_dir.join(format!(
+                "python{}{}{}",
+                version.major,
+                utils::extension_sep(),
+                utils::bin_extension()
+            ));
+            log::debug!("python_major_bin: {:?}", python_major_bin);
+            if let Some(python_major_bin) = python_major_bin.to_str() {
                 for (i, to_pip_install) in to_pip_installs.iter().enumerate() {
                     if let Err(e) = utils::run_cmd_template(
-                        &version,
+                        version,
                         &format!("[{}/15] pip install --upgrade {}", i + 6, to_pip_install),
-                        pip,
+                        python_major_bin,
                         &[
                             "-m",
                             "pip",
@@ -100,13 +96,16 @@ where
                             "--upgrade",
                             to_pip_install,
                         ],
-                        &extract_dir,
+                        &install_dir,
                     ) {
                         log::error!("Failed to pip install {}: {:?}", to_pip_install, e);
                     }
                 }
             } else {
-                log::error!("Could not get string slice from pip path: {:?}", pip);
+                log::error!(
+                    "Could not get string slice from python path: {:?}",
+                    python_major_bin
+                );
             }
         }
 

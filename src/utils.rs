@@ -13,11 +13,11 @@ use anyhow::{anyhow, Result};
 use dirs::home_dir;
 use indicatif::{ProgressBar, ProgressStyle};
 use semver::{Version, VersionReq};
-use subprocess::{Exec, Redirection};
 use terminal_size::{terminal_size, Width};
 
 use crate::{
     constants::{home_env_variable, DEFAULT_DOT_DIR, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME},
+    os,
     toolchain::installed::InstalledToolchain,
 };
 
@@ -36,6 +36,26 @@ pub fn copy_file<P1: AsRef<Path>, P2: AsRef<Path>>(from: P1, to: P2) -> Result<u
         let number_of_bytes_copied = fs::copy(from, to)?;
         Ok(number_of_bytes_copied)
     }
+}
+
+#[cfg(windows)]
+pub fn bin_extension() -> &'static str {
+    "exe"
+}
+
+#[cfg(not(windows))]
+pub fn bin_extension() -> &'static str {
+    ""
+}
+
+#[cfg(windows)]
+pub fn extension_sep() -> &'static str {
+    "."
+}
+
+#[cfg(not(windows))]
+pub fn extension_sep() -> &'static str {
+    ""
 }
 
 pub mod directory {
@@ -91,6 +111,43 @@ pub mod directory {
 
     pub fn install_dir(version: &Version) -> Result<PathBuf> {
         Ok(installed()?.join(format!("{}", version)))
+    }
+
+    #[cfg(not(windows))]
+    pub fn bin_dir(version: &Version) -> Result<PathBuf> {
+        Ok(install_dir(version)?.join("bin"))
+    }
+    #[cfg(windows)]
+    pub fn bin_dir(version: &Version) -> Result<PathBuf> {
+        Ok(install_dir(version)?)
+    }
+
+    pub mod shell {
+        pub mod bash {
+            pub mod config {
+                use std::path::{Path, PathBuf};
+
+                use super::super::super::config_home;
+
+                use crate::Result;
+
+                pub fn dir_relative() -> PathBuf {
+                    Path::new("shell").join("bash")
+                }
+
+                pub fn dir_absolute() -> Result<PathBuf> {
+                    Ok(config_home()?.join(dir_relative()))
+                }
+
+                pub fn file_name() -> &'static str {
+                    "config.sh"
+                }
+
+                pub fn file_absolute() -> Result<PathBuf> {
+                    Ok(dir_absolute()?.join(file_name()))
+                }
+            }
+        }
     }
 }
 
@@ -237,6 +294,33 @@ where
     Ok(())
 }
 
+/// Wrapper around `std::process::Child`
+///
+/// NOTE: According to [](https://doc.rust-lang.org/std/process/struct.Child.html),
+/// `std::process::Child` does not implements `Drop`. Since we use `?` for earlier
+/// return, let's make sure the child process is killed by implementing `Drop`.
+struct ChildProcess(std::process::Child);
+
+impl Drop for ChildProcess {
+    fn drop(&mut self) {
+        match self.0.try_wait() {
+            Ok(Some(_status)) => {}
+            Ok(None) => {
+                log::error!("Killing child process (pid: {})", self.0.id());
+                match self.0.kill() {
+                    Ok(()) => {}
+                    Err(e) => {
+                        log::error!("An error occurred while killing child process: {:?}", e);
+                    }
+                }
+            }
+            Err(e) => {
+                log::error!("An error occurred while waiting for child process: {:?}", e);
+            }
+        }
+    }
+}
+
 pub fn run_cmd_template<S, P>(
     version: &Version,
     line_header: &str,
@@ -272,16 +356,34 @@ where
 
     let (tx, child) = spinner_in_thread(line_header.to_string());
 
-    let mut process = Exec::cmd(cmd)
-        .args(args)
-        .cwd(cwd)
-        .stderr(Redirection::Merge)
-        .stdout(Redirection::Pipe)
-        .popen()?;
+    let current_paths: Vec<PathBuf> = match env::var("PATH") {
+        Ok(path) => env::split_paths(&path).collect(),
+        Err(err) => {
+            log::error!("Failed to get environment variable PATH: {:?}", err);
+            vec![PathBuf::new()]
+        }
+    };
+    let new_paths: Vec<PathBuf> = {
+        let mut tmp = os::paths_to_prepends(version)?;
+        tmp.extend_from_slice(&current_paths);
+        tmp
+    };
+    let new_path = env::join_paths(new_paths.iter())?;
 
-    // Extract the stdout std::fs::File from `p`, replacing it with a None.
-    let mut stdout: Option<File> = None;
-    std::mem::swap(&mut process.stdout, &mut stdout);
+    // FIXME: Change cwd
+    // Wrap in a custom `ChildProcess` that implements `Drop` to kill the child process
+    let mut process = ChildProcess(
+        std::process::Command::new(cmd)
+            .args(args)
+            .env("PATH", &new_path)
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()?,
+    );
+
+    // Extract the stdout from `process`, replacing it with a None.
+    let mut stdout: Option<std::process::ChildStdout> = None;
+    std::mem::swap(&mut process.0.stdout, &mut stdout);
 
     let br = BufReader::new(stdout.ok_or_else(|| anyhow!("Got none"))?);
 
@@ -318,7 +420,7 @@ where
 
     // We've read all process output. Wait for the process to finish and
     // get exit code.
-    let exit_status = process.wait()?;
+    let exit_status = process.0.wait()?;
 
     // Send signal to thread to stop
     let message = format!("{} done.", line_header);
@@ -329,35 +431,20 @@ where
         .join()
         .map_err(|e| anyhow!("Failed to join threads: {:?}", e))?;
 
-    match exit_status {
-        subprocess::ExitStatus::Exited(code) => match code {
-            0 => Ok(()),
-            _ => Err(anyhow!(
-                "Command {} with arguments {:?} failed! Exit status: {} (see log file {})",
-                cmd,
-                args,
-                code,
-                log_filepath.display()
-            )),
-        },
-        subprocess::ExitStatus::Signaled(signal) => Err(anyhow!(
-            "Command {} with arguments {:?} failed due to it being sent signal {} (see log file {})",
+    if exit_status.success() {
+        log::debug!("Success!");
+        Ok(())
+    } else {
+        Err(anyhow::anyhow!(
+            "Failed to execute command (exit code: {:?}): {} {}\nPATH: \"{}\"",
+            exit_status.code(),
             cmd,
-            args,
-            signal,
-                log_filepath.display()
-        )),
-        subprocess::ExitStatus::Other(unknown_code) => Err(anyhow!(
-            "Command {} with arguments {:?} failed with an unknown exit status {} (see log file {})",
-            cmd,
-            args,
-            unknown_code,
-                log_filepath.display()
-        )),
-        subprocess::ExitStatus::Undetermined => {
-            log::error!("Could not get process exit status code.");
-            Err(anyhow!("Could not get process exit status code."))
-        }
+            args.iter()
+                .map(|s| s.as_ref().to_string_lossy().to_string())
+                .collect::<Vec<String>>()
+                .join(" "),
+            new_path.to_string_lossy()
+        ))
     }
 }
 

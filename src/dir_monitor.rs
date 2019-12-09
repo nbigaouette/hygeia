@@ -61,7 +61,7 @@ mod tests {
 
         let tmp_filename = tmp_dir.join("test");
         let mut tmp_file = File::create(tmp_filename).unwrap();
-        tmp_file.write_all("test".as_bytes()).unwrap();
+        tmp_file.write_all(b"test").unwrap();
 
         assert_eq!(d.check().unwrap().count(), 1);
         assert!(d.files_set_before.is_empty());

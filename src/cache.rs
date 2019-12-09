@@ -15,6 +15,7 @@ use url::Url;
 
 use crate::{
     constants::{AVAILABLE_TOOLCHAIN_CACHE, PYTHON_BASE_URL},
+    download::download_to_string,
     utils,
 };
 
@@ -89,9 +90,9 @@ impl AvailableToolchainsCache {
     }
 
     pub fn update(&mut self) -> Result<()> {
-        let index_html = reqwest::get(PYTHON_BASE_URL)?.text()?;
-
         self.last_updated = Utc::now();
+        let rt = tokio::runtime::Runtime::new()?;
+        let index_html: String = rt.block_on(download_to_string(PYTHON_BASE_URL))?;
 
         self.available = parse_index_html(&index_html)?;
 
