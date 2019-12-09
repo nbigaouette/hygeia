@@ -62,7 +62,6 @@ pub fn setup_bash(home: &Path) -> Result<()> {
     ];
 
     let config_file = utils::directory::shell::bash::config::file_absolute()?;
-    fs::create_dir_all(utils::directory::shell::bash::config::dir_absolute()?)?;
     let f = BufWriter::new(fs::File::create(&config_file)?);
     write_config_to(f, &config_lines, &autocomplete_file)?;
 
