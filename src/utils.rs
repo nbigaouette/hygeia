@@ -24,14 +24,18 @@ pub fn path_exists<P: AsRef<Path>>(path: P) -> bool {
 }
 
 pub fn copy_file<P1: AsRef<Path>, P2: AsRef<Path>>(from: P1, to: P2) -> Result<u64> {
-    if from.as_ref() == to.as_ref() {
+    let from = from.as_ref();
+    let to = to.as_ref();
+    if from == to {
         Err(anyhow::anyhow!(
             "Will not copy {:?} unto {:?} as this would probably truncate it.",
-            from.as_ref(),
-            to.as_ref()
+            from,
+            to
         ))
     } else {
-        let number_of_bytes_copied = fs::copy(from, to)?;
+        let number_of_bytes_copied = fs::copy(from, to).with_context(|| {
+            format!("Failed to copy {:?} to {:?}", from.display(), to.display())
+        })?;
         Ok(number_of_bytes_copied)
     }
 }
@@ -81,7 +85,7 @@ where
     let from = from.as_ref();
     let to = to.as_ref();
     if Path::new(&to).exists() {
-        fs::remove_file(&to)?;
+        fs::remove_file(&to).with_context(|| format!("Failed to remove file {:?}", to))?;
     }
     log::debug!("Creating hard-link from {:?} to {:?}", from, to);
     match fs::hard_link(&from, &to) {
@@ -224,7 +228,8 @@ where
     let cwd = cwd.as_ref();
 
     if !logs_dir.exists() {
-        fs::create_dir_all(&logs_dir)?;
+        fs::create_dir_all(&logs_dir)
+            .with_context(|| format!("Failed to create directory {:?}", logs_dir))?;
     }
 
     let log_filename = format!(
@@ -239,7 +244,10 @@ where
             .replace("-", "")
     );
     let log_filepath = logs_dir.join(&log_filename);
-    let mut log_file = BufWriter::new(File::create(&log_filepath)?);
+    let mut log_file = BufWriter::new(
+        File::create(&log_filepath)
+            .with_context(|| format!("Failed to create log file {:?}", log_filepath))?,
+    );
 
     log_line(&format!("cd {}", cwd.display()), &mut log_file);
     log_line(&format!("{} {:?}", cmd, args), &mut log_file);
@@ -258,7 +266,12 @@ where
         tmp.extend_from_slice(&current_paths);
         tmp
     };
-    let new_path = env::join_paths(new_paths.iter())?;
+    let new_path = env::join_paths(new_paths.iter()).with_context(|| {
+        format!(
+            "Failed to create a single string from paths {:?}",
+            new_paths
+        )
+    })?;
 
     let original_current_dir =
         env::current_dir().with_context(|| "Failed to get current working directory")?;
@@ -273,7 +286,8 @@ where
             .env("PATH", &new_path)
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
-            .spawn()?,
+            .spawn()
+            .with_context(|| format!("Failed to spawn command {} {:?}", cmd, args))?,
     );
 
     // Extract the stdout from `process`, replacing it with a None.
@@ -315,7 +329,12 @@ where
 
     // We've read all process output. Wait for the process to finish and
     // get exit code.
-    let exit_status = process.0.wait()?;
+    let exit_status = process.0.wait().with_context(|| {
+        format!(
+            "Failed to wait for child process with command {} {:?}",
+            cmd, args
+        )
+    })?;
 
     // Send signal to thread to stop
     let message = format!("{} done.", line_header);
