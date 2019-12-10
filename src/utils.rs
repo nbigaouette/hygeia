@@ -8,12 +8,12 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{anyhow, Result};
+use anyhow::Context;
 use indicatif::{ProgressBar, ProgressStyle};
 use semver::{Version, VersionReq};
 use terminal_size::{terminal_size, Width};
 
-use crate::{os, toolchain::installed::InstalledToolchain};
+use crate::{os, toolchain::installed::InstalledToolchain, Result};
 
 pub mod directory;
 
@@ -25,7 +25,7 @@ pub fn path_exists<P: AsRef<Path>>(path: P) -> bool {
 
 pub fn copy_file<P1: AsRef<Path>, P2: AsRef<Path>>(from: P1, to: P2) -> Result<u64> {
     if from.as_ref() == to.as_ref() {
-        Err(anyhow!(
+        Err(anyhow::anyhow!(
             "Will not copy {:?} unto {:?} as this would probably truncate it.",
             from.as_ref(),
             to.as_ref()
@@ -220,6 +220,9 @@ where
 {
     let logs_dir = PycorsPathsFromEnv::new().logs();
 
+    // FIXME: Extract generics part to own function to reduce bloat
+    let cwd = cwd.as_ref();
+
     if !logs_dir.exists() {
         fs::create_dir_all(&logs_dir)?;
     }
@@ -238,7 +241,7 @@ where
     let log_filepath = logs_dir.join(&log_filename);
     let mut log_file = BufWriter::new(File::create(&log_filepath)?);
 
-    log_line(&format!("cd {}", cwd.as_ref().display()), &mut log_file);
+    log_line(&format!("cd {}", cwd.display()), &mut log_file);
     log_line(&format!("{} {:?}", cmd, args), &mut log_file);
 
     let (tx, child) = spinner_in_thread(line_header.to_string());
@@ -257,7 +260,12 @@ where
     };
     let new_path = env::join_paths(new_paths.iter())?;
 
-    // FIXME: Change cwd
+    let original_current_dir =
+        env::current_dir().with_context(|| "Failed to get current working directory")?;
+
+    env::set_current_dir(&cwd)
+        .with_context(|| format!("Failed to set current working directory to {:?}", cwd))?;
+
     // Wrap in a custom `ChildProcess` that implements `Drop` to kill the child process
     let mut process = ChildProcess(
         std::process::Command::new(cmd)
@@ -272,7 +280,7 @@ where
     let mut stdout: Option<std::process::ChildStdout> = None;
     std::mem::swap(&mut process.0.stdout, &mut stdout);
 
-    let br = BufReader::new(stdout.ok_or_else(|| anyhow!("Got none"))?);
+    let br = BufReader::new(stdout.ok_or_else(|| anyhow::anyhow!("Got none"))?);
 
     let message_width = if let Some((Width(width), _)) = terminal_size() {
         // There is two characters before the message: the spinner and a space
@@ -291,7 +299,7 @@ where
                     e
                 )))?;
                 tx.send(SpinnerMessage::Stop)?;
-                return Err(anyhow!("Error reading stdout: {:?}", e));
+                return Err(anyhow::anyhow!("Error reading stdout: {:?}", e));
             }
             Ok(line) => {
                 log_line(&line, &mut log_file);
@@ -316,7 +324,18 @@ where
 
     child
         .join()
-        .map_err(|e| anyhow!("Failed to join threads: {:?}", e))?;
+        .map_err(|e| anyhow::anyhow!("Failed to join threads: {:?}", e))?;
+
+    log::debug!(
+        "Changing back current directory to {:?}",
+        original_current_dir
+    );
+    env::set_current_dir(&original_current_dir).with_context(|| {
+        format!(
+            "Failed to set current working directory back to original {:?}",
+            original_current_dir
+        )
+    })?;
 
     if exit_status.success() {
         log::debug!("Success!");
