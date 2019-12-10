@@ -1,5 +1,4 @@
 use std::{
-    collections::HashSet,
     env,
     fs::{self, File},
     io::{self, BufRead, BufReader, BufWriter, Write},
@@ -154,21 +153,6 @@ pub fn active_version<'a>(
     log::debug!("Compatible versions found: {:?}", compatible_versions);
 
     compatible_versions.last().cloned()
-}
-
-pub fn dir_files_set<P>(dir: P) -> Result<HashSet<PathBuf>>
-where
-    P: AsRef<Path>,
-{
-    Ok(fs::read_dir(dir.as_ref())?
-        .filter_map(|entry| match entry {
-            Ok(dir) => Some(dir.path()),
-            Err(err) => {
-                log::error!("Reading failed: {:?}", err);
-                None
-            }
-        })
-        .collect())
 }
 
 pub fn get_info_file<P>(install_dir: P) -> PathBuf
