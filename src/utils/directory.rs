@@ -3,7 +3,9 @@ use std::{env, ffi::OsString, path::PathBuf};
 use dirs::home_dir;
 use semver::Version;
 
-use crate::{constants, DEFAULT_DOT_DIR, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME};
+use crate::{
+    constants, AVAILABLE_TOOLCHAIN_CACHE, DEFAULT_DOT_DIR, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME,
+};
 
 pub fn dot_dir(name: &str) -> Option<PathBuf> {
     home_dir().map(|p| p.join(name))
@@ -34,6 +36,10 @@ pub trait PycorsPaths {
 
     fn downloaded(&self) -> PathBuf {
         self.cache().join("downloaded")
+    }
+
+    fn available_toolchains_cache_file(&self) -> PathBuf {
+        self.cache().join(AVAILABLE_TOOLCHAIN_CACHE)
     }
 
     fn extracted(&self) -> PathBuf {

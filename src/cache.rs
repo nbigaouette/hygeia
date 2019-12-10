@@ -44,22 +44,18 @@ pub struct AvailableToolchainsCache {
     available: Vec<AvailableToolchain>,
 }
 
-fn cache_file() -> PathBuf {
-    PycorsPathsFromEnv::new()
-        .cache()
-        .join(AVAILABLE_TOOLCHAIN_CACHE)
-}
-
 impl AvailableToolchainsCache {
     pub fn new() -> Result<AvailableToolchainsCache> {
         log::debug!("Initializing cache...");
+
+        let paths_provider = PycorsPathsFromEnv::new();
 
         let cache_dir = PycorsPathsFromEnv::new().cache();
         if !cache_dir.exists() {
             create_dir_all(&cache_dir)?
         }
 
-        let cache_file = cache_file();
+        let cache_file = paths_provider.available_toolchains_cache_file();
         let cache: AvailableToolchainsCache = if cache_file.exists() {
             let cache_json = read_to_string(&cache_file)?;
             let mut cache: AvailableToolchainsCache = serde_json::from_str(&cache_json)?;
@@ -99,7 +95,8 @@ impl AvailableToolchainsCache {
         self.available = parse_index_html(&index_html)?;
 
         let cache_json = serde_json::to_string(&self)?;
-        let cache_file = cache_file();
+        let paths_provider = PycorsPathsFromEnv::new();
+        let cache_file = paths_provider.available_toolchains_cache_file();
         let mut output = BufWriter::new(File::create(&cache_file)?);
         output.write_all(cache_json.as_bytes())?;
 
