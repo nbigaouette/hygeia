@@ -30,8 +30,24 @@ pub trait PycorsPaths {
             .unwrap()
     }
 
+    fn default_extra_package_file(&self) -> PathBuf {
+        self.config_home().join(EXTRA_PACKAGES_FILENAME)
+    }
+
     fn cache(&self) -> PathBuf {
         self.config_home().join("cache")
+    }
+
+    fn installed(&self) -> PathBuf {
+        self.config_home().join("installed")
+    }
+
+    fn logs(&self) -> PathBuf {
+        self.config_home().join("logs")
+    }
+
+    fn shims(&self) -> PathBuf {
+        self.config_home().join("shims")
     }
 
     fn downloaded(&self) -> PathBuf {
@@ -46,24 +62,8 @@ pub trait PycorsPaths {
         self.cache().join("extracted")
     }
 
-    fn installed(&self) -> PathBuf {
-        self.config_home().join("installed")
-    }
-
-    fn shims(&self) -> PathBuf {
-        self.config_home().join("shims")
-    }
-
-    fn logs(&self) -> PathBuf {
-        self.config_home().join("logs")
-    }
-
     fn install_dir(&self, version: &Version) -> PathBuf {
         self.installed().join(format!("{}", version))
-    }
-
-    fn default_extra_package_file(&self) -> PathBuf {
-        self.config_home().join(EXTRA_PACKAGES_FILENAME)
     }
 
     #[cfg(not(windows))]
