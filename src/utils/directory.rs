@@ -113,6 +113,7 @@ pub mod shell {
 
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
 
     use super::*;
 
@@ -131,6 +132,38 @@ mod tests {
         fn home_env_variable(&self) -> Option<OsString> {
             self.value.clone()
         }
+    }
+
+    #[test]
+    fn pycors_paths_from_env() {
+        // Playing an env variables is subject to race conditions
+        // since tests are run in parallel. Simply call the constructor
+        // and the function.
+        let _ = PycorsPathsFromEnv::new().home_env_variable();
+    }
+
+    #[test]
+    fn bash_dir_relative() {
+        assert_eq!(
+            shell::bash::config::dir_relative(),
+            Path::new("shell").join("bash")
+        );
+    }
+
+    #[test]
+    fn bash_file_path() {
+        assert_eq!(
+            shell::bash::config::file_path(),
+            Path::new("shell").join("bash").join("config.sh")
+        );
+    }
+
+    #[test]
+    fn bash_autocomplete() {
+        assert_eq!(
+            shell::bash::config::autocomplete(),
+            Path::new("shell").join("bash").join("completion.sh")
+        );
     }
 
     mod pycors_paths_trait {
