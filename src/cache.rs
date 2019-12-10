@@ -1,7 +1,6 @@
 use std::{
     fs::{create_dir_all, read_to_string, File},
     io::{BufWriter, Write},
-    path::PathBuf,
 };
 
 use anyhow::Result;
@@ -14,7 +13,7 @@ use thiserror::Error;
 use url::Url;
 
 use crate::{
-    constants::{AVAILABLE_TOOLCHAIN_CACHE, PYTHON_BASE_URL},
+    constants::PYTHON_BASE_URL,
     download::download_to_string,
     utils::directory::{PycorsPaths, PycorsPathsFromEnv},
 };
