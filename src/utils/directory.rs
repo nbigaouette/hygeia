@@ -112,7 +112,7 @@ pub mod shell {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use std::path::Path;
 
     use super::*;
