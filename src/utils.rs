@@ -399,6 +399,38 @@ pub enum SpinnerMessage {
 mod tests {
     use super::*;
 
+    fn temp_dir() -> PathBuf {
+        env::temp_dir()
+            .join(crate::constants::EXECUTABLE_NAME)
+            .join("utils")
+            .join("tests")
+    }
+
+    fn fixture_installed_toolchains() -> Vec<InstalledToolchain> {
+        vec![
+            InstalledToolchain {
+                location: PathBuf::from("unimportant"),
+                version: Version::new(3, 7, 4),
+            },
+            InstalledToolchain {
+                location: PathBuf::from("unimportant"),
+                version: Version::new(3, 7, 5),
+            },
+            InstalledToolchain {
+                location: PathBuf::from("unimportant"),
+                version: Version::new(3, 7, 2),
+            },
+            InstalledToolchain {
+                location: PathBuf::from("unimportant"),
+                version: Version::new(3, 6, 1),
+            },
+            InstalledToolchain {
+                location: PathBuf::from("unimportant"),
+                version: Version::new(3, 8, 0),
+            },
+        ]
+    }
+
     #[test]
     fn path_exists_success() {
         assert!(path_exists("target"));
@@ -411,7 +443,12 @@ mod tests {
 
     #[test]
     fn copy_file_success() {
-        let copied_file_location = env::temp_dir().join("dummy_copied_file");
+        let tmp_dir = temp_dir().join("copy_file_success");
+        if tmp_dir.exists() {
+            fs::remove_dir_all(&tmp_dir).unwrap()
+        };
+        fs::create_dir_all(&tmp_dir).unwrap();
+        let copied_file_location = tmp_dir.join("dummy_copied_file");
         let _ = fs::remove_file(&copied_file_location);
         assert!(!copied_file_location.exists());
         let nb_bytes_copied = copy_file("LICENSE-APACHE", &copied_file_location).unwrap();
@@ -486,5 +523,166 @@ mod tests {
             assert!(Path::new(&hardlink_location.replace("###", "replaced")).exists());
             let _ = fs::remove_file(&hardlink_location.replace("###", "replaced"));
         }
+    }
+
+    #[test]
+    fn active_version_empty_list() {
+        let version_req = VersionReq::parse("=3.7.5").unwrap();
+        let installed_toolchains = vec![];
+        let compatible_version = active_version(&version_req, &installed_toolchains);
+        assert!(compatible_version.is_none());
+    }
+
+    #[test]
+    fn active_version_tilde() {
+        let version_req = VersionReq::parse("~3.7").unwrap();
+        let installed_toolchains = fixture_installed_toolchains();
+        let compatible_version = active_version(&version_req, &installed_toolchains).unwrap();
+        assert_eq!(compatible_version.version, Version::new(3, 7, 5));
+    }
+
+    #[test]
+    fn active_version_exact_not_in_list() {
+        let version_req = VersionReq::parse("=3.7.3").unwrap();
+        let installed_toolchains = fixture_installed_toolchains();
+        assert!(active_version(&version_req, &installed_toolchains).is_none());
+    }
+
+    #[test]
+    fn active_version_found() {
+        let version_req = VersionReq::parse("=3.7.2").unwrap();
+        let installed_toolchains = fixture_installed_toolchains();
+        let compatible_version = active_version(&version_req, &installed_toolchains).unwrap();
+        assert_eq!(compatible_version.version, Version::new(3, 7, 2));
+    }
+
+    #[test]
+    fn get_info_file_success() {
+        let dir = Path::new("unimportant");
+        let file = get_info_file(&dir);
+        let expected = dir.join(crate::INFO_FILE);
+        assert_eq!(file, expected);
+    }
+
+    #[test]
+    fn create_info_file_success() {
+        let tmp_dir = temp_dir().join("create_info_file_success");
+        if tmp_dir.exists() {
+            fs::remove_dir_all(&tmp_dir).unwrap()
+        };
+        fs::create_dir_all(&tmp_dir).unwrap();
+        let version = Version::new(3, 7, 5);
+        let expected_file_path = tmp_dir.join(crate::INFO_FILE);
+        let expected_file_begin = "Python 3.7.5 installed using ";
+        assert!(!expected_file_path.exists());
+        create_info_file(&tmp_dir, &version).unwrap();
+        assert!(expected_file_path.exists());
+        let file_content = fs::read_to_string(&expected_file_path).unwrap();
+        assert!(file_content.starts_with(&expected_file_begin));
+    }
+
+    #[test]
+    fn run_cmd_template_success() {
+        let version = Version::new(0, 0, 0);
+        let line_header = "0 utils::tests::run_cmd_template_success";
+        let cmd = "cargo";
+        let args = &["-V"];
+        let cwd = ".";
+
+        let expected_file_path = PycorsPathsFromEnv::new()
+            .logs()
+            .join("Python_v0.0.0_step_0_utils__tests__run_cmd_template_success.log");
+        if expected_file_path.exists() {
+            fs::remove_file(&expected_file_path).unwrap();
+        }
+
+        run_cmd_template(&version, line_header, cmd, args, cwd).unwrap();
+
+        let re = regex::Regex::new(r#"(?P<date>20[0-9]{2}-[0-3][0-9]-[0-1][0-9]T[0-2][0-9]:[0-5][0-9]:[0-5][0-9].[0-9]{6}[-+][0-2][0-9]:[0-5][0-9]) - (?P<cmd>.*)"#).unwrap();
+        let file_content = fs::read_to_string(&expected_file_path).unwrap();
+
+        let lines: Vec<&str> = file_content.lines().collect();
+
+        let caps = re.captures(lines[0]).unwrap();
+        let _date = &caps["date"];
+        assert_eq!(&caps["cmd"], "cd .");
+
+        let caps = re.captures(lines[1]).unwrap();
+        let _date = &caps["date"];
+        assert_eq!(&caps["cmd"], r#"cargo ["-V"]"#);
+
+        let caps = re.captures(lines[2]).unwrap();
+        let _date = &caps["date"];
+        assert!(&caps["cmd"].starts_with("cargo 1."));
+    }
+
+    #[test]
+    fn run_cmd_template_fail_stdout() {
+        let version = Version::new(0, 0, 0);
+        let line_header = "0 utils::tests::run_cmd_template_fail_stdout";
+        let cmd = "non-existent-command";
+        let args = &["-V"];
+        let cwd = ".";
+
+        let expected_file_path = PycorsPathsFromEnv::new()
+            .logs()
+            .join("Python_v0.0.0_step_0_utils__tests__run_cmd_template_fail_stdout.log");
+        if expected_file_path.exists() {
+            fs::remove_file(&expected_file_path).unwrap();
+        }
+
+        run_cmd_template(&version, line_header, cmd, args, cwd).unwrap_err();
+
+        let re = regex::Regex::new(r#"(?P<date>20[0-9]{2}-[0-3][0-9]-[0-1][0-9]T[0-2][0-9]:[0-5][0-9]:[0-5][0-9].[0-9]{6}[-+][0-2][0-9]:[0-5][0-9]) - (?P<cmd>.*)"#).unwrap();
+        let file_content = fs::read_to_string(&expected_file_path).unwrap();
+
+        let lines: Vec<&str> = file_content.lines().collect();
+
+        let caps = re.captures(lines[0]).unwrap();
+        let _date = &caps["date"];
+        assert_eq!(&caps["cmd"], "cd .");
+
+        let caps = re.captures(lines[1]).unwrap();
+        let _date = &caps["date"];
+        assert_eq!(&caps["cmd"], r#"non-existent-command ["-V"]"#);
+    }
+
+    #[test]
+    #[ignore] // stderr is not saved for now in run_cmd_template()
+    fn run_cmd_template_fail_stderr() {
+        let version = Version::new(0, 0, 0);
+        let line_header = "0 utils::tests::run_cmd_template_fail_stderr";
+        let cmd = "cargo";
+        let args = &["non-existent-subcommand"];
+        let cwd = ".";
+
+        let expected_file_path = PycorsPathsFromEnv::new()
+            .logs()
+            .join("Python_v0.0.0_step_0_utils__tests__run_cmd_template_fail_stderr.log");
+        if expected_file_path.exists() {
+            fs::remove_file(&expected_file_path).unwrap();
+        }
+
+        run_cmd_template(&version, line_header, cmd, args, cwd).unwrap_err();
+
+        let re = regex::Regex::new(r#"(?P<date>20[0-9]{2}-[0-3][0-9]-[0-1][0-9]T[0-2][0-9]:[0-5][0-9]:[0-5][0-9].[0-9]{6}[-+][0-2][0-9]:[0-5][0-9]) - (?P<cmd>.*)"#).unwrap();
+        let file_content = fs::read_to_string(&expected_file_path).unwrap();
+
+        let lines: Vec<&str> = file_content.lines().collect();
+
+        let caps = re.captures(lines[0]).unwrap();
+        let _date = &caps["date"];
+        assert_eq!(&caps["cmd"], "cd .");
+
+        let caps = re.captures(lines[1]).unwrap();
+        let _date = &caps["date"];
+        assert_eq!(&caps["cmd"], r#"cargo ["non-existent-subcommand"]"#);
+
+        let caps = re.captures(lines[2]).unwrap();
+        let _date = &caps["date"];
+        assert_eq!(
+            &caps["cmd"],
+            r#"error: no such subcommand: `non-existent-command`"#
+        );
     }
 }
