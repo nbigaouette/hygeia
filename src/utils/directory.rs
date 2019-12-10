@@ -134,6 +134,13 @@ mod tests {
         }
     }
 
+    fn temp_dir() -> PathBuf {
+        env::temp_dir()
+            .join(crate::constants::EXECUTABLE_NAME)
+            .join("directory")
+            .join("tests")
+    }
+
     #[test]
     fn pycors_paths_from_env() {
         // Playing an env variables is subject to race conditions
@@ -180,7 +187,7 @@ mod tests {
         #[test]
         fn home_from_env_variable() {
             let mut paths_provider = PycorsPathsFromFakeEnv::new();
-            let tmp_dir = env::temp_dir();
+            let tmp_dir = temp_dir().join("home_from_env_variable");
             paths_provider.value = Some(tmp_dir.clone().into_os_string());
             let expected = tmp_dir;
             let to_validate = paths_provider.config_home();
@@ -200,7 +207,7 @@ mod tests {
         #[test]
         fn default_extra_package_file_from_env() {
             let mut paths_provider = PycorsPathsFromFakeEnv::new();
-            let tmp_dir = env::temp_dir();
+            let tmp_dir = temp_dir().join("default_extra_package_file_from_env");
             paths_provider.value = Some(tmp_dir.clone().into_os_string());
             let expected = tmp_dir.join(EXTRA_PACKAGES_FILENAME);
             let to_validate = paths_provider.default_extra_package_file();
@@ -218,7 +225,7 @@ mod tests {
         #[test]
         fn cache_from_env() {
             let mut paths_provider = PycorsPathsFromFakeEnv::new();
-            let tmp_dir = env::temp_dir();
+            let tmp_dir = temp_dir().join("cache_from_env");
             paths_provider.value = Some(tmp_dir.clone().into_os_string());
             let expected = tmp_dir.join("cache");
             let to_validate = paths_provider.cache();
@@ -236,7 +243,7 @@ mod tests {
         #[test]
         fn installed_from_env() {
             let mut paths_provider = PycorsPathsFromFakeEnv::new();
-            let tmp_dir = env::temp_dir();
+            let tmp_dir = temp_dir().join("installed_from_env");
             paths_provider.value = Some(tmp_dir.clone().into_os_string());
             let to_validate = paths_provider.installed();
             let expected = tmp_dir.join("installed");
@@ -254,7 +261,7 @@ mod tests {
         #[test]
         fn logs_from_env() {
             let mut paths_provider = PycorsPathsFromFakeEnv::new();
-            let tmp_dir = env::temp_dir();
+            let tmp_dir = temp_dir().join("logs_from_env");
             paths_provider.value = Some(tmp_dir.clone().into_os_string());
             let expected = tmp_dir.join("logs");
             let to_validate = paths_provider.logs();
@@ -272,7 +279,7 @@ mod tests {
         #[test]
         fn shims_from_env() {
             let mut paths_provider = PycorsPathsFromFakeEnv::new();
-            let tmp_dir = env::temp_dir();
+            let tmp_dir = temp_dir().join("shims_from_env");
             paths_provider.value = Some(tmp_dir.clone().into_os_string());
             let expected = tmp_dir.join("shims");
             let to_validate = paths_provider.shims();
@@ -293,7 +300,7 @@ mod tests {
         #[test]
         fn downloaded_from_env() {
             let mut paths_provider = PycorsPathsFromFakeEnv::new();
-            let tmp_dir = env::temp_dir();
+            let tmp_dir = temp_dir().join("downloaded_from_env");
             paths_provider.value = Some(tmp_dir.clone().into_os_string());
             let expected = tmp_dir.join("cache").join("downloaded");
             let to_validate = paths_provider.downloaded();
@@ -314,7 +321,7 @@ mod tests {
         #[test]
         fn available_toolchain_from_env() {
             let mut paths_provider = PycorsPathsFromFakeEnv::new();
-            let tmp_dir = env::temp_dir();
+            let tmp_dir = temp_dir().join("available_toolchain_from_env");
             paths_provider.value = Some(tmp_dir.clone().into_os_string());
             let expected = tmp_dir.join("cache").join(AVAILABLE_TOOLCHAIN_CACHE);
             let to_validate = paths_provider.available_toolchains_cache_file();
@@ -335,7 +342,7 @@ mod tests {
         #[test]
         fn extracted_from_env() {
             let mut paths_provider = PycorsPathsFromFakeEnv::new();
-            let tmp_dir = env::temp_dir();
+            let tmp_dir = temp_dir().join("extracted_from_env");
             paths_provider.value = Some(tmp_dir.clone().into_os_string());
             let expected = tmp_dir.join("cache").join("extracted");
             let to_validate = paths_provider.extracted();
@@ -359,7 +366,7 @@ mod tests {
             let mut paths_provider = PycorsPathsFromFakeEnv::new();
             let version = Version::parse("3.7.5").unwrap();
 
-            let tmp_dir = env::temp_dir();
+            let tmp_dir = temp_dir().join("install_dir_from_env");
             paths_provider.value = Some(tmp_dir.clone().into_os_string());
             let expected = tmp_dir.join("installed").join("3.7.5");
 
@@ -391,7 +398,7 @@ mod tests {
             let mut paths_provider = PycorsPathsFromFakeEnv::new();
             let version = Version::parse("3.7.5").unwrap();
 
-            let tmp_dir = env::temp_dir();
+            let tmp_dir = temp_dir().join("bin_dir_from_env");
             paths_provider.value = Some(tmp_dir.clone().into_os_string());
             #[cfg(not(windows))]
             let expected = tmp_dir.join("installed").join("3.7.5").join("bin");
