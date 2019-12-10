@@ -26,7 +26,7 @@ pub fn setup_bash(home: &Path) -> Result<()> {
 
     // Add the autocomplete too
     let autocomplete_file = paths_provider
-        .config_home()?
+        .config_home()
         .join(utils::directory::shell::bash::config::autocomplete());
     let mut f = fs::File::create(&autocomplete_file)
         .with_context(|| format!("Failed creating file {:?}", autocomplete_file))?;
@@ -71,7 +71,7 @@ pub fn setup_bash(home: &Path) -> Result<()> {
     ];
 
     let config_file = paths_provider
-        .config_home()?
+        .config_home()
         .join(utils::directory::shell::bash::config::file_path());
     let f = BufWriter::new(fs::File::create(&config_file)?);
     write_config_to(f, &config_lines, &autocomplete_file)?;
@@ -112,7 +112,7 @@ pub fn setup_bash(home: &Path) -> Result<()> {
             format!(
                 r#"export {}_HOME="{}""#,
                 exec_name_capital,
-                PycorsPathsFromEnv::new().config_home()?.display()
+                PycorsPathsFromEnv::new().config_home().display()
             )
         )
         .with_context(|| format!("Failed to export line to {:?}", tmp_file_path))?;

@@ -27,7 +27,7 @@ pub fn run(shell: Shell) -> Result<()> {
         paths_provider.cache()?,
         paths_provider.installed()?,
         paths_provider
-            .config_home()?
+            .config_home()
             .join(utils::directory::shell::bash::config::dir_relative()),
         paths_provider.shims()?,
     ] {
@@ -38,7 +38,7 @@ pub fn run(shell: Shell) -> Result<()> {
     }
 
     // Copy itself into ~/.EXECUTABLE_NAME/shim
-    let config_home_dir = paths_provider.config_home()?;
+    let config_home_dir = paths_provider.config_home();
     let shims_dir = paths_provider.shims()?;
     let copy_from = env::current_exe()?;
     let copy_to = {

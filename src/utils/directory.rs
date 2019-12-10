@@ -18,31 +18,20 @@ pub trait PycorsPaths {
 
     fn home_env_variable(&self) -> Option<OsString>;
 
-    fn config_home(&self) -> Result<PathBuf> {
-        let env_var = self.home_env_variable();
-
-        let config_home_from_env = if env_var.is_some() {
-            let cwd = env::current_dir()?;
-            env_var.clone().map(|home| cwd.join(home))
-        } else {
-            None
-        };
+    fn config_home(&self) -> PathBuf {
+        let config_home_from_env = self.home_env_variable().map(PathBuf::from);
 
         let default_dot_dir = dot_dir(&DEFAULT_DOT_DIR);
 
-        let home = match config_home_from_env.or(default_dot_dir) {
-            None => Err(anyhow::anyhow!(
-                "Cannot find {}' home directory",
-                EXECUTABLE_NAME
-            )),
-            Some(home) => Ok(home),
-        }?;
-
-        Ok(home)
+        // If we can't find our home directory, there is nothing we can do; simply panic.
+        config_home_from_env
+            .or(default_dot_dir)
+            .ok_or_else(|| anyhow::anyhow!("Cannot find {}' home directory", EXECUTABLE_NAME))
+            .unwrap()
     }
 
     fn cache(&self) -> Result<PathBuf> {
-        Ok(self.config_home()?.join("cache"))
+        Ok(self.config_home().join("cache"))
     }
 
     fn downloaded(&self) -> Result<PathBuf> {
@@ -54,15 +43,15 @@ pub trait PycorsPaths {
     }
 
     fn installed(&self) -> Result<PathBuf> {
-        Ok(self.config_home()?.join("installed"))
+        Ok(self.config_home().join("installed"))
     }
 
     fn shims(&self) -> Result<PathBuf> {
-        Ok(self.config_home()?.join("shims"))
+        Ok(self.config_home().join("shims"))
     }
 
     fn logs(&self) -> Result<PathBuf> {
-        Ok(self.config_home()?.join("logs"))
+        Ok(self.config_home().join("logs"))
     }
 
     fn install_dir(&self, version: &Version) -> Result<PathBuf> {
@@ -70,7 +59,7 @@ pub trait PycorsPaths {
     }
 
     fn default_extra_package_file(&self) -> Result<PathBuf> {
-        Ok(self.config_home()?.join(EXTRA_PACKAGES_FILENAME))
+        Ok(self.config_home().join(EXTRA_PACKAGES_FILENAME))
     }
 
     #[cfg(not(windows))]
@@ -144,7 +133,7 @@ mod tests {
     #[test]
     fn home_default() {
         let paths_provider = PycorsPathsFromFakeEnv::new();
-        let default_home = paths_provider.config_home().unwrap();
+        let default_home = paths_provider.config_home();
         let expected = home_dir().unwrap().join(DEFAULT_DOT_DIR);
         assert_eq!(default_home, expected);
     }
@@ -154,8 +143,7 @@ mod tests {
         let mut paths_provider = PycorsPathsFromFakeEnv::new();
         let tmp_dir = env::temp_dir();
         paths_provider.value = Some(tmp_dir.clone().into_os_string());
-        let tmp_home = paths_provider.config_home().unwrap();
-        assert_eq!(tmp_home, Path::new(&tmp_dir));
+        assert_eq!(paths_provider.config_home(), tmp_dir);
     }
 
     #[test]
