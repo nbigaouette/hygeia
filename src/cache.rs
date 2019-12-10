@@ -29,6 +29,29 @@ pub enum CacheError {
     NoCompatibleVersionFound,
 }
 
+pub trait ToolchainsCacheFetch {
+    fn new() -> Result<Self>
+    where
+        Self: Sized;
+    fn get(&self) -> Result<String>;
+}
+
+pub struct ToolchainsCacheFetchOnline;
+
+impl ToolchainsCacheFetch for ToolchainsCacheFetchOnline {
+    fn new() -> Result<Self>
+    where
+        Self: Sized,
+    {
+        Ok(ToolchainsCacheFetchOnline {})
+    }
+    fn get(&self) -> Result<String> {
+        let rt = tokio::runtime::Runtime::new()?;
+        let index_html: String = rt.block_on(download_to_string(PYTHON_BASE_URL))?;
+        Ok(index_html)
+    }
+}
+
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct AvailableToolchain {
     pub version: Version,
@@ -42,9 +65,10 @@ pub struct AvailableToolchainsCache {
 }
 
 impl AvailableToolchainsCache {
-    pub fn new<P>(paths_provider: &P) -> Result<AvailableToolchainsCache>
+    pub fn new<P, D>(paths_provider: &P, downloader: &D) -> Result<AvailableToolchainsCache>
     where
         P: PycorsPaths,
+        D: ToolchainsCacheFetch,
     {
         log::debug!("Initializing cache...");
 
@@ -64,37 +88,38 @@ impl AvailableToolchainsCache {
                     "Cache is older than 10 days (age: {} days). Updating...",
                     cache_age_days
                 );
-                cache.update(paths_provider)?;
+                cache.update(paths_provider, downloader)?;
             } else {
                 log::info!("Using cache ({} days old)", cache_age_days);
             }
             cache
         } else {
-            AvailableToolchainsCache::create(paths_provider)?
+            AvailableToolchainsCache::create(paths_provider, downloader)?
         };
 
         Ok(cache)
     }
 
-    fn create<P>(paths_provider: &P) -> Result<AvailableToolchainsCache>
+    fn create<P, D>(paths_provider: &P, downloader: &D) -> Result<AvailableToolchainsCache>
     where
         P: PycorsPaths,
+        D: ToolchainsCacheFetch,
     {
         let mut cache = AvailableToolchainsCache {
             last_updated: Utc::now(),
             available: Vec::new(),
         };
-        cache.update(paths_provider)?;
+        cache.update(paths_provider, downloader)?;
         Ok(cache)
     }
 
-    pub fn update<P>(&mut self, paths_provider: &P) -> Result<()>
+    pub fn update<P, D>(&mut self, paths_provider: &P, downloader: &D) -> Result<()>
     where
         P: PycorsPaths,
+        D: ToolchainsCacheFetch,
     {
         self.last_updated = Utc::now();
-        let rt = tokio::runtime::Runtime::new()?;
-        let index_html: String = rt.block_on(download_to_string(PYTHON_BASE_URL))?;
+        let index_html: String = downloader.get()?;
 
         self.available = parse_index_html(&index_html)?;
 
