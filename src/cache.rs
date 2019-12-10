@@ -13,9 +13,7 @@ use thiserror::Error;
 use url::Url;
 
 use crate::{
-    constants::PYTHON_BASE_URL,
-    download::download_to_string,
-    utils::directory::{PycorsPaths, PycorsPathsFromEnv},
+    constants::PYTHON_BASE_URL, download::download_to_string, utils::directory::PycorsPaths,
 };
 
 // FIXME: Pre-releases are available inside 'https://www.python.org/ftp/python/MAJOR.MINOR.PATCH'
@@ -44,12 +42,13 @@ pub struct AvailableToolchainsCache {
 }
 
 impl AvailableToolchainsCache {
-    pub fn new() -> Result<AvailableToolchainsCache> {
+    pub fn new<P>(paths_provider: &P) -> Result<AvailableToolchainsCache>
+    where
+        P: PycorsPaths,
+    {
         log::debug!("Initializing cache...");
 
-        let paths_provider = PycorsPathsFromEnv::new();
-
-        let cache_dir = PycorsPathsFromEnv::new().cache();
+        let cache_dir = paths_provider.cache();
         if !cache_dir.exists() {
             create_dir_all(&cache_dir)?
         }
@@ -65,28 +64,34 @@ impl AvailableToolchainsCache {
                     "Cache is older than 10 days (age: {} days). Updating...",
                     cache_age_days
                 );
-                cache.update()?;
+                cache.update(paths_provider)?;
             } else {
                 log::info!("Using cache ({} days old)", cache_age_days);
             }
             cache
         } else {
-            AvailableToolchainsCache::create()?
+            AvailableToolchainsCache::create(paths_provider)?
         };
 
         Ok(cache)
     }
 
-    fn create() -> Result<AvailableToolchainsCache> {
+    fn create<P>(paths_provider: &P) -> Result<AvailableToolchainsCache>
+    where
+        P: PycorsPaths,
+    {
         let mut cache = AvailableToolchainsCache {
             last_updated: Utc::now(),
             available: Vec::new(),
         };
-        cache.update()?;
+        cache.update(paths_provider)?;
         Ok(cache)
     }
 
-    pub fn update(&mut self) -> Result<()> {
+    pub fn update<P>(&mut self, paths_provider: &P) -> Result<()>
+    where
+        P: PycorsPaths,
+    {
         self.last_updated = Utc::now();
         let rt = tokio::runtime::Runtime::new()?;
         let index_html: String = rt.block_on(download_to_string(PYTHON_BASE_URL))?;
@@ -94,7 +99,6 @@ impl AvailableToolchainsCache {
         self.available = parse_index_html(&index_html)?;
 
         let cache_json = serde_json::to_string(&self)?;
-        let paths_provider = PycorsPathsFromEnv::new();
         let cache_file = paths_provider.available_toolchains_cache_file();
         let mut output = BufWriter::new(File::create(&cache_file)?);
         output.write_all(cache_json.as_bytes())?;
