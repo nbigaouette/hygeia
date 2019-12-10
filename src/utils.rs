@@ -228,6 +228,7 @@ where
         "Python_v{}_step_{}.log",
         version,
         line_header
+            .replace(":", "_")
             .replace(" ", "_")
             .replace("[", "")
             .replace("/", "_of_")
