@@ -7,7 +7,7 @@ use crate::{
     constants, AVAILABLE_TOOLCHAIN_CACHE, DEFAULT_DOT_DIR, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME,
 };
 
-pub fn dot_dir(name: &str) -> Option<PathBuf> {
+fn dot_dir(name: &str) -> Option<PathBuf> {
     home_dir().map(|p| p.join(name))
 }
 
