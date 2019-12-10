@@ -13,14 +13,21 @@ use crate::{
         EXECUTABLE_NAME, SHELL_CONFIG_IDENTIFYING_PATTERN_END,
         SHELL_CONFIG_IDENTIFYING_PATTERN_START,
     },
-    utils, Result,
+    utils::{
+        self,
+        directory::{PycorsPaths, PycorsPathsFromEnv},
+    },
+    Result,
 };
 
 pub fn setup_bash(home: &Path) -> Result<()> {
     let exec_name_capital = EXECUTABLE_NAME.to_uppercase();
+    let paths_provider = PycorsPathsFromEnv::new();
 
     // Add the autocomplete too
-    let autocomplete_file = utils::directory::shell::bash::config::autocomplete()?;
+    let autocomplete_file = paths_provider
+        .config_home()
+        .join(utils::directory::shell::bash::config::autocomplete());
     let mut f = fs::File::create(&autocomplete_file)
         .with_context(|| format!("Failed creating file {:?}", autocomplete_file))?;
     commands::autocomplete::run(Shell::Bash, &mut f)?;
@@ -63,12 +70,14 @@ pub fn setup_bash(home: &Path) -> Result<()> {
         String::from(r#"fi"#),
     ];
 
-    let config_file = utils::directory::shell::bash::config::file_absolute()?;
+    let config_file = paths_provider
+        .config_home()
+        .join(utils::directory::shell::bash::config::file_path());
     let f = BufWriter::new(fs::File::create(&config_file)?);
     write_config_to(f, &config_lines, &autocomplete_file)?;
 
     for bash_config_file in &[".bashrc", ".bash_profile"] {
-        let tmp_file_path = utils::directory::cache()?.join(bash_config_file);
+        let tmp_file_path = PycorsPathsFromEnv::new().cache().join(bash_config_file);
         let bash_config_file = home.join(bash_config_file);
 
         if !bash_config_file.exists() {
@@ -103,7 +112,7 @@ pub fn setup_bash(home: &Path) -> Result<()> {
             format!(
                 r#"export {}_HOME="{}""#,
                 exec_name_capital,
-                utils::directory::config_home()?.display()
+                PycorsPathsFromEnv::new().config_home().display()
             )
         )
         .with_context(|| format!("Failed to export line to {:?}", tmp_file_path))?;
@@ -111,10 +120,9 @@ pub fn setup_bash(home: &Path) -> Result<()> {
             &mut tmp_file,
             "{}",
             format!(
-                r#"source ${{{}_HOME}}/{}/{}"#,
+                r#"source ${{{}_HOME}}/{}"#,
                 exec_name_capital,
-                utils::directory::shell::bash::config::dir_relative().display(),
-                utils::directory::shell::bash::config::file_name(),
+                utils::directory::shell::bash::config::file_path().display()
             )
         )
         .with_context(|| format!("Failed to write source line to {:?}", tmp_file_path))?;

@@ -10,16 +10,15 @@ use std::{
 };
 
 use anyhow::{anyhow, Result};
-use dirs::home_dir;
 use indicatif::{ProgressBar, ProgressStyle};
 use semver::{Version, VersionReq};
 use terminal_size::{terminal_size, Width};
 
-use crate::{
-    constants::{home_env_variable, DEFAULT_DOT_DIR, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME},
-    os,
-    toolchain::installed::InstalledToolchain,
-};
+use crate::{os, toolchain::installed::InstalledToolchain};
+
+pub mod directory;
+
+use directory::{PycorsPaths, PycorsPathsFromEnv};
 
 pub fn path_exists<P: AsRef<Path>>(path: P) -> bool {
     fs::metadata(path).is_ok()
@@ -56,107 +55,6 @@ pub fn extension_sep() -> &'static str {
 #[cfg(not(windows))]
 pub fn extension_sep() -> &'static str {
     ""
-}
-
-pub mod directory {
-    use super::*;
-
-    pub fn dot_dir(name: &str) -> Option<PathBuf> {
-        home_dir().map(|p| p.join(name))
-    }
-
-    pub fn config_home() -> Result<PathBuf> {
-        let env_var = env::var_os(home_env_variable());
-
-        let config_home_from_env = if env_var.is_some() {
-            let cwd = env::current_dir()?;
-            env_var.clone().map(|home| cwd.join(home))
-        } else {
-            None
-        };
-
-        let default_dot_dir = dot_dir(&DEFAULT_DOT_DIR);
-
-        let home = match config_home_from_env.or(default_dot_dir) {
-            None => Err(anyhow!("Cannot find {}' home directory", EXECUTABLE_NAME)),
-            Some(home) => Ok(home),
-        }?;
-
-        Ok(home)
-    }
-
-    pub fn cache() -> Result<PathBuf> {
-        Ok(config_home()?.join("cache"))
-    }
-
-    pub fn downloaded() -> Result<PathBuf> {
-        Ok(cache()?.join("downloaded"))
-    }
-
-    pub fn extracted() -> Result<PathBuf> {
-        Ok(cache()?.join("extracted"))
-    }
-
-    pub fn installed() -> Result<PathBuf> {
-        Ok(config_home()?.join("installed"))
-    }
-
-    pub fn shims() -> Result<PathBuf> {
-        Ok(config_home()?.join("shims"))
-    }
-
-    pub fn logs() -> Result<PathBuf> {
-        Ok(config_home()?.join("logs"))
-    }
-
-    pub fn install_dir(version: &Version) -> Result<PathBuf> {
-        Ok(installed()?.join(format!("{}", version)))
-    }
-
-    #[cfg(not(windows))]
-    pub fn bin_dir(version: &Version) -> Result<PathBuf> {
-        Ok(install_dir(version)?.join("bin"))
-    }
-    #[cfg(windows)]
-    pub fn bin_dir(version: &Version) -> Result<PathBuf> {
-        Ok(install_dir(version)?)
-    }
-
-    pub mod shell {
-        pub mod bash {
-            pub mod config {
-                use std::path::{Path, PathBuf};
-
-                use super::super::super::config_home;
-
-                use crate::Result;
-
-                pub fn dir_relative() -> PathBuf {
-                    Path::new("shell").join("bash")
-                }
-
-                pub fn dir_absolute() -> Result<PathBuf> {
-                    Ok(config_home()?.join(dir_relative()))
-                }
-
-                pub fn file_name() -> &'static str {
-                    "config.sh"
-                }
-
-                pub fn file_absolute() -> Result<PathBuf> {
-                    Ok(dir_absolute()?.join(file_name()))
-                }
-
-                pub fn autocomplete() -> Result<PathBuf> {
-                    Ok(dir_absolute()?.join("completion.sh"))
-                }
-            }
-        }
-    }
-}
-
-pub fn default_extra_package_file() -> Result<PathBuf> {
-    Ok(directory::config_home()?.join(EXTRA_PACKAGES_FILENAME))
 }
 
 pub fn build_basename(version: &Version) -> Result<String> {
@@ -336,7 +234,7 @@ where
     S: AsRef<std::ffi::OsStr> + std::fmt::Debug,
     P: AsRef<Path>,
 {
-    let logs_dir = directory::logs()?;
+    let logs_dir = PycorsPathsFromEnv::new().logs();
 
     if !logs_dir.exists() {
         fs::create_dir_all(&logs_dir)?;
@@ -554,72 +452,6 @@ mod tests {
     #[test]
     fn copy_file_overwrite() {
         copy_file("LICENSE-APACHE", "LICENSE-APACHE").unwrap_err();
-    }
-
-    #[test]
-    fn home_default() {
-        env::remove_var(home_env_variable());
-        let default_home = directory::config_home().unwrap();
-        let expected = home_dir().unwrap().join(DEFAULT_DOT_DIR);
-        assert_eq!(default_home, expected);
-    }
-
-    #[test]
-    #[ignore]
-    fn home_from_env_variable() {
-        let tmp_dir = env::temp_dir();
-        env::set_var(home_env_variable(), &tmp_dir);
-        let tmp_home = directory::config_home().unwrap();
-        assert_eq!(tmp_home, Path::new(&tmp_dir));
-    }
-
-    #[test]
-    fn dot_dir_success() {
-        env::remove_var(home_env_variable());
-        let dir = directory::dot_dir(".dummy").unwrap();
-        let expected = home_dir().unwrap().join(".dummy");
-        assert_eq!(dir, expected);
-    }
-
-    #[test]
-    fn directories() {
-        env::remove_var(home_env_variable());
-        let dir = directory::cache().unwrap();
-        let expected = home_dir().unwrap().join(DEFAULT_DOT_DIR).join("cache");
-        assert_eq!(dir, expected);
-
-        let dir = directory::downloaded().unwrap();
-        let expected = home_dir()
-            .unwrap()
-            .join(DEFAULT_DOT_DIR)
-            .join("cache")
-            .join("downloaded");
-        assert_eq!(dir, expected);
-
-        let dir = directory::extracted().unwrap();
-        let expected = home_dir()
-            .unwrap()
-            .join(DEFAULT_DOT_DIR)
-            .join("cache")
-            .join("extracted");
-        assert_eq!(dir, expected);
-
-        let dir = directory::installed().unwrap();
-        let expected = home_dir().unwrap().join(DEFAULT_DOT_DIR).join("installed");
-        assert_eq!(dir, expected);
-    }
-
-    #[test]
-    fn install_dir_version() {
-        env::remove_var(home_env_variable());
-        let version = Version::parse("3.7.2").unwrap();
-        let dir = directory::install_dir(&version).unwrap();
-        let expected = home_dir()
-            .unwrap()
-            .join(DEFAULT_DOT_DIR)
-            .join("installed")
-            .join("3.7.2");
-        assert_eq!(dir, expected);
     }
 
     #[test]

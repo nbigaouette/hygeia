@@ -13,7 +13,14 @@ use semver::{Version, VersionReq};
 use thiserror::Error;
 use which::which_in;
 
-use crate::{constants::TOOLCHAIN_FILE, utils, Result, EXECUTABLE_NAME};
+use crate::{
+    constants::TOOLCHAIN_FILE,
+    utils::{
+        self,
+        directory::{PycorsPaths, PycorsPathsFromEnv},
+    },
+    Result, EXECUTABLE_NAME,
+};
 
 pub mod installed;
 pub mod selected;
@@ -245,13 +252,7 @@ where
         }
     };
 
-    let shims_dir = match utils::directory::shims() {
-        Ok(shims_dir) => shims_dir,
-        Err(e) => {
-            log::error!("Failed to get shims directory: {:?}", e);
-            return other_pythons;
-        }
-    };
+    let shims_dir = PycorsPathsFromEnv::new().shims();
     let shims_dir = match shims_dir.canonicalize() {
         Ok(shims_dir) => shims_dir,
         Err(e) => {
@@ -382,7 +383,7 @@ where
 }
 
 pub fn find_installed_toolchains() -> Result<Vec<InstalledToolchain>> {
-    let install_dir = utils::directory::installed()?;
+    let install_dir = PycorsPathsFromEnv::new().installed();
 
     let mut installed_python = Vec::new();
 
@@ -423,7 +424,7 @@ pub fn find_installed_toolchains() -> Result<Vec<InstalledToolchain>> {
 
                         // Append `bin` to the path (if it exists) since this location
                         // will be used.
-                        let location_bin = utils::directory::bin_dir(&version)?;
+                        let location_bin = PycorsPathsFromEnv::new().bin_dir(&version);
                         let location = if location_bin.exists() {
                             location_bin
                         } else {
