@@ -234,7 +234,7 @@ where
     S: AsRef<std::ffi::OsStr> + std::fmt::Debug,
     P: AsRef<Path>,
 {
-    let logs_dir = PycorsPathsFromEnv::new().logs()?;
+    let logs_dir = PycorsPathsFromEnv::new().logs();
 
     if !logs_dir.exists() {
         fs::create_dir_all(&logs_dir)?;

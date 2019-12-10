@@ -24,12 +24,12 @@ pub fn run(shell: Shell) -> Result<()> {
 
     // Create all required directories
     for dir in &[
-        paths_provider.cache()?,
-        paths_provider.installed()?,
+        paths_provider.cache(),
+        paths_provider.installed(),
         paths_provider
             .config_home()
             .join(utils::directory::shell::bash::config::dir_relative()),
-        paths_provider.shims()?,
+        paths_provider.shims(),
     ] {
         if !utils::path_exists(&dir) {
             log::debug!("Directory {:?} does not exists, creating.", dir);
@@ -39,7 +39,7 @@ pub fn run(shell: Shell) -> Result<()> {
 
     // Copy itself into ~/.EXECUTABLE_NAME/shim
     let config_home_dir = paths_provider.config_home();
-    let shims_dir = paths_provider.shims()?;
+    let shims_dir = paths_provider.shims();
     let copy_from = env::current_exe()?;
     let copy_to = {
         #[cfg_attr(not(windows), allow(unused_mut))]
@@ -94,7 +94,7 @@ pub fn run(shell: Shell) -> Result<()> {
     }
 
     let extra_packages_file_default_content = EXTRA_PACKAGES_FILENAME_CONTENT;
-    let output_filename = PycorsPathsFromEnv::new().default_extra_package_file()?;
+    let output_filename = PycorsPathsFromEnv::new().default_extra_package_file();
     log::debug!(
         "Writing list of default packages to install to {:?}",
         output_filename

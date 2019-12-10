@@ -30,45 +30,45 @@ pub trait PycorsPaths {
             .unwrap()
     }
 
-    fn cache(&self) -> Result<PathBuf> {
-        Ok(self.config_home().join("cache"))
+    fn cache(&self) -> PathBuf {
+        self.config_home().join("cache")
     }
 
-    fn downloaded(&self) -> Result<PathBuf> {
-        Ok(self.cache()?.join("downloaded"))
+    fn downloaded(&self) -> PathBuf {
+        self.cache().join("downloaded")
     }
 
-    fn extracted(&self) -> Result<PathBuf> {
-        Ok(self.cache()?.join("extracted"))
+    fn extracted(&self) -> PathBuf {
+        self.cache().join("extracted")
     }
 
-    fn installed(&self) -> Result<PathBuf> {
-        Ok(self.config_home().join("installed"))
+    fn installed(&self) -> PathBuf {
+        self.config_home().join("installed")
     }
 
-    fn shims(&self) -> Result<PathBuf> {
-        Ok(self.config_home().join("shims"))
+    fn shims(&self) -> PathBuf {
+        self.config_home().join("shims")
     }
 
-    fn logs(&self) -> Result<PathBuf> {
-        Ok(self.config_home().join("logs"))
+    fn logs(&self) -> PathBuf {
+        self.config_home().join("logs")
     }
 
-    fn install_dir(&self, version: &Version) -> Result<PathBuf> {
-        Ok(self.installed()?.join(format!("{}", version)))
+    fn install_dir(&self, version: &Version) -> PathBuf {
+        self.installed().join(format!("{}", version))
     }
 
-    fn default_extra_package_file(&self) -> Result<PathBuf> {
-        Ok(self.config_home().join(EXTRA_PACKAGES_FILENAME))
+    fn default_extra_package_file(&self) -> PathBuf {
+        self.config_home().join(EXTRA_PACKAGES_FILENAME)
     }
 
     #[cfg(not(windows))]
-    fn bin_dir(&self, version: &Version) -> Result<PathBuf> {
-        Ok(self.install_dir(version)?.join("bin"))
+    fn bin_dir(&self, version: &Version) -> PathBuf {
+        self.install_dir(version).join("bin")
     }
     #[cfg(windows)]
-    fn bin_dir(&self, version: &Version) -> Result<PathBuf> {
-        Ok(self.install_dir(version)?)
+    fn bin_dir(&self, version: &Version) -> PathBuf {
+        self.install_dir(version)
     }
 }
 
@@ -109,7 +109,6 @@ pub mod shell {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
 
     use super::*;
 
@@ -146,6 +145,9 @@ mod tests {
         assert_eq!(paths_provider.config_home(), tmp_dir);
     }
 
+    // #[test]
+    // fn cache_
+
     #[test]
     fn dot_dir_success() {
         let mut paths_provider = PycorsPathsFromFakeEnv::new();
@@ -157,11 +159,11 @@ mod tests {
     #[test]
     fn directories() {
         let mut paths_provider = PycorsPathsFromFakeEnv::new();
-        let dir = paths_provider.cache().unwrap();
+        let dir = paths_provider.cache();
         let expected = home_dir().unwrap().join(DEFAULT_DOT_DIR).join("cache");
         assert_eq!(dir, expected);
 
-        let dir = paths_provider.downloaded().unwrap();
+        let dir = paths_provider.downloaded();
         let expected = home_dir()
             .unwrap()
             .join(DEFAULT_DOT_DIR)
@@ -169,7 +171,7 @@ mod tests {
             .join("downloaded");
         assert_eq!(dir, expected);
 
-        let dir = paths_provider.extracted().unwrap();
+        let dir = paths_provider.extracted();
         let expected = home_dir()
             .unwrap()
             .join(DEFAULT_DOT_DIR)
@@ -177,7 +179,7 @@ mod tests {
             .join("extracted");
         assert_eq!(dir, expected);
 
-        let dir = paths_provider.installed().unwrap();
+        let dir = paths_provider.installed();
         let expected = home_dir().unwrap().join(DEFAULT_DOT_DIR).join("installed");
         assert_eq!(dir, expected);
     }
@@ -186,7 +188,7 @@ mod tests {
     fn install_dir_version() {
         let mut paths_provider = PycorsPathsFromFakeEnv::new();
         let version = Version::parse("3.7.2").unwrap();
-        let dir = paths_provider.install_dir(&version).unwrap();
+        let dir = paths_provider.install_dir(&version);
         let expected = home_dir()
             .unwrap()
             .join(DEFAULT_DOT_DIR)

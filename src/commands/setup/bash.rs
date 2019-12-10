@@ -77,7 +77,7 @@ pub fn setup_bash(home: &Path) -> Result<()> {
     write_config_to(f, &config_lines, &autocomplete_file)?;
 
     for bash_config_file in &[".bashrc", ".bash_profile"] {
-        let tmp_file_path = PycorsPathsFromEnv::new().cache()?.join(bash_config_file);
+        let tmp_file_path = PycorsPathsFromEnv::new().cache().join(bash_config_file);
         let bash_config_file = home.join(bash_config_file);
 
         if !bash_config_file.exists() {
