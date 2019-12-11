@@ -636,7 +636,7 @@ mod tests {
 
         run_cmd_template(&version, line_header, cmd, args, cwd).unwrap();
 
-        let re = regex::Regex::new(r#"(?P<date>20[0-9]{2}-[0-3][0-9]-[0-1][0-9]T[0-2][0-9]:[0-5][0-9]:[0-5][0-9].[0-9]{6}[-+][0-2][0-9]:[0-5][0-9]) - (?P<cmd>.*)"#).unwrap();
+        let re = regex::Regex::new(r#"(?P<date>20[0-9]{2}-[0-3][0-9]-[0-1][0-9]T[0-2][0-9]:[0-5][0-9]:[0-5][0-9].[0-9]+[-+][0-2][0-9]:[0-5][0-9]) - (?P<cmd>.*)"#).unwrap();
         let file_content = fs::read_to_string(&expected_file_path).unwrap();
 
         let lines: Vec<&str> = file_content.lines().collect();
@@ -671,7 +671,7 @@ mod tests {
 
         run_cmd_template(&version, line_header, cmd, args, cwd).unwrap_err();
 
-        let re = regex::Regex::new(r#"(?P<date>20[0-9]{2}-[0-3][0-9]-[0-1][0-9]T[0-2][0-9]:[0-5][0-9]:[0-5][0-9].[0-9]{6}[-+][0-2][0-9]:[0-5][0-9]) - (?P<cmd>.*)"#).unwrap();
+        let re = regex::Regex::new(r#"(?P<date>20[0-9]{2}-[0-3][0-9]-[0-1][0-9]T[0-2][0-9]:[0-5][0-9]:[0-5][0-9].[0-9]+[-+][0-2][0-9]:[0-5][0-9]) - (?P<cmd>.*)"#).unwrap();
         let file_content = fs::read_to_string(&expected_file_path).unwrap();
         println!("file_content:\n{}", file_content);
 
@@ -704,7 +704,7 @@ mod tests {
 
         run_cmd_template(&version, line_header, cmd, args, cwd).unwrap_err();
 
-        let re = regex::Regex::new(r#"(?P<date>20[0-9]{2}-[0-3][0-9]-[0-1][0-9]T[0-2][0-9]:[0-5][0-9]:[0-5][0-9].[0-9]{6}[-+][0-2][0-9]:[0-5][0-9]) - (?P<cmd>.*)"#).unwrap();
+        let re = regex::Regex::new(r#"(?P<date>20[0-9]{2}-[0-3][0-9]-[0-1][0-9]T[0-2][0-9]:[0-5][0-9]:[0-5][0-9].[0-9]+[-+][0-2][0-9]:[0-5][0-9]) - (?P<cmd>.*)"#).unwrap();
         let file_content = fs::read_to_string(&expected_file_path).unwrap();
         println!("file_content:\n{}", file_content);
 
