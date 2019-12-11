@@ -232,7 +232,9 @@ mod tests {
         let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
         // The test expects an empty directory
-        fs::remove_dir_all(&pycors_home).unwrap();
+        if pycors_home.exists() {
+            fs::remove_dir_all(&pycors_home).unwrap();
+        }
 
         let mut mock = MockPycorsHomeProviderTrait::new();
         mock.expect_home_env_variable()
