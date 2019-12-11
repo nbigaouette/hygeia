@@ -22,15 +22,12 @@ where
     home_provider: P,
 }
 
-// Allow using 'PycorsPathsProviderFromEnv::new().home_env_variable()'
-impl<P> std::ops::Deref for PycorsPathsProvider<P>
+impl<P> PycorsHomeProviderTrait for PycorsPathsProvider<P>
 where
     P: PycorsHomeProviderTrait,
 {
-    type Target = P;
-
-    fn deref(&self) -> &Self::Target {
-        &self.home_provider
+    fn home_env_variable(&self) -> Option<OsString> {
+        self.home_provider.home_env_variable()
     }
 }
 
@@ -155,7 +152,9 @@ pub mod tests {
         // Playing an env variables is subject to race conditions
         // since tests are run in parallel. Simply call the constructor
         // and the function.
-        let _ = PycorsPathsProviderFromEnv::new().home_env_variable();
+        let paths_provider: PycorsPathsProvider<PycorsPathsProviderFromEnv> =
+            PycorsPathsProviderFromEnv::new();
+        let _ = paths_provider.home_env_variable();
     }
 
     #[test]
