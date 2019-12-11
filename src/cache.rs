@@ -77,19 +77,30 @@ impl AvailableToolchainsCache {
         let cache_file = paths_provider.available_toolchains_cache_file();
         let cache: AvailableToolchainsCache = if cache_file.exists() {
             let cache_json = read_to_string(&cache_file)?;
-            let mut cache: AvailableToolchainsCache = serde_json::from_str(&cache_json)?;
-            let cache_age = Utc::now() - cache.last_updated;
-            let cache_age_days = cache_age.num_days();
-            if cache_age_days > 10 {
-                log::info!(
-                    "Cache is older than 10 days (age: {} days). Updating...",
-                    cache_age_days
-                );
-                cache.update(paths_provider, downloader)?;
-            } else {
-                log::info!("Using cache ({} days old)", cache_age_days);
+            match serde_json::from_str::<AvailableToolchainsCache>(&cache_json) {
+                Ok(mut cache) => {
+                    let cache_age = Utc::now() - cache.last_updated;
+                    let cache_age_days = cache_age.num_days();
+                    if cache_age_days > 10 {
+                        log::info!(
+                            "Cache is older than 10 days (age: {} days). Updating...",
+                            cache_age_days
+                        );
+                        cache.update(paths_provider, downloader)?;
+                    } else {
+                        log::info!("Using cache ({} days old)", cache_age_days);
+                    }
+                    cache
+                }
+                Err(e) => {
+                    log::error!(
+                        "Corrupted cache on disk ({:?}), recreating: {:?}",
+                        cache_file,
+                        e
+                    );
+                    AvailableToolchainsCache::create(paths_provider, downloader)?
+                }
             }
-            cache
         } else {
             AvailableToolchainsCache::create(paths_provider, downloader)?
         };
