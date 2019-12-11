@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::Result;
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Utc};
 use regex::Regex;
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
@@ -211,6 +211,8 @@ fn parse_index_html(index_html: &str) -> Result<Vec<AvailableToolchain>> {
 #[cfg(test)]
 mod tests {
     use std::{env, fs, path::PathBuf};
+
+    use chrono::Duration;
 
     use super::*;
     use crate::utils::directory::MockPycorsHomeProviderTrait;
