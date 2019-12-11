@@ -1022,7 +1022,7 @@ dependencies = [
 
 [[package]]
 name = "pycors"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow 1.0.25 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.10 (registry+https://github.com/rust-lang/crates.io-index)",
