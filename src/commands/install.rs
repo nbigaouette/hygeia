@@ -14,7 +14,7 @@ use crate::{
     constants::{EXECUTABLE_NAME, TOOLCHAIN_FILE},
     download::download_source,
     toolchain::{find_installed_toolchains, installed::InstalledToolchain, ToolchainFile},
-    utils::directory::{PycorsPaths, PycorsPathsFromEnv},
+    utils::directory::PycorsPathsProviderFromEnv,
 };
 
 mod pip;
@@ -64,8 +64,8 @@ pub fn run(
         }
     };
 
-    let paths_provider = PycorsPathsFromEnv::new();
     let downloader = ToolchainsCacheFetchOnline::new()?;
+    let paths_provider = PycorsPathsProviderFromEnv::new();
     let cache = AvailableToolchainsCache::new(&paths_provider, &downloader)?;
 
     let requested_version = cache.query(&requested_version_req)?;

@@ -13,16 +13,13 @@ use crate::{
         EXECUTABLE_NAME, SHELL_CONFIG_IDENTIFYING_PATTERN_END,
         SHELL_CONFIG_IDENTIFYING_PATTERN_START,
     },
-    utils::{
-        self,
-        directory::{PycorsPaths, PycorsPathsFromEnv},
-    },
+    utils::{self, directory::PycorsPathsProviderFromEnv},
     Result,
 };
 
 pub fn setup_bash(home: &Path) -> Result<()> {
     let exec_name_capital = EXECUTABLE_NAME.to_uppercase();
-    let paths_provider = PycorsPathsFromEnv::new();
+    let paths_provider = PycorsPathsProviderFromEnv::new();
 
     // Add the autocomplete too
     let autocomplete_file = paths_provider
@@ -77,7 +74,9 @@ pub fn setup_bash(home: &Path) -> Result<()> {
     write_config_to(f, &config_lines, &autocomplete_file)?;
 
     for bash_config_file in &[".bashrc", ".bash_profile"] {
-        let tmp_file_path = PycorsPathsFromEnv::new().cache().join(bash_config_file);
+        let tmp_file_path = PycorsPathsProviderFromEnv::new()
+            .cache()
+            .join(bash_config_file);
         let bash_config_file = home.join(bash_config_file);
 
         if !bash_config_file.exists() {
@@ -112,7 +111,7 @@ pub fn setup_bash(home: &Path) -> Result<()> {
             format!(
                 r#"export {}_HOME="{}""#,
                 exec_name_capital,
-                PycorsPathsFromEnv::new().config_home().display()
+                PycorsPathsProviderFromEnv::new().config_home().display()
             )
         )
         .with_context(|| format!("Failed to export line to {:?}", tmp_file_path))?;

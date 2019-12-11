@@ -13,11 +13,7 @@ use tar::Archive;
 use crate::{
     commands::{self, install::pip::install_extra_pip_packages},
     os::build_filename,
-    utils::{
-        self,
-        directory::{PycorsPaths, PycorsPathsFromEnv},
-        SpinnerMessage,
-    },
+    utils::{self, directory::PycorsPathsProviderFromEnv, SpinnerMessage},
     Result,
 };
 
@@ -34,11 +30,11 @@ pub fn install_package(
 
 #[cfg_attr(windows, allow(dead_code))]
 pub fn extract_source(version: &Version) -> Result<()> {
-    let download_dir = PycorsPathsFromEnv::new().downloaded();
+    let download_dir = PycorsPathsProviderFromEnv::new().downloaded();
     let filename = build_filename(&version)
         .with_context(|| format!("Failed to build filename from version {}", version))?;
     let file_path = download_dir.join(&filename);
-    let extract_dir = PycorsPathsFromEnv::new().extracted();
+    let extract_dir = PycorsPathsProviderFromEnv::new().extracted();
 
     let line_header = "[2/15] Extract";
 
@@ -74,7 +70,7 @@ pub fn compile_source(
 ) -> Result<()> {
     // Compilation
 
-    let install_dir = PycorsPathsFromEnv::new().install_dir(version);
+    let install_dir = PycorsPathsProviderFromEnv::new().install_dir(version);
 
     #[cfg_attr(not(macos), allow(unused_mut))]
     let mut configure_args = vec![
@@ -128,7 +124,9 @@ pub fn compile_source(
 
     let basename = utils::build_basename(&version)
         .with_context(|| format!("Failed to build basename from version {}", version))?;
-    let extract_dir = PycorsPathsFromEnv::new().extracted().join(&basename);
+    let extract_dir = PycorsPathsProviderFromEnv::new()
+        .extracted()
+        .join(&basename);
 
     utils::run_cmd_template(
         &version,
@@ -163,7 +161,7 @@ pub fn compile_source(
     }
 
     // Create symbolic links from binaries with `3` suffix
-    let bin_dir = PycorsPathsFromEnv::new().bin_dir(&version);
+    let bin_dir = PycorsPathsProviderFromEnv::new().bin_dir(&version);
     let basenames_to_link = &[
         "easy_install-###",
         "idle###",

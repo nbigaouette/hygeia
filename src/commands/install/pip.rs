@@ -10,10 +10,7 @@ use semver::Version;
 use crate::{
     commands,
     dir_monitor::DirectoryMonitor,
-    utils::{
-        self,
-        directory::{PycorsPaths, PycorsPathsFromEnv},
-    },
+    utils::{self, directory::PycorsPathsProviderFromEnv},
     Result, EXECUTABLE_NAME,
 };
 
@@ -33,13 +30,13 @@ pub fn install_extra_pip_packages(
     {
         let mut to_pip_installs: Vec<String> = Vec::new();
 
-        let bin_dir = PycorsPathsFromEnv::new().bin_dir(&version);
+        let bin_dir = PycorsPathsProviderFromEnv::new().bin_dir(&version);
         let mut bin_dir_monitor = DirectoryMonitor::new(&bin_dir)?;
 
         if install_extra_packages.install_extra_packages {
             to_pip_installs.extend(
                 load_extra_packages_to_install_from_file(
-                    PycorsPathsFromEnv::new().default_extra_package_file(),
+                    PycorsPathsProviderFromEnv::new().default_extra_package_file(),
                 )?
                 .into_iter(),
             );
@@ -84,7 +81,7 @@ pub fn install_extra_pip_packages(
             .show_defaults()
             .confirm()
         {
-            let install_dir = PycorsPathsFromEnv::new().install_dir(version);
+            let install_dir = PycorsPathsProviderFromEnv::new().install_dir(version);
             let python_major_bin = install_dir.join(format!(
                 "python{}{}{}",
                 version.major,
@@ -122,7 +119,7 @@ pub fn install_extra_pip_packages(
         let new_bin_files: Vec<_> = bin_dir_monitor.check()?.collect();
 
         // Create a hard-link for the new bins
-        let shim_dir = PycorsPathsFromEnv::new().shims();
+        let shim_dir = PycorsPathsProviderFromEnv::new().shims();
         let executable_path = shim_dir.join(EXECUTABLE_NAME);
         for new_bin_file_path in new_bin_files {
             match new_bin_file_path.file_name() {

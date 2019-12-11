@@ -13,7 +13,9 @@ use thiserror::Error;
 use url::Url;
 
 use crate::{
-    constants::PYTHON_BASE_URL, download::download_to_string, utils::directory::PycorsPaths,
+    constants::PYTHON_BASE_URL,
+    download::download_to_string,
+    utils::directory::{PycorsHomeProviderTrait, PycorsPathsProvider},
 };
 
 // FIXME: Pre-releases are available inside 'https://www.python.org/ftp/python/MAJOR.MINOR.PATCH'
@@ -65,9 +67,12 @@ pub struct AvailableToolchainsCache {
 }
 
 impl AvailableToolchainsCache {
-    pub fn new<P, D>(paths_provider: &P, downloader: &D) -> Result<AvailableToolchainsCache>
+    pub fn new<P, D>(
+        paths_provider: &PycorsPathsProvider<P>,
+        downloader: &D,
+    ) -> Result<AvailableToolchainsCache>
     where
-        P: PycorsPaths,
+        P: PycorsHomeProviderTrait,
         D: ToolchainsCacheFetch,
     {
         log::debug!("Initializing cache...");
@@ -100,9 +105,12 @@ impl AvailableToolchainsCache {
         Ok(cache)
     }
 
-    fn create<P, D>(paths_provider: &P, downloader: &D) -> Result<AvailableToolchainsCache>
+    fn create<P, D>(
+        paths_provider: &PycorsPathsProvider<P>,
+        downloader: &D,
+    ) -> Result<AvailableToolchainsCache>
     where
-        P: PycorsPaths,
+        P: PycorsHomeProviderTrait,
         D: ToolchainsCacheFetch,
     {
         let mut cache = AvailableToolchainsCache {
@@ -113,9 +121,13 @@ impl AvailableToolchainsCache {
         Ok(cache)
     }
 
-    pub fn update<P, D>(&mut self, paths_provider: &P, downloader: &D) -> Result<()>
+    pub fn update<P, D>(
+        &mut self,
+        paths_provider: &PycorsPathsProvider<P>,
+        downloader: &D,
+    ) -> Result<()>
     where
-        P: PycorsPaths,
+        P: PycorsHomeProviderTrait,
         D: ToolchainsCacheFetch,
     {
         self.last_updated = Utc::now();

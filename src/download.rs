@@ -12,10 +12,7 @@ use url::Url;
 
 use crate::{
     os::build_filename,
-    utils::{
-        self,
-        directory::{PycorsPaths, PycorsPathsFromEnv},
-    },
+    utils::{self, directory::PycorsPathsProviderFromEnv},
     Result,
 };
 
@@ -29,7 +26,7 @@ where
 
 pub async fn download_source(version: &Version) -> Result<()> {
     let url = build_url(&version)?;
-    let download_dir = PycorsPathsFromEnv::new().downloaded();
+    let download_dir = PycorsPathsProviderFromEnv::new().downloaded();
     download_to_path(&url, download_dir).await
 }
 

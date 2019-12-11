@@ -17,7 +17,7 @@ use crate::{os, toolchain::installed::InstalledToolchain, Result};
 
 pub mod directory;
 
-use directory::{PycorsPaths, PycorsPathsFromEnv};
+use directory::PycorsPathsProviderFromEnv;
 
 pub fn path_exists<P: AsRef<Path>>(path: P) -> bool {
     fs::metadata(path).is_ok()
@@ -222,7 +222,7 @@ where
     S: AsRef<std::ffi::OsStr> + std::fmt::Debug,
     P: AsRef<Path>,
 {
-    let logs_dir = PycorsPathsFromEnv::new().logs();
+    let logs_dir = PycorsPathsProviderFromEnv::new().logs();
 
     // FIXME: Extract generics part to own function to reduce bloat
     let cwd = cwd.as_ref();
@@ -627,7 +627,7 @@ mod tests {
         let args = &["-V"];
         let cwd = ".";
 
-        let expected_file_path = PycorsPathsFromEnv::new()
+        let expected_file_path = PycorsPathsProviderFromEnv::new()
             .logs()
             .join("Python_v0.0.0_step_0_utils__tests__run_cmd_template_success.log");
         if expected_file_path.exists() {
@@ -662,7 +662,7 @@ mod tests {
         let args = &["-V"];
         let cwd = ".";
 
-        let expected_file_path = PycorsPathsFromEnv::new()
+        let expected_file_path = PycorsPathsProviderFromEnv::new()
             .logs()
             .join("Python_v0.0.0_step_0_utils__tests__run_cmd_template_fail_stdout.log");
         if expected_file_path.exists() {
@@ -694,7 +694,7 @@ mod tests {
         let args = &["non-existent-subcommand"];
         let cwd = ".";
 
-        let expected_file_path = PycorsPathsFromEnv::new()
+        let expected_file_path = PycorsPathsProviderFromEnv::new()
             .logs()
             .join("Python_v0.0.0_step_0_utils__tests__run_cmd_template_fail_stderr.log");
         if expected_file_path.exists() {

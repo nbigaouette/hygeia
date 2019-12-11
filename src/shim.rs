@@ -10,7 +10,7 @@ use crate::{
     os,
     toolchain::{installed::InstalledToolchain, CompatibleToolchainBuilder},
     utils,
-    utils::directory::{PycorsPaths, PycorsPathsFromEnv},
+    utils::directory::PycorsPathsProviderFromEnv,
     EXECUTABLE_NAME,
 };
 
@@ -61,7 +61,7 @@ where
         tmp.extend_from_slice(&current_paths);
         // Delete the shims path from the list
         // This should prevent calling our shims by accident.
-        let shims_dir = PycorsPathsFromEnv::new().shims();
+        let shims_dir = PycorsPathsProviderFromEnv::new().shims();
         tmp.retain(|x| *x != shims_dir);
         tmp
     };
@@ -83,7 +83,7 @@ where
     let new_bin_files: Vec<_> = bin_dir_monitor.check()?.collect();
 
     // Create a hard-link for the new bins
-    let shim_dir = PycorsPathsFromEnv::new().shims();
+    let shim_dir = PycorsPathsProviderFromEnv::new().shims();
     let executable_path = shim_dir.join(EXECUTABLE_NAME);
     for new_bin_file_path in new_bin_files {
         match new_bin_file_path.file_name() {
