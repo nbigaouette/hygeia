@@ -228,8 +228,6 @@ mod tests {
 
     #[test]
     fn cache_new_empty() {
-        // crate::tests::init_logger();
-
         let pycors_home = temp_dir().join("cache_from_env");
         let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
@@ -288,6 +286,8 @@ mod tests {
 
     #[test]
     fn cache_corrupted() {
+        crate::tests::init_logger();
+
         let pycors_home = temp_dir().join("cache_corrupted");
         let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
@@ -298,7 +298,7 @@ mod tests {
 
         let mut mock = MockPycorsHomeProviderTrait::new();
         mock.expect_home_env_variable()
-            .times(2 + 1) // +1 since we later get the cache file
+            .times(3 + 1) // +1 since we later get the cache file
             .return_const(mocked_pycors_home.clone());
         let paths_provider = PycorsPathsProvider::from(mock);
         let cache_file = paths_provider.available_toolchains_cache_file();
@@ -320,9 +320,48 @@ mod tests {
         // Let's create the cache for real
         let mut mock = MockToolchainsCacheFetch::new();
         mock.expect_get()
-            .times(0) // Cache file is up to date, no download required.
+            .times(1) // Cache file is corrupted, new download required.
             .returning(|| Ok(INDEX_HTML.to_string()));
-        // let _cache = AvailableToolchainsCache::new(&paths_provider, &mock).unwrap();
+        let _cache = AvailableToolchainsCache::new(&paths_provider, &mock).unwrap();
+    }
+
+    #[test]
+    fn cache_outdated() {
+        crate::tests::init_logger();
+
+        let pycors_home = temp_dir().join("cache_outdated");
+        let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+
+        // The test expects an empty directory
+        if pycors_home.exists() {
+            fs::remove_dir_all(&pycors_home).unwrap();
+        }
+
+        let mut mock = MockPycorsHomeProviderTrait::new();
+        mock.expect_home_env_variable()
+            .times(3 + 1) // +1 since we later get the cache file
+            .return_const(mocked_pycors_home.clone());
+        let paths_provider = PycorsPathsProvider::from(mock);
+        let cache_file = paths_provider.available_toolchains_cache_file();
+
+        // Save a dummy cache
+        // NOTE: Since we call a method on 'paths_provider', this will increment the mock count
+        let dummy_cache = AvailableToolchainsCache {
+            last_updated: Utc::now() - Duration::days(11),
+            available: Vec::new(),
+        };
+        let cache_json = serde_json::to_string(&dummy_cache).unwrap();
+        fs::create_dir_all(cache_file.parent().unwrap()).unwrap();
+        let mut f = File::create(cache_file).unwrap();
+        let cache_bytes = cache_json.as_bytes();
+        // Save the cache
+        f.write_all(&cache_bytes).unwrap();
+
+        let mut mock = MockToolchainsCacheFetch::new();
+        mock.expect_get()
+            .times(1) // Cache file is outdated, new download required.
+            .returning(|| Ok(INDEX_HTML.to_string()));
+        let _cache = AvailableToolchainsCache::new(&paths_provider, &mock).unwrap();
     }
 
     #[test]
