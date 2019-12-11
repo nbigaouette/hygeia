@@ -5,7 +5,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{anyhow, Result};
+use anyhow::Context;
 use flate2::read::GzDecoder;
 use semver::Version;
 use tar::Archive;
@@ -13,11 +13,8 @@ use tar::Archive;
 use crate::{
     commands::{self, install::pip::install_extra_pip_packages},
     os::build_filename,
-    utils::{
-        self,
-        directory::{PycorsPaths, PycorsPathsFromEnv},
-        SpinnerMessage,
-    },
+    utils::{self, directory::PycorsPathsProviderFromEnv, SpinnerMessage},
+    Result,
 };
 
 #[cfg_attr(windows, allow(dead_code))]
@@ -25,29 +22,34 @@ pub fn install_package(
     version_to_install: &Version,
     install_extra_packages: Option<&commands::InstallExtraPackagesOptions>,
 ) -> Result<()> {
-    extract_source(&version_to_install)?;
-    compile_source(&version_to_install, install_extra_packages)?;
+    extract_source(&version_to_install).with_context(|| "Failed to extract source")?;
+    compile_source(&version_to_install, install_extra_packages)
+        .with_context(|| "Failed to compile source")?;
     Ok(())
 }
 
 #[cfg_attr(windows, allow(dead_code))]
 pub fn extract_source(version: &Version) -> Result<()> {
-    let download_dir = PycorsPathsFromEnv::new().downloaded();
-    let filename = build_filename(&version)?;
+    let download_dir = PycorsPathsProviderFromEnv::new().downloaded();
+    let filename = build_filename(&version)
+        .with_context(|| format!("Failed to build filename from version {}", version))?;
     let file_path = download_dir.join(&filename);
-    let extract_dir = PycorsPathsFromEnv::new().extracted();
+    let extract_dir = PycorsPathsProviderFromEnv::new().extracted();
 
     let line_header = "[2/15] Extract";
 
     let message = format!("{}ing {:?}...", line_header, file_path);
 
-    let tar_gz = File::open(&file_path)?;
+    let tar_gz =
+        File::open(&file_path).with_context(|| format!("Failed to open file {:?}", file_path))?;
 
     let (tx, child) = utils::spinner_in_thread(message);
 
     let tar = GzDecoder::new(tar_gz);
     let mut archive = Archive::new(tar);
-    archive.unpack(extract_dir)?;
+    archive
+        .unpack(extract_dir)
+        .with_context(|| format!("Failed to unpack archive {:?}", file_path))?;
 
     // Send signal to thread to stop
     let message = format!("{}ion of {:?} done.", line_header, file_path);
@@ -56,7 +58,7 @@ pub fn extract_source(version: &Version) -> Result<()> {
 
     child
         .join()
-        .map_err(|e| anyhow!("Failed to join threads: {:?}", e))?;
+        .map_err(|e| anyhow::anyhow!("Failed to join threads: {:?}", e))?;
 
     Ok(())
 }
@@ -68,16 +70,16 @@ pub fn compile_source(
 ) -> Result<()> {
     // Compilation
 
-    let original_current_dir = env::current_dir()?;
-
-    let install_dir = PycorsPathsFromEnv::new().install_dir(version);
+    let install_dir = PycorsPathsProviderFromEnv::new().install_dir(version);
 
     #[cfg_attr(not(macos), allow(unused_mut))]
     let mut configure_args = vec![
         "--prefix".to_string(),
         install_dir
             .to_str()
-            .ok_or_else(|| anyhow!("Error converting install dir {:?} to `str`", install_dir))?
+            .ok_or_else(|| {
+                anyhow::anyhow!("Error converting install dir {:?} to `str`", install_dir)
+            })?
             .to_string(),
         "--enable-optimizations".to_string(),
     ];
@@ -109,7 +111,8 @@ pub fn compile_source(
                 .arg("--show-sdk-path")
                 .output()?
                 .stdout,
-        )?;
+        )
+        .with_context(|| "Failed to run command 'xrun' to find macOS SDK path")?;
         cflags.push(format!("-I{}/usr/include", macos_sdk_path.trim()));
 
         cppflags.push("-I/opt/X11/include".into());
@@ -119,8 +122,11 @@ pub fn compile_source(
     env::set_var("CPPFLAGS", cppflags.join(" "));
     env::set_var("LDFLAGS", ldflags.join(" "));
 
-    let basename = utils::build_basename(&version)?;
-    let extract_dir = PycorsPathsFromEnv::new().extracted().join(&basename);
+    let basename = utils::build_basename(&version)
+        .with_context(|| format!("Failed to build basename from version {}", version))?;
+    let extract_dir = PycorsPathsProviderFromEnv::new()
+        .extracted()
+        .join(&basename);
 
     utils::run_cmd_template(
         &version,
@@ -128,25 +134,34 @@ pub fn compile_source(
         "./configure",
         &configure_args,
         &extract_dir,
-    )?;
-    utils::run_cmd_template::<&str, &PathBuf>(&version, "[4/15] Make", "make", &[], &extract_dir)?;
+    )
+    .with_context(|| format!("Failed to run command ./configure {:?}", configure_args))?;
+    utils::run_cmd_template::<&str, &PathBuf>(&version, "[4/15] Make", "make", &[], &extract_dir)
+        .with_context(|| "Failed to run command 'make'")?;
     utils::run_cmd_template(
         &version,
         "[5/15] Make install",
         "make",
         &["install"],
         &extract_dir,
-    )?;
+    )
+    .with_context(|| "Failed to run command 'make install'")?;
 
     // Create a file in install directory to detect if we installed it ourselves
-    utils::create_info_file(&install_dir, version)?;
+    utils::create_info_file(&install_dir, version).with_context(|| {
+        format!(
+            "Failed create info file for version {} in {:?}",
+            version, install_dir
+        )
+    })?;
 
     if let Some(install_extra_packages) = install_extra_packages {
-        install_extra_pip_packages(&version, install_extra_packages)?;
+        install_extra_pip_packages(&version, install_extra_packages)
+            .with_context(|| "Failed to install extra pip packages")?;
     }
 
     // Create symbolic links from binaries with `3` suffix
-    let bin_dir = PycorsPathsFromEnv::new().bin_dir(&version);
+    let bin_dir = PycorsPathsProviderFromEnv::new().bin_dir(&version);
     let basenames_to_link = &[
         "easy_install-###",
         "idle###",
@@ -159,13 +174,18 @@ pub fn compile_source(
     ];
     let ver_maj_min = format!("{}.{}", version.major, version.minor);
     let ver_maj = format!("{}", version.major);
-    env::set_current_dir(&bin_dir)?;
+    let original_current_dir =
+        env::current_dir().with_context(|| "Failed to get current working directory")?;
+    env::set_current_dir(&bin_dir)
+        .with_context(|| format!("Failed to set current working directory to {:?}", bin_dir))?;
     for basename_to_link in basenames_to_link {
         let basename_src = basename_to_link.replace("###", &ver_maj_min);
         // Create a hard link to the file containing the version (major.minor)
         let basename_dest = basename_to_link.replace("-###", "").replace("###", "");
         if Path::new(&basename_dest).exists() {
-            fs::remove_file(&basename_dest)?;
+            fs::remove_file(&basename_dest).with_context(|| {
+                format!("Failed to delete previous hard link {:?}", basename_dest)
+            })?;
         }
         log::debug!(
             "Creating hard-link from {:?} to {:?}",
@@ -193,7 +213,12 @@ pub fn compile_source(
         "Changing back current directory to {:?}",
         original_current_dir
     );
-    env::set_current_dir(&original_current_dir)?;
+    env::set_current_dir(&original_current_dir).with_context(|| {
+        format!(
+            "Failed to set current working directory back to original {:?}",
+            original_current_dir
+        )
+    })?;
 
     Ok(())
 }

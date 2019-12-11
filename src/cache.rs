@@ -15,7 +15,7 @@ use url::Url;
 use crate::{
     constants::PYTHON_BASE_URL,
     download::download_to_string,
-    utils::directory::{PycorsPaths, PycorsPathsFromEnv},
+    utils::directory::{PycorsHomeProviderTrait, PycorsPathsProvider},
 };
 
 // FIXME: Pre-releases are available inside 'https://www.python.org/ftp/python/MAJOR.MINOR.PATCH'
@@ -31,6 +31,21 @@ pub enum CacheError {
     NoCompatibleVersionFound,
 }
 
+#[cfg_attr(test, mockall::automock)]
+pub trait ToolchainsCacheFetch {
+    fn get(&self) -> Result<String>;
+}
+
+pub struct ToolchainsCacheFetchOnline;
+
+impl ToolchainsCacheFetch for ToolchainsCacheFetchOnline {
+    fn get(&self) -> Result<String> {
+        let rt = tokio::runtime::Runtime::new()?;
+        let index_html: String = rt.block_on(download_to_string(PYTHON_BASE_URL))?;
+        Ok(index_html)
+    }
+}
+
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct AvailableToolchain {
     pub version: Version,
@@ -44,12 +59,17 @@ pub struct AvailableToolchainsCache {
 }
 
 impl AvailableToolchainsCache {
-    pub fn new() -> Result<AvailableToolchainsCache> {
+    pub fn new<P, D>(
+        paths_provider: &PycorsPathsProvider<P>,
+        downloader: &D,
+    ) -> Result<AvailableToolchainsCache>
+    where
+        P: PycorsHomeProviderTrait,
+        D: ToolchainsCacheFetch,
+    {
         log::debug!("Initializing cache...");
 
-        let paths_provider = PycorsPathsFromEnv::new();
-
-        let cache_dir = PycorsPathsFromEnv::new().cache();
+        let cache_dir = paths_provider.cache();
         if !cache_dir.exists() {
             create_dir_all(&cache_dir)?
         }
@@ -57,44 +77,68 @@ impl AvailableToolchainsCache {
         let cache_file = paths_provider.available_toolchains_cache_file();
         let cache: AvailableToolchainsCache = if cache_file.exists() {
             let cache_json = read_to_string(&cache_file)?;
-            let mut cache: AvailableToolchainsCache = serde_json::from_str(&cache_json)?;
-            let cache_age = Utc::now() - cache.last_updated;
-            let cache_age_days = cache_age.num_days();
-            if cache_age_days > 10 {
-                log::info!(
-                    "Cache is older than 10 days (age: {} days). Updating...",
-                    cache_age_days
-                );
-                cache.update()?;
-            } else {
-                log::info!("Using cache ({} days old)", cache_age_days);
+            match serde_json::from_str::<AvailableToolchainsCache>(&cache_json) {
+                Ok(mut cache) => {
+                    let cache_age = Utc::now() - cache.last_updated;
+                    let cache_age_days = cache_age.num_days();
+                    if cache_age_days > 10 {
+                        log::info!(
+                            "Cache is older than 10 days (age: {} days). Updating...",
+                            cache_age_days
+                        );
+                        cache.update(paths_provider, downloader)?;
+                    } else {
+                        log::info!("Using cache ({} days old)", cache_age_days);
+                    }
+                    cache
+                }
+                Err(e) => {
+                    log::error!(
+                        "Corrupted cache on disk ({:?}), recreating: {:?}",
+                        cache_file,
+                        e
+                    );
+                    AvailableToolchainsCache::create(paths_provider, downloader)?
+                }
             }
-            cache
         } else {
-            AvailableToolchainsCache::create()?
+            AvailableToolchainsCache::create(paths_provider, downloader)?
         };
 
         Ok(cache)
     }
 
-    fn create() -> Result<AvailableToolchainsCache> {
+    fn create<P, D>(
+        paths_provider: &PycorsPathsProvider<P>,
+        downloader: &D,
+    ) -> Result<AvailableToolchainsCache>
+    where
+        P: PycorsHomeProviderTrait,
+        D: ToolchainsCacheFetch,
+    {
         let mut cache = AvailableToolchainsCache {
             last_updated: Utc::now(),
             available: Vec::new(),
         };
-        cache.update()?;
+        cache.update(paths_provider, downloader)?;
         Ok(cache)
     }
 
-    pub fn update(&mut self) -> Result<()> {
+    pub fn update<P, D>(
+        &mut self,
+        paths_provider: &PycorsPathsProvider<P>,
+        downloader: &D,
+    ) -> Result<()>
+    where
+        P: PycorsHomeProviderTrait,
+        D: ToolchainsCacheFetch,
+    {
         self.last_updated = Utc::now();
-        let rt = tokio::runtime::Runtime::new()?;
-        let index_html: String = rt.block_on(download_to_string(PYTHON_BASE_URL))?;
+        let index_html: String = downloader.get()?;
 
         self.available = parse_index_html(&index_html)?;
 
         let cache_json = serde_json::to_string(&self)?;
-        let paths_provider = PycorsPathsFromEnv::new();
         let cache_file = paths_provider.available_toolchains_cache_file();
         let mut output = BufWriter::new(File::create(&cache_file)?);
         output.write_all(cache_json.as_bytes())?;
@@ -166,13 +210,167 @@ fn parse_index_html(index_html: &str) -> Result<Vec<AvailableToolchain>> {
 
 #[cfg(test)]
 mod tests {
+    use std::{env, fs, path::PathBuf};
+
+    use chrono::Duration;
+
     use super::*;
+    use crate::utils::directory::MockPycorsHomeProviderTrait;
+
+    use mockall::predicate::*;
+
+    const INDEX_HTML: &str = include_str!("../tests/fixtures/index.html");
+
+    fn temp_dir() -> PathBuf {
+        env::temp_dir()
+            .join(crate::constants::EXECUTABLE_NAME)
+            .join("cache")
+            .join("tests")
+    }
+
+    #[test]
+    fn cache_new_empty() {
+        let pycors_home = temp_dir().join("cache_from_env");
+        let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+
+        // The test expects an empty directory
+        if pycors_home.exists() {
+            fs::remove_dir_all(&pycors_home).unwrap();
+        }
+
+        let mut mock = MockPycorsHomeProviderTrait::new();
+        mock.expect_home_env_variable()
+            .times(3)
+            .return_const(mocked_pycors_home.clone());
+
+        let paths_provider = PycorsPathsProvider::from(mock);
+
+        let mut mock = MockToolchainsCacheFetch::new();
+        mock.expect_get()
+            .times(1)
+            .returning(|| Ok(INDEX_HTML.to_string()));
+        let _cache = AvailableToolchainsCache::new(&paths_provider, &mock).unwrap();
+    }
+
+    #[test]
+    fn cache_up_to_date() {
+        let pycors_home = temp_dir().join("cache_up_to_date");
+        let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+
+        // The test expects an empty directory
+        if pycors_home.exists() {
+            fs::remove_dir_all(&pycors_home).unwrap();
+        }
+
+        let mut mock = MockPycorsHomeProviderTrait::new();
+        mock.expect_home_env_variable()
+            .times(2 + 1) // +1 since we later get the cache file
+            .return_const(mocked_pycors_home.clone());
+        let paths_provider = PycorsPathsProvider::from(mock);
+        let cache_file = paths_provider.available_toolchains_cache_file();
+
+        // Save a dummy cache
+        // NOTE: Since we call a method on 'paths_provider', this will increment the mock count
+        let dummy_cache = AvailableToolchainsCache {
+            last_updated: Utc::now() - Duration::days(1),
+            available: Vec::new(),
+        };
+        let cache_json = serde_json::to_string(&dummy_cache).unwrap();
+        fs::create_dir_all(cache_file.parent().unwrap()).unwrap();
+        let mut f = File::create(cache_file).unwrap();
+        f.write_all(cache_json.as_bytes()).unwrap();
+
+        // Let's create the cache for real
+        let mut mock = MockToolchainsCacheFetch::new();
+        mock.expect_get()
+            .times(0) // Cache file is up to date, no download required.
+            .returning(|| Ok(INDEX_HTML.to_string()));
+        let _cache = AvailableToolchainsCache::new(&paths_provider, &mock).unwrap();
+    }
+
+    #[test]
+    fn cache_corrupted() {
+        crate::tests::init_logger();
+
+        let pycors_home = temp_dir().join("cache_corrupted");
+        let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+
+        // The test expects an empty directory
+        if pycors_home.exists() {
+            fs::remove_dir_all(&pycors_home).unwrap();
+        }
+
+        let mut mock = MockPycorsHomeProviderTrait::new();
+        mock.expect_home_env_variable()
+            .times(3 + 1) // +1 since we later get the cache file
+            .return_const(mocked_pycors_home.clone());
+        let paths_provider = PycorsPathsProvider::from(mock);
+        let cache_file = paths_provider.available_toolchains_cache_file();
+
+        // Save a dummy cache
+        // NOTE: Since we call a method on 'paths_provider', this will increment the mock count
+        let dummy_cache = AvailableToolchainsCache {
+            last_updated: Utc::now() - Duration::days(1),
+            available: Vec::new(),
+        };
+        let cache_json = serde_json::to_string(&dummy_cache).unwrap();
+        fs::create_dir_all(cache_file.parent().unwrap()).unwrap();
+        let mut f = File::create(cache_file).unwrap();
+        let cache_bytes = cache_json.as_bytes();
+        // Save a corrupted version of the cache
+        f.write_all(&cache_bytes[0..(cache_bytes.len() / 2)])
+            .unwrap();
+
+        // Let's create the cache for real
+        let mut mock = MockToolchainsCacheFetch::new();
+        mock.expect_get()
+            .times(1) // Cache file is corrupted, new download required.
+            .returning(|| Ok(INDEX_HTML.to_string()));
+        let _cache = AvailableToolchainsCache::new(&paths_provider, &mock).unwrap();
+    }
+
+    #[test]
+    fn cache_outdated() {
+        crate::tests::init_logger();
+
+        let pycors_home = temp_dir().join("cache_outdated");
+        let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+
+        // The test expects an empty directory
+        if pycors_home.exists() {
+            fs::remove_dir_all(&pycors_home).unwrap();
+        }
+
+        let mut mock = MockPycorsHomeProviderTrait::new();
+        mock.expect_home_env_variable()
+            .times(3 + 1) // +1 since we later get the cache file
+            .return_const(mocked_pycors_home.clone());
+        let paths_provider = PycorsPathsProvider::from(mock);
+        let cache_file = paths_provider.available_toolchains_cache_file();
+
+        // Save a dummy cache
+        // NOTE: Since we call a method on 'paths_provider', this will increment the mock count
+        let dummy_cache = AvailableToolchainsCache {
+            last_updated: Utc::now() - Duration::days(11),
+            available: Vec::new(),
+        };
+        let cache_json = serde_json::to_string(&dummy_cache).unwrap();
+        fs::create_dir_all(cache_file.parent().unwrap()).unwrap();
+        let mut f = File::create(cache_file).unwrap();
+        let cache_bytes = cache_json.as_bytes();
+        // Save the cache
+        f.write_all(&cache_bytes).unwrap();
+
+        let mut mock = MockToolchainsCacheFetch::new();
+        mock.expect_get()
+            .times(1) // Cache file is outdated, new download required.
+            .returning(|| Ok(INDEX_HTML.to_string()));
+        let _cache = AvailableToolchainsCache::new(&paths_provider, &mock).unwrap();
+    }
 
     #[test]
     fn parse_html() {
-        let index_html = include_str!("../tests/fixtures/index.html");
-
-        let parsed: Vec<AvailableToolchain> = parse_index_html(index_html).unwrap();
+        let parsed: Vec<AvailableToolchain> = parse_index_html(INDEX_HTML).unwrap();
 
         let url =
             Url::parse(PYTHON_BASE_URL).expect("Constant 'PYTHON_BASE_URL' should be parsable");

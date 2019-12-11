@@ -1,9 +1,10 @@
 use std::{
     collections::HashSet,
+    fs,
     path::{Path, PathBuf},
 };
 
-use crate::{utils, Result};
+use crate::Result;
 
 #[derive(Debug)]
 pub struct DirectoryMonitor {
@@ -13,6 +14,21 @@ pub struct DirectoryMonitor {
     files_set_after: HashSet<PathBuf>,
 }
 
+fn dir_files_set<P>(dir: P) -> Result<HashSet<PathBuf>>
+where
+    P: AsRef<Path>,
+{
+    Ok(fs::read_dir(dir.as_ref())?
+        .filter_map(|entry| match entry {
+            Ok(dir) => Some(dir.path()),
+            Err(err) => {
+                log::error!("Reading failed: {:?}", err);
+                None
+            }
+        })
+        .collect())
+}
+
 impl DirectoryMonitor {
     pub fn new<P>(dir: P) -> Result<DirectoryMonitor>
     where
@@ -20,13 +36,13 @@ impl DirectoryMonitor {
     {
         Ok(DirectoryMonitor {
             directory: dir.as_ref().to_path_buf(),
-            files_set_before: utils::dir_files_set(dir)?,
+            files_set_before: dir_files_set(dir)?,
             files_set_after: HashSet::new(),
         })
     }
 
     pub fn check(&mut self) -> Result<impl Iterator<Item = &PathBuf>> {
-        self.files_set_after = utils::dir_files_set(&self.directory)?;
+        self.files_set_after = dir_files_set(&self.directory)?;
         Ok(self.files_set_after.difference(&self.files_set_before))
     }
 }

@@ -9,11 +9,12 @@ use semver::{Version, VersionReq};
 use thiserror::Error;
 
 use crate::{
-    cache::AvailableToolchainsCache,
+    cache::{AvailableToolchainsCache, ToolchainsCacheFetchOnline},
     commands,
     constants::{EXECUTABLE_NAME, TOOLCHAIN_FILE},
     download::download_source,
     toolchain::{find_installed_toolchains, installed::InstalledToolchain, ToolchainFile},
+    utils::directory::PycorsPathsProviderFromEnv,
 };
 
 mod pip;
@@ -63,7 +64,9 @@ pub fn run(
         }
     };
 
-    let cache = AvailableToolchainsCache::new()?;
+    let paths_provider = PycorsPathsProviderFromEnv::new();
+    let downloader = ToolchainsCacheFetchOnline {};
+    let cache = AvailableToolchainsCache::new(&paths_provider, &downloader)?;
 
     let requested_version = cache.query(&requested_version_req)?;
 

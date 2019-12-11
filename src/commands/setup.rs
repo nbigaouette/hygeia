@@ -8,10 +8,7 @@ use structopt::clap::Shell;
 
 use crate::{
     commands,
-    utils::{
-        self,
-        directory::{PycorsPaths, PycorsPathsFromEnv},
-    },
+    utils::{self, directory::PycorsPathsProviderFromEnv},
     Result, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME_CONTENT,
 };
 
@@ -20,7 +17,7 @@ pub mod bash;
 pub fn run(shell: Shell) -> Result<()> {
     log::info!("Setting up the shim...");
 
-    let paths_provider = PycorsPathsFromEnv::new();
+    let paths_provider = PycorsPathsProviderFromEnv::new();
 
     // Create all required directories
     for dir in &[
@@ -94,7 +91,7 @@ pub fn run(shell: Shell) -> Result<()> {
     }
 
     let extra_packages_file_default_content = EXTRA_PACKAGES_FILENAME_CONTENT;
-    let output_filename = PycorsPathsFromEnv::new().default_extra_package_file();
+    let output_filename = PycorsPathsProviderFromEnv::new().default_extra_package_file();
     log::debug!(
         "Writing list of default packages to install to {:?}",
         output_filename

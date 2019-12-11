@@ -10,16 +10,54 @@ use crate::{
 fn dot_dir(name: &str) -> Option<PathBuf> {
     home_dir().map(|p| p.join(name))
 }
-
-pub trait PycorsPaths {
-    fn new() -> Self
-    where
-        Self: Sized;
-
+#[cfg_attr(test, mockall::automock)]
+pub trait PycorsHomeProviderTrait {
     fn home_env_variable(&self) -> Option<OsString>;
+}
 
-    fn config_home(&self) -> PathBuf {
-        let config_home_from_env = self.home_env_variable().map(PathBuf::from);
+pub struct PycorsPathsProvider<P>
+where
+    P: PycorsHomeProviderTrait,
+{
+    home_provider: P,
+}
+
+impl<P> PycorsHomeProviderTrait for PycorsPathsProvider<P>
+where
+    P: PycorsHomeProviderTrait,
+{
+    fn home_env_variable(&self) -> Option<OsString> {
+        self.home_provider.home_env_variable()
+    }
+}
+
+pub struct PycorsPathsProviderFromEnv;
+
+impl PycorsPathsProviderFromEnv {
+    pub fn new() -> PycorsPathsProvider<PycorsPathsProviderFromEnv> {
+        PycorsPathsProvider {
+            home_provider: PycorsPathsProviderFromEnv {},
+        }
+    }
+}
+
+impl PycorsHomeProviderTrait for PycorsPathsProviderFromEnv {
+    fn home_env_variable(&self) -> Option<OsString> {
+        env::var_os(constants::home_env_variable())
+    }
+}
+
+impl<P> PycorsPathsProvider<P>
+where
+    P: PycorsHomeProviderTrait,
+{
+    #[cfg(test)]
+    pub fn from(home_provider: P) -> Self {
+        PycorsPathsProvider { home_provider }
+    }
+
+    pub fn config_home(&self) -> PathBuf {
+        let config_home_from_env = self.home_provider.home_env_variable().map(PathBuf::from);
 
         let default_dot_dir = dot_dir(&DEFAULT_DOT_DIR);
 
@@ -30,64 +68,49 @@ pub trait PycorsPaths {
             .unwrap()
     }
 
-    fn default_extra_package_file(&self) -> PathBuf {
+    pub fn default_extra_package_file(&self) -> PathBuf {
         self.config_home().join(EXTRA_PACKAGES_FILENAME)
     }
 
-    fn cache(&self) -> PathBuf {
+    pub fn cache(&self) -> PathBuf {
         self.config_home().join("cache")
     }
 
-    fn installed(&self) -> PathBuf {
+    pub fn installed(&self) -> PathBuf {
         self.config_home().join("installed")
     }
 
-    fn logs(&self) -> PathBuf {
+    pub fn logs(&self) -> PathBuf {
         self.config_home().join("logs")
     }
 
-    fn shims(&self) -> PathBuf {
+    pub fn shims(&self) -> PathBuf {
         self.config_home().join("shims")
     }
 
-    fn downloaded(&self) -> PathBuf {
+    pub fn downloaded(&self) -> PathBuf {
         self.cache().join("downloaded")
     }
 
-    fn available_toolchains_cache_file(&self) -> PathBuf {
+    pub fn available_toolchains_cache_file(&self) -> PathBuf {
         self.cache().join(AVAILABLE_TOOLCHAIN_CACHE)
     }
 
-    fn extracted(&self) -> PathBuf {
+    pub fn extracted(&self) -> PathBuf {
         self.cache().join("extracted")
     }
 
-    fn install_dir(&self, version: &Version) -> PathBuf {
+    pub fn install_dir(&self, version: &Version) -> PathBuf {
         self.installed().join(format!("{}", version))
     }
 
     #[cfg(not(windows))]
-    fn bin_dir(&self, version: &Version) -> PathBuf {
+    pub fn bin_dir(&self, version: &Version) -> PathBuf {
         self.install_dir(version).join("bin")
     }
     #[cfg(windows)]
-    fn bin_dir(&self, version: &Version) -> PathBuf {
+    pub fn bin_dir(&self, version: &Version) -> PathBuf {
         self.install_dir(version)
-    }
-}
-
-pub struct PycorsPathsFromEnv;
-
-impl PycorsPaths for PycorsPathsFromEnv {
-    fn new() -> Self
-    where
-        Self: Sized,
-    {
-        PycorsPathsFromEnv {}
-    }
-
-    fn home_env_variable(&self) -> Option<OsString> {
-        env::var_os(constants::home_env_variable())
     }
 }
 
@@ -112,259 +135,460 @@ pub mod shell {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
+    use std::path::Path;
 
     use super::*;
 
-    pub struct PycorsPathsFromFakeEnv {
-        pub value: Option<OsString>,
+    fn temp_dir() -> PathBuf {
+        env::temp_dir()
+            .join(crate::constants::EXECUTABLE_NAME)
+            .join("directory")
+            .join("tests")
     }
 
-    impl PycorsPaths for PycorsPathsFromFakeEnv {
-        fn new() -> Self
-        where
-            Self: Sized,
-        {
-            PycorsPathsFromFakeEnv { value: None }
-        }
+    #[test]
+    fn pycors_paths_from_env() {
+        // Playing an env variables is subject to race conditions
+        // since tests are run in parallel. Simply call the constructor
+        // and the function.
+        let paths_provider: PycorsPathsProvider<PycorsPathsProviderFromEnv> =
+            PycorsPathsProviderFromEnv::new();
+        let _ = paths_provider.home_env_variable();
+    }
 
-        fn home_env_variable(&self) -> Option<OsString> {
-            self.value.clone()
-        }
+    #[test]
+    fn bash_dir_relative() {
+        assert_eq!(
+            shell::bash::config::dir_relative(),
+            Path::new("shell").join("bash")
+        );
+    }
+
+    #[test]
+    fn bash_file_path() {
+        assert_eq!(
+            shell::bash::config::file_path(),
+            Path::new("shell").join("bash").join("config.sh")
+        );
+    }
+
+    #[test]
+    fn bash_autocomplete() {
+        assert_eq!(
+            shell::bash::config::autocomplete(),
+            Path::new("shell").join("bash").join("completion.sh")
+        );
     }
 
     mod pycors_paths_trait {
         use super::*;
 
         #[test]
-        fn home_default() {
-            let paths_provider = PycorsPathsFromFakeEnv::new();
-            let to_validate = paths_provider.config_home();
+        fn home_provider_env() {
+            // FIXME: Detect if PYCORS_HOME is set, use it for 'expected' if set.
             let expected = dot_dir(DEFAULT_DOT_DIR).unwrap();
-            assert_eq!(to_validate, expected);
-        }
-
-        #[test]
-        fn home_from_env_variable() {
-            let mut paths_provider = PycorsPathsFromFakeEnv::new();
-            let tmp_dir = env::temp_dir();
-            paths_provider.value = Some(tmp_dir.clone().into_os_string());
-            let expected = tmp_dir;
+            let paths_provider = PycorsPathsProviderFromEnv::new();
             let to_validate = paths_provider.config_home();
             assert_eq!(to_validate, expected);
         }
 
         #[test]
-        fn default_extra_package_file_default() {
-            let paths_provider = PycorsPathsFromFakeEnv::new();
+        fn config_home_from_default() {
+            let pycors_home = dot_dir(DEFAULT_DOT_DIR).unwrap();
+
+            let mocked_pycors_home = None;
+
+            let expected = pycors_home;
+
+            let mut mock = MockPycorsHomeProviderTrait::new();
+            mock.expect_home_env_variable()
+                .times(1)
+                .return_const(mocked_pycors_home);
+
+            let paths_provider = PycorsPathsProvider::from(mock);
+            let to_validate = paths_provider.config_home();
+            assert_eq!(to_validate, expected);
+        }
+
+        #[test]
+        fn config_home_from_env_variable() {
+            let pycors_home = temp_dir().join("config_home_from_env_variable");
+
+            let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+
+            let expected = pycors_home;
+
+            let mut mock = MockPycorsHomeProviderTrait::new();
+            mock.expect_home_env_variable()
+                .times(1)
+                .return_const(mocked_pycors_home);
+
+            let paths_provider = PycorsPathsProvider::from(mock);
+            let to_validate = paths_provider.config_home();
+            assert_eq!(to_validate, expected);
+        }
+
+        #[test]
+        fn default_extra_package_file_from_default() {
+            let pycors_home = dot_dir(DEFAULT_DOT_DIR).unwrap();
+
+            let mocked_pycors_home = None;
+
+            let expected = pycors_home.join(EXTRA_PACKAGES_FILENAME);
+
+            let mut mock = MockPycorsHomeProviderTrait::new();
+            mock.expect_home_env_variable()
+                .times(1)
+                .return_const(mocked_pycors_home);
+
+            let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.default_extra_package_file();
-            let expected = dot_dir(DEFAULT_DOT_DIR)
-                .unwrap()
-                .join(EXTRA_PACKAGES_FILENAME);
             assert_eq!(to_validate, expected);
         }
 
         #[test]
-        fn default_extra_package_file_from_env() {
-            let mut paths_provider = PycorsPathsFromFakeEnv::new();
-            let tmp_dir = env::temp_dir();
-            paths_provider.value = Some(tmp_dir.clone().into_os_string());
-            let expected = tmp_dir.join(EXTRA_PACKAGES_FILENAME);
+        fn default_extra_package_file_from_env_variable() {
+            let pycors_home = temp_dir().join("default_extra_package_file_from_env");
+            let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+
+            let expected = pycors_home.join(EXTRA_PACKAGES_FILENAME);
+
+            let mut mock = MockPycorsHomeProviderTrait::new();
+            mock.expect_home_env_variable()
+                .times(1)
+                .return_const(mocked_pycors_home);
+
+            let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.default_extra_package_file();
             assert_eq!(to_validate, expected);
         }
 
         #[test]
-        fn cache_default() {
-            let paths_provider = PycorsPathsFromFakeEnv::new();
+        fn cache_from_default() {
+            let pycors_home = dot_dir(DEFAULT_DOT_DIR).unwrap();
+
+            let mocked_pycors_home = None;
+
+            let expected = pycors_home.join("cache");
+
+            let mut mock = MockPycorsHomeProviderTrait::new();
+            mock.expect_home_env_variable()
+                .times(1)
+                .return_const(mocked_pycors_home);
+
+            let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.cache();
-            let expected = dot_dir(DEFAULT_DOT_DIR).unwrap().join("cache");
             assert_eq!(to_validate, expected);
         }
 
         #[test]
-        fn cache_from_env() {
-            let mut paths_provider = PycorsPathsFromFakeEnv::new();
-            let tmp_dir = env::temp_dir();
-            paths_provider.value = Some(tmp_dir.clone().into_os_string());
-            let expected = tmp_dir.join("cache");
+        fn cache_from_env_variable() {
+            let pycors_home = temp_dir().join("cache_from_env");
+            let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+
+            let expected = pycors_home.join("cache");
+
+            let mut mock = MockPycorsHomeProviderTrait::new();
+            mock.expect_home_env_variable()
+                .times(1)
+                .return_const(mocked_pycors_home);
+
+            let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.cache();
             assert_eq!(to_validate, expected);
         }
 
         #[test]
-        fn installed_default() {
-            let paths_provider = PycorsPathsFromFakeEnv::new();
+        fn installed_from_default() {
+            let pycors_home = dot_dir(DEFAULT_DOT_DIR).unwrap();
+
+            let mocked_pycors_home = None;
+
+            let expected = pycors_home.join("installed");
+
+            let mut mock = MockPycorsHomeProviderTrait::new();
+            mock.expect_home_env_variable()
+                .times(1)
+                .return_const(mocked_pycors_home);
+
+            let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.installed();
-            let expected = dot_dir(DEFAULT_DOT_DIR).unwrap().join("installed");
             assert_eq!(to_validate, expected);
         }
 
         #[test]
-        fn installed_from_env() {
-            let mut paths_provider = PycorsPathsFromFakeEnv::new();
-            let tmp_dir = env::temp_dir();
-            paths_provider.value = Some(tmp_dir.clone().into_os_string());
+        fn installed_from_env_variable() {
+            let pycors_home = temp_dir().join("installed_from_env");
+            let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+
+            let expected = pycors_home.join("installed");
+
+            let mut mock = MockPycorsHomeProviderTrait::new();
+            mock.expect_home_env_variable()
+                .times(1)
+                .return_const(mocked_pycors_home);
+
+            let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.installed();
-            let expected = tmp_dir.join("installed");
             assert_eq!(to_validate, expected);
         }
 
         #[test]
-        fn logs_default() {
-            let paths_provider = PycorsPathsFromFakeEnv::new();
-            let expected = dot_dir(DEFAULT_DOT_DIR).unwrap().join("logs");
+        fn logs_from_default() {
+            let pycors_home = dot_dir(DEFAULT_DOT_DIR).unwrap();
+
+            let mocked_pycors_home = None;
+
+            let expected = pycors_home.join("logs");
+
+            let mut mock = MockPycorsHomeProviderTrait::new();
+            mock.expect_home_env_variable()
+                .times(1)
+                .return_const(mocked_pycors_home);
+
+            let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.logs();
             assert_eq!(to_validate, expected);
         }
 
         #[test]
-        fn logs_from_env() {
-            let mut paths_provider = PycorsPathsFromFakeEnv::new();
-            let tmp_dir = env::temp_dir();
-            paths_provider.value = Some(tmp_dir.clone().into_os_string());
-            let expected = tmp_dir.join("logs");
+        fn logs_from_env_variable() {
+            let pycors_home = temp_dir().join("logs_from_env");
+            let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+
+            let expected = pycors_home.join("logs");
+
+            let mut mock = MockPycorsHomeProviderTrait::new();
+            mock.expect_home_env_variable()
+                .times(1)
+                .return_const(mocked_pycors_home);
+
+            let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.logs();
             assert_eq!(to_validate, expected);
         }
 
         #[test]
-        fn shims_default() {
-            let paths_provider = PycorsPathsFromFakeEnv::new();
+        fn shims_from_default() {
+            let pycors_home = dot_dir(DEFAULT_DOT_DIR).unwrap();
+
+            let mocked_pycors_home = None;
+
+            let expected = pycors_home.join("shims");
+
+            let mut mock = MockPycorsHomeProviderTrait::new();
+            mock.expect_home_env_variable()
+                .times(1)
+                .return_const(mocked_pycors_home);
+
+            let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.shims();
-            let expected = dot_dir(DEFAULT_DOT_DIR).unwrap().join("shims");
             assert_eq!(to_validate, expected);
         }
 
         #[test]
-        fn shims_from_env() {
-            let mut paths_provider = PycorsPathsFromFakeEnv::new();
-            let tmp_dir = env::temp_dir();
-            paths_provider.value = Some(tmp_dir.clone().into_os_string());
-            let expected = tmp_dir.join("shims");
+        fn shims_from_env_variable() {
+            let pycors_home = temp_dir().join("shims_from_env");
+            let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+
+            let expected = pycors_home.join("shims");
+
+            let mut mock = MockPycorsHomeProviderTrait::new();
+            mock.expect_home_env_variable()
+                .times(1)
+                .return_const(mocked_pycors_home);
+
+            let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.shims();
             assert_eq!(to_validate, expected);
         }
 
         #[test]
-        fn downloaded_default() {
-            let paths_provider = PycorsPathsFromFakeEnv::new();
-            let to_validate = paths_provider.downloaded();
-            let expected = dot_dir(DEFAULT_DOT_DIR)
-                .unwrap()
-                .join("cache")
-                .join("downloaded");
-            assert_eq!(to_validate, expected);
-        }
+        fn downloaded_from_default() {
+            let pycors_home = dot_dir(DEFAULT_DOT_DIR).unwrap();
 
-        #[test]
-        fn downloaded_from_env() {
-            let mut paths_provider = PycorsPathsFromFakeEnv::new();
-            let tmp_dir = env::temp_dir();
-            paths_provider.value = Some(tmp_dir.clone().into_os_string());
-            let expected = tmp_dir.join("cache").join("downloaded");
+            let mocked_pycors_home = None;
+
+            let expected = pycors_home.join("cache").join("downloaded");
+
+            let mut mock = MockPycorsHomeProviderTrait::new();
+            mock.expect_home_env_variable()
+                .times(1)
+                .return_const(mocked_pycors_home);
+
+            let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.downloaded();
             assert_eq!(to_validate, expected);
         }
 
         #[test]
-        fn available_toolchain_default() {
-            let paths_provider = PycorsPathsFromFakeEnv::new();
+        fn downloaded_from_env_variable() {
+            let pycors_home = temp_dir().join("downloaded_from_env");
+            let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+
+            let expected = pycors_home.join("cache").join("downloaded");
+
+            let mut mock = MockPycorsHomeProviderTrait::new();
+            mock.expect_home_env_variable()
+                .times(1)
+                .return_const(mocked_pycors_home);
+
+            let paths_provider = PycorsPathsProvider::from(mock);
+            let to_validate = paths_provider.downloaded();
+            assert_eq!(to_validate, expected);
+        }
+
+        #[test]
+        fn available_toolchain_from_default() {
+            let pycors_home = dot_dir(DEFAULT_DOT_DIR).unwrap();
+
+            let mocked_pycors_home = None;
+
+            let expected = pycors_home.join("cache").join(AVAILABLE_TOOLCHAIN_CACHE);
+
+            let mut mock = MockPycorsHomeProviderTrait::new();
+            mock.expect_home_env_variable()
+                .times(1)
+                .return_const(mocked_pycors_home);
+
+            let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.available_toolchains_cache_file();
-            let expected = dot_dir(DEFAULT_DOT_DIR)
-                .unwrap()
-                .join("cache")
-                .join(AVAILABLE_TOOLCHAIN_CACHE);
             assert_eq!(to_validate, expected);
         }
 
         #[test]
-        fn available_toolchain_from_env() {
-            let mut paths_provider = PycorsPathsFromFakeEnv::new();
-            let tmp_dir = env::temp_dir();
-            paths_provider.value = Some(tmp_dir.clone().into_os_string());
-            let expected = tmp_dir.join("cache").join(AVAILABLE_TOOLCHAIN_CACHE);
+        fn available_toolchain_from_env_variable() {
+            let pycors_home = temp_dir().join("available_toolchain_from_env");
+            let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+
+            let expected = pycors_home.join("cache").join(AVAILABLE_TOOLCHAIN_CACHE);
+
+            let mut mock = MockPycorsHomeProviderTrait::new();
+            mock.expect_home_env_variable()
+                .times(1)
+                .return_const(mocked_pycors_home);
+
+            let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.available_toolchains_cache_file();
             assert_eq!(to_validate, expected);
         }
 
         #[test]
-        fn extracted_default() {
-            let paths_provider = PycorsPathsFromFakeEnv::new();
-            let to_validate = paths_provider.extracted();
-            let expected = dot_dir(DEFAULT_DOT_DIR)
-                .unwrap()
-                .join("cache")
-                .join("extracted");
-            assert_eq!(to_validate, expected);
-        }
+        fn extracted_from_default() {
+            let pycors_home = dot_dir(DEFAULT_DOT_DIR).unwrap();
 
-        #[test]
-        fn extracted_from_env() {
-            let mut paths_provider = PycorsPathsFromFakeEnv::new();
-            let tmp_dir = env::temp_dir();
-            paths_provider.value = Some(tmp_dir.clone().into_os_string());
-            let expected = tmp_dir.join("cache").join("extracted");
+            let mocked_pycors_home = None;
+
+            let expected = pycors_home.join("cache").join("extracted");
+
+            let mut mock = MockPycorsHomeProviderTrait::new();
+            mock.expect_home_env_variable()
+                .times(1)
+                .return_const(mocked_pycors_home);
+
+            let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.extracted();
             assert_eq!(to_validate, expected);
         }
 
         #[test]
-        fn install_dir_default() {
-            let paths_provider = PycorsPathsFromFakeEnv::new();
-            let version = Version::parse("3.7.5").unwrap();
-            let to_validate = paths_provider.install_dir(&version);
-            let expected = dot_dir(DEFAULT_DOT_DIR)
-                .unwrap()
-                .join("installed")
-                .join("3.7.5");
+        fn extracted_from_env_variable() {
+            let pycors_home = temp_dir().join("extracted_from_env");
+            let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+
+            let expected = pycors_home.join("cache").join("extracted");
+
+            let mut mock = MockPycorsHomeProviderTrait::new();
+            mock.expect_home_env_variable()
+                .times(1)
+                .return_const(mocked_pycors_home);
+
+            let paths_provider = PycorsPathsProvider::from(mock);
+            let to_validate = paths_provider.extracted();
             assert_eq!(to_validate, expected);
         }
 
         #[test]
-        fn install_dir_from_env() {
-            let mut paths_provider = PycorsPathsFromFakeEnv::new();
-            let version = Version::parse("3.7.5").unwrap();
+        fn install_dir_from_default() {
+            let pycors_home = dot_dir(DEFAULT_DOT_DIR).unwrap();
+            let version_str = "3.7.5";
+            let version = Version::parse(version_str).unwrap();
 
-            let tmp_dir = env::temp_dir();
-            paths_provider.value = Some(tmp_dir.clone().into_os_string());
-            let expected = tmp_dir.join("installed").join("3.7.5");
+            let mocked_pycors_home = None;
 
+            let expected = pycors_home.join("installed").join(version_str);
+
+            let mut mock = MockPycorsHomeProviderTrait::new();
+            mock.expect_home_env_variable()
+                .times(1)
+                .return_const(mocked_pycors_home);
+
+            let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.install_dir(&version);
             assert_eq!(to_validate, expected);
         }
 
         #[test]
-        fn bin_dir_default() {
-            let paths_provider = PycorsPathsFromFakeEnv::new();
-            let version = Version::parse("3.7.5").unwrap();
+        fn install_dir_from_env_variable() {
+            let pycors_home = temp_dir().join("install_dir_from_env");
+            let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+            let version_str = "3.7.5";
+            let version = Version::parse(version_str).unwrap();
+
+            let expected = pycors_home.join("installed").join(version_str);
+
+            let mut mock = MockPycorsHomeProviderTrait::new();
+            mock.expect_home_env_variable()
+                .times(1)
+                .return_const(mocked_pycors_home);
+
+            let paths_provider = PycorsPathsProvider::from(mock);
+            let to_validate = paths_provider.install_dir(&version);
+            assert_eq!(to_validate, expected);
+        }
+
+        #[test]
+        fn bin_dir_from_default() {
+            let pycors_home = dot_dir(DEFAULT_DOT_DIR).unwrap();
+            let version_str = "3.7.5";
+            let version = Version::parse(version_str).unwrap();
+
+            let mocked_pycors_home = None;
+
+            #[cfg(not(windows))]
+            let expected = pycors_home.join("installed").join(version_str).join("bin");
+            #[cfg(windows)]
+            let expected = pycors_home.join("installed").join(version_str);
+
+            let mut mock = MockPycorsHomeProviderTrait::new();
+            mock.expect_home_env_variable()
+                .times(1)
+                .return_const(mocked_pycors_home);
+
+            let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.bin_dir(&version);
-            #[cfg(not(windows))]
-            let expected = dot_dir(DEFAULT_DOT_DIR)
-                .unwrap()
-                .join("installed")
-                .join("3.7.5")
-                .join("bin");
-            #[cfg(windows)]
-            let expected = dot_dir(DEFAULT_DOT_DIR)
-                .unwrap()
-                .join("installed")
-                .join("3.7.5");
             assert_eq!(to_validate, expected);
         }
 
         #[test]
-        fn bin_dir_from_env() {
-            let mut paths_provider = PycorsPathsFromFakeEnv::new();
-            let version = Version::parse("3.7.5").unwrap();
+        fn bin_dir_from_env_variable() {
+            let pycors_home = temp_dir().join("bin_dir_from_env");
+            let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+            let version_str = "3.7.5";
+            let version = Version::parse(version_str).unwrap();
 
-            let tmp_dir = env::temp_dir();
-            paths_provider.value = Some(tmp_dir.clone().into_os_string());
             #[cfg(not(windows))]
-            let expected = tmp_dir.join("installed").join("3.7.5").join("bin");
+            let expected = pycors_home.join("installed").join(version_str).join("bin");
             #[cfg(windows)]
-            let expected = tmp_dir.join("installed").join("3.7.5");
+            let expected = pycors_home.join("installed").join(version_str);
 
+            let mut mock = MockPycorsHomeProviderTrait::new();
+            mock.expect_home_env_variable()
+                .times(1)
+                .return_const(mocked_pycors_home);
+
+            let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.bin_dir(&version);
             assert_eq!(to_validate, expected);
         }
