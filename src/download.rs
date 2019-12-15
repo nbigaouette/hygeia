@@ -4,7 +4,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use hyper::{Client, Uri};
+use hyper::{body::HttpBody as _, Client, Uri};
 use hyper_tls::HttpsConnector;
 use indicatif::{ProgressBar, ProgressStyle};
 use semver::Version;
@@ -75,7 +75,7 @@ async fn download(url: &Url) -> Result<Vec<u8>> {
     log::info!("Downloading {}...", url);
 
     let https = {
-        let mut connector = HttpsConnector::new().expect("TLS initialization failed");
+        let mut connector = HttpsConnector::new();
         connector.https_only(true);
         connector
     };
@@ -119,13 +119,13 @@ async fn download(url: &Url) -> Result<Vec<u8>> {
     let message = format!("Downloading {:?}...", filename);
     let pb = create_progress_bar(&message, ct_len);
 
-    let body = response.body_mut();
+    // let body = response.body_mut();
 
     let mut output: Vec<u8> = Vec::with_capacity(1024);
-    while let Some(chunk) = body.next().await {
-        let bytes = chunk?.into_bytes();
-        pb.inc(bytes.len() as u64);
-        output.write_all(&bytes[..])?;
+    while let Some(next) = response.data().await {
+        let chunk = next?;
+        pb.inc(chunk.len() as u64);
+        output.write_all(&chunk[..])?;
     }
 
     pb.finish();

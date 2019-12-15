@@ -10,3 +10,4 @@ venv_pycobertura
 coverage/tarpaulin.html
 release_url*
 docker/*/artifacts
+.vagrant

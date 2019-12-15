@@ -37,9 +37,9 @@ shlex = "0.1"
 which = { version = "3", default-features = false }
 
 # Used for downloading
-hyper = "0.13.0-alpha.4"
-hyper-tls = "0.4.0-alpha.4"
-tokio = "0.2.0-alpha.6"
+hyper = "0.13"
+hyper-tls = "0.4"
+tokio = "0.2"
 
 # On Windows
 zip = {version = "0.5", default-features = false, features = ["deflate"]}

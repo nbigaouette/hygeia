@@ -63,7 +63,7 @@ pub fn install_package(
     // Install pip
     let cache_dir = PycorsPathsProviderFromEnv::new().cache();
     let get_pip_py = cache_dir.join("get-pip.py");
-    let rt = tokio::runtime::Runtime::new()?;
+    let mut rt = tokio::runtime::Runtime::new()?;
     rt.block_on(download_to_path(GET_PIP_URL, &cache_dir))?;
     utils::run_cmd_template(
         &version,
