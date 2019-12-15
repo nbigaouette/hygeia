@@ -21,7 +21,6 @@ use crate::{
 // FIXME: Pre-releases are available inside 'https://www.python.org/ftp/python/MAJOR.MINOR.PATCH'
 //          This means that seeing 'MAJOR.MINOR.PATCH' in the index.html does not mean a
 //          release is available; a pre-release might have created the directory.
-// FIXME: Cache is re-created from scratch every time it is created. Save it to disk instead.
 
 #[derive(Debug, Error)]
 pub enum CacheError {
