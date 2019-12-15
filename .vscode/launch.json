@@ -1,0 +1,68 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "unit tests",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=pycors",
+                    "--package=pycors"
+                ],
+                "filter": {
+                    "name": "pycors",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "pycors list",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=pycors",
+                    "--package=pycors"
+                ],
+                "filter": {
+                    "name": "pycors",
+                    "kind": "bin"
+                }
+            },
+            "args": [
+                "list",
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "pycors setup bash",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=pycors",
+                    "--package=pycors"
+                ],
+                "filter": {
+                    "name": "pycors",
+                    "kind": "bin"
+                }
+            },
+            "args": [
+                "setup",
+                "bash",
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+    ]
+}
