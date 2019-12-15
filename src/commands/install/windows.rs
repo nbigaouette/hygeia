@@ -23,7 +23,7 @@ pub fn install_package(
     let install_dir = PycorsPathsProviderFromEnv::new().install_dir(version);
 
     let cwd = PycorsPathsProviderFromEnv::new().downloaded();
-    let archive = build_filename_zip(version)?;
+    let archive = build_filename_zip(version);
 
     let file = BufReader::new(File::open(cwd.join(archive)).unwrap());
     let mut archive = zip::ZipArchive::new(file).unwrap();

@@ -31,8 +31,7 @@ pub fn install_package(
 #[cfg_attr(windows, allow(dead_code))]
 pub fn extract_source(version: &Version) -> Result<()> {
     let download_dir = PycorsPathsProviderFromEnv::new().downloaded();
-    let filename = build_filename(&version)
-        .with_context(|| format!("Failed to build filename from version {}", version))?;
+    let filename = build_filename(&version);
     let file_path = download_dir.join(&filename);
     let extract_dir = PycorsPathsProviderFromEnv::new().extracted();
 
@@ -122,8 +121,7 @@ pub fn compile_source(
     env::set_var("CPPFLAGS", cppflags.join(" "));
     env::set_var("LDFLAGS", ldflags.join(" "));
 
-    let basename = utils::build_basename(&version)
-        .with_context(|| format!("Failed to build basename from version {}", version))?;
+    let basename = utils::build_basename(&version);
     let extract_dir = PycorsPathsProviderFromEnv::new()
         .extracted()
         .join(&basename);

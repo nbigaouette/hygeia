@@ -3,11 +3,11 @@ use semver::Version;
 use crate::{toolchain::installed::InstalledToolchain, utils, Result};
 
 #[cfg_attr(not(windows), allow(dead_code))]
-pub fn build_filename_zip(version: &Version) -> Result<String> {
-    Ok(format!(
+pub fn build_filename_zip(version: &Version) -> String {
+    format!(
         "{}-embed-amd64.zip",
-        utils::build_basename(version)?.replace("Python", "python")
-    ))
+        utils::build_basename(version).replace("Python", "python")
+    )
 }
 
 #[cfg_attr(not(windows), allow(dead_code))]
@@ -37,7 +37,7 @@ mod tests {
     fn build_filename_from_version_372() {
         let version = Version::parse("3.7.2").unwrap();
 
-        let filename_exe = build_filename_zip(&version).unwrap();
+        let filename_exe = build_filename_zip(&version);
         assert_eq!(&filename_exe, "python-3.7.2-embed-amd64.zip");
     }
 
@@ -45,7 +45,7 @@ mod tests {
     fn build_filename_from_version_372rc1() {
         let version = Version::parse("3.7.2-rc1").unwrap();
 
-        let filename_exe = build_filename_zip(&version).unwrap();
+        let filename_exe = build_filename_zip(&version);
         assert_eq!(&filename_exe, "python-3.7.2rc1-embed-amd64.zip");
     }
 

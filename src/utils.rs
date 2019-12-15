@@ -60,7 +60,7 @@ pub fn extension_sep() -> &'static str {
     ""
 }
 
-pub fn build_basename(version: &Version) -> Result<String> {
+pub fn build_basename(version: &Version) -> String {
     // Starting with 3.3, the filename contains the full MAJOR.MINOR.PATCH-RC (f.e. "3.3.0" or "3.7.2-rc1").
     // Before that, the filename only contained MAJOR.MINOR (without the patch, for example "3.2")
     // See for example the difference between those versions:
@@ -74,7 +74,7 @@ pub fn build_basename(version: &Version) -> Result<String> {
     }
     .replace("-", "");
 
-    Ok(format!("Python-{}", version_file))
+    format!("Python-{}", version_file)
 }
 
 pub fn create_hard_link<P1, P2>(from: P1, to: P2) -> Result<()>
@@ -518,7 +518,7 @@ mod tests {
     fn build_basename_from_version_372() {
         let version = Version::parse("3.7.2").unwrap();
 
-        let filename = build_basename(&version).unwrap();
+        let filename = build_basename(&version);
 
         assert_eq!(&filename, "Python-3.7.2");
     }
@@ -527,7 +527,7 @@ mod tests {
     fn build_basename_from_version_372rc1() {
         let version = Version::parse("3.7.2-rc1").unwrap();
 
-        let filename = build_basename(&version).unwrap();
+        let filename = build_basename(&version);
         assert_eq!(&filename, "Python-3.7.2rc1");
     }
 

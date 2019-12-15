@@ -143,7 +143,7 @@ fn build_url(version: &Version) -> Result<Url> {
         format!("{}.{}", version.major, version.minor)
     };
 
-    let filename = build_filename(&version)?;
+    let filename = build_filename(&version);
 
     let to_download = Url::parse(&format!(
         "https://www.python.org/ftp/python/{}/{}",
