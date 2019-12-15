@@ -25,7 +25,7 @@ where
 }
 
 pub async fn download_source(version: &Version) -> Result<()> {
-    let url = build_url(&version)?;
+    let url = build_url(&version);
     let download_dir = PycorsPathsProviderFromEnv::new().downloaded();
     download_to_path(&url, download_dir).await
 }
@@ -133,7 +133,7 @@ async fn download(url: &Url) -> Result<Vec<u8>> {
     Ok(output)
 }
 
-fn build_url(version: &Version) -> Result<Url> {
+fn build_url(version: &Version) -> Url {
     // Starting with 3.3, the Url contains the full MAJOR.MINOR.PATCH (f.e. "3.3.0").
     // Before that, the Url only contained MAJOR.MINOR (without the patch, for example "3.2")
     // See directory listing in https://www.python.org/ftp/python/
@@ -145,12 +145,11 @@ fn build_url(version: &Version) -> Result<Url> {
 
     let filename = build_filename(&version);
 
-    let to_download = Url::parse(&format!(
+    Url::parse(&format!(
         "https://www.python.org/ftp/python/{}/{}",
         version_path, filename
-    ))?;
-
-    Ok(to_download)
+    ))
+    .expect("Parsing url with controlled data should always succeeds")
 }
 
 fn create_progress_bar(msg: &str, length: Option<u64>) -> ProgressBar {
