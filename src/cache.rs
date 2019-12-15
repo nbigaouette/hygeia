@@ -34,7 +34,12 @@ pub struct ToolchainsCacheFetchOnline;
 impl ToolchainsCacheFetch for ToolchainsCacheFetchOnline {
     fn get(&self) -> Result<String> {
         let mut rt = tokio::runtime::Runtime::new()?;
-        let index_html: String = rt.block_on(download_to_string(PYTHON_SOURCE_INDEX_URL))?;
+        // HTML file is too small to bother with a progress bar
+        let with_progress_bar = false;
+        let index_html: String = rt.block_on(download_to_string(
+            PYTHON_SOURCE_INDEX_URL,
+            with_progress_bar,
+        ))?;
         Ok(index_html)
     }
 }
@@ -206,8 +211,6 @@ fn parse_index_html(index_html: &str) -> Result<Vec<AvailableToolchain>> {
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
-
     use std::{env, fs, path::PathBuf};
 
     use chrono::Duration;

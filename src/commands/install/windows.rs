@@ -64,7 +64,9 @@ pub fn install_package(
     let cache_dir = PycorsPathsProviderFromEnv::new().cache();
     let get_pip_py = cache_dir.join("get-pip.py");
     let mut rt = tokio::runtime::Runtime::new()?;
-    rt.block_on(download_to_path(GET_PIP_URL, &cache_dir))?;
+    // File is too small to bother for a progress bar
+    let with_progress_bar = false;
+    rt.block_on(download_to_path(GET_PIP_URL, &cache_dir, with_progress_bar))?;
     utils::run_cmd_template(
         &version,
         "Install pip",

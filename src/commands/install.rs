@@ -108,8 +108,13 @@ pub fn run(
                 };
 
             // Configure make make install
+            let url_to_download = requested_version
+                .url
+                .join(&requested_version.source_tar_gz)?;
+            let with_progress_bar = true;
+            // FIXME: Create progress bar outside of download_source()
             let mut rt = tokio::runtime::Runtime::new()?;
-            rt.block_on(download_source(&requested_version.version))?;
+            rt.block_on(download_source(&url_to_download, with_progress_bar))?;
             // FIXME: Validate downloaded package with checksum
             // FIXME: Validate downloaded package with signature
             install_package(&requested_version.version, install_extra_packages)?;
