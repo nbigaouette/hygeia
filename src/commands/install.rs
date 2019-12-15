@@ -108,7 +108,7 @@ pub fn run(
                 };
 
             // Configure make make install
-            let rt = tokio::runtime::Runtime::new()?;
+            let mut rt = tokio::runtime::Runtime::new()?;
             rt.block_on(download_source(&requested_version.version))?;
             // FIXME: Validate downloaded package with checksum
             // FIXME: Validate downloaded package with signature

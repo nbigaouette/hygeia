@@ -40,7 +40,7 @@ pub struct ToolchainsCacheFetchOnline;
 
 impl ToolchainsCacheFetch for ToolchainsCacheFetchOnline {
     fn get(&self) -> Result<String> {
-        let rt = tokio::runtime::Runtime::new()?;
+        let mut rt = tokio::runtime::Runtime::new()?;
         let index_html: String = rt.block_on(download_to_string(PYTHON_BASE_URL))?;
         Ok(index_html)
     }
