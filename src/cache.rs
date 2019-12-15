@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::Result;
 use chrono::{DateTime, Utc};
-use regex::Regex;
+use regex::{Regex, RegexBuilder};
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use serde_json;
@@ -13,7 +13,7 @@ use thiserror::Error;
 use url::Url;
 
 use crate::{
-    constants::PYTHON_BASE_URL,
+    constants::PYTHON_SOURCE_INDEX_URL,
     download::download_to_string,
     utils::directory::{PycorsHomeProviderTrait, PycorsPathsProvider},
 };
@@ -22,8 +22,6 @@ use crate::{
 //          This means that seeing 'MAJOR.MINOR.PATCH' in the index.html does not mean a
 //          release is available; a pre-release might have created the directory.
 // FIXME: Cache is re-created from scratch every time it is created. Save it to disk instead.
-
-// FIXME: Use https://www.python.org/downloads/source/ instead to get all links of releases!
 
 #[derive(Debug, Error)]
 pub enum CacheError {
@@ -41,7 +39,7 @@ pub struct ToolchainsCacheFetchOnline;
 impl ToolchainsCacheFetch for ToolchainsCacheFetchOnline {
     fn get(&self) -> Result<String> {
         let mut rt = tokio::runtime::Runtime::new()?;
-        let index_html: String = rt.block_on(download_to_string(PYTHON_BASE_URL))?;
+        let index_html: String = rt.block_on(download_to_string(PYTHON_SOURCE_INDEX_URL))?;
         Ok(index_html)
     }
 }
@@ -49,7 +47,8 @@ impl ToolchainsCacheFetch for ToolchainsCacheFetchOnline {
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct AvailableToolchain {
     pub version: Version,
-    pub base_url: Url,
+    pub url: Url,
+    pub source_tar_gz: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -164,41 +163,37 @@ impl AvailableToolchainsCache {
 }
 
 fn parse_index_html(index_html: &str) -> Result<Vec<AvailableToolchain>> {
-    let re = Regex::new(r#"(?x)<a \s+ href="(?P<version>\d+[\d\.]+)/">"#)?;
-
-    let base_url =
-        Url::parse(PYTHON_BASE_URL).expect("Constant 'PYTHON_BASE_URL' should be parsable");
+    let re: Regex = RegexBuilder::new(
+        r#"<a href="/downloads/release/python.*">Python (?P<version>[2-3].[0-9]+.[0-9]+)? .*Download <a href="(?P<url>[^<]*)?">Gzipped source tar"#
+    )
+    .dot_matches_new_line(true)  // (s)
+    .swap_greed(true)  // (U)
+        .build()?;
 
     let mut toolchains: Vec<AvailableToolchain> = re
         .captures_iter(index_html)
-        .filter_map(|caps| {
-            let v = &caps["version"];
-            let url = base_url.join(&v);
-            match url {
-                Ok(url) => Some((v.to_string(), url)),
-                Err(e) => {
-                    log::error!(
-                        "Failed to construct a url from version ({:?}), skipping: {:?}",
-                        v,
-                        e
-                    );
-                    None
-                }
+        .filter_map(|caps| match (caps.name("version"), caps.name("url")) {
+            (Some(version), Some(url)) => Some((version.as_str(), url.as_str())),
+            (Some(version), None) => {
+                log::error!("Failed to extract url for version {}", version.as_str());
+                None
             }
+            (None, Some(url)) => {
+                log::error!("Failed to extract version for url {}", url.as_str());
+                None
+            }
+            (None, None) => None,
         })
-        .filter_map(|(v, url)| {
-            // Add a `.0` for versions missing a patch number (f.e. `2.7`)
-            let dots = v.chars().filter(|c| *c == '.').count();
-            let v = if dots == 1 { format!("{}.0", v) } else { v };
-            match Version::parse(&v) {
-                Ok(version) => Some(AvailableToolchain {
-                    version,
-                    base_url: url,
-                }),
-                Err(e) => {
-                    log::error!("Failed to parse version ({:?}), skipping: {:?}", v, e);
-                    None
-                }
+        .map(|(version, url)| {
+            let version = Version::parse(version).unwrap();
+            let mut url = Url::parse(url).unwrap();
+            let source_tar_gz = url.path_segments().unwrap().last().unwrap().to_string();
+            url.path_segments_mut().unwrap().pop();
+            url.set_scheme("https").unwrap(); // 3.3.4, 3.3.5 has "http" instead of "https"
+            AvailableToolchain {
+                version,
+                url,
+                source_tar_gz,
             }
         })
         .collect();
@@ -210,6 +205,8 @@ fn parse_index_html(index_html: &str) -> Result<Vec<AvailableToolchain>> {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
+
     use std::{env, fs, path::PathBuf};
 
     use chrono::Duration;
@@ -371,133 +368,133 @@ mod tests {
     #[test]
     fn parse_html() {
         let parsed: Vec<AvailableToolchain> = parse_index_html(INDEX_HTML).unwrap();
+        assert_eq!(parsed.len(), 117);
+
+        // Note: Trailing '/' is required for proper parsing
+        pub const PYTHON_BASE_URL: &str = "https://www.python.org/ftp/python/";
 
         let url =
             Url::parse(PYTHON_BASE_URL).expect("Constant 'PYTHON_BASE_URL' should be parsable");
 
         #[rustfmt::skip]
         let expected: Vec<AvailableToolchain> = vec![
-            AvailableToolchain{version: "3.8.0".parse().unwrap(), base_url: url.join("3.8.0").unwrap()},
-            AvailableToolchain{version: "3.7.5".parse().unwrap(), base_url: url.join("3.7.5").unwrap()},
-            AvailableToolchain{version: "3.7.4".parse().unwrap(), base_url: url.join("3.7.4").unwrap()},
-            AvailableToolchain{version: "3.7.3".parse().unwrap(), base_url: url.join("3.7.3").unwrap()},
-            AvailableToolchain{version: "3.7.2".parse().unwrap(), base_url: url.join("3.7.2").unwrap()},
-            AvailableToolchain{version: "3.7.1".parse().unwrap(), base_url: url.join("3.7.1").unwrap()},
-            AvailableToolchain{version: "3.7.0".parse().unwrap(), base_url: url.join("3.7.0").unwrap()},
-            AvailableToolchain{version: "3.6.9".parse().unwrap(), base_url: url.join("3.6.9").unwrap()},
-            AvailableToolchain{version: "3.6.8".parse().unwrap(), base_url: url.join("3.6.8").unwrap()},
-            AvailableToolchain{version: "3.6.7".parse().unwrap(), base_url: url.join("3.6.7").unwrap()},
-            AvailableToolchain{version: "3.6.6".parse().unwrap(), base_url: url.join("3.6.6").unwrap()},
-            AvailableToolchain{version: "3.6.5".parse().unwrap(), base_url: url.join("3.6.5").unwrap()},
-            AvailableToolchain{version: "3.6.4".parse().unwrap(), base_url: url.join("3.6.4").unwrap()},
-            AvailableToolchain{version: "3.6.3".parse().unwrap(), base_url: url.join("3.6.3").unwrap()},
-            AvailableToolchain{version: "3.6.2".parse().unwrap(), base_url: url.join("3.6.2").unwrap()},
-            AvailableToolchain{version: "3.6.1".parse().unwrap(), base_url: url.join("3.6.1").unwrap()},
-            AvailableToolchain{version: "3.6.0".parse().unwrap(), base_url: url.join("3.6.0").unwrap()},
-            AvailableToolchain{version: "3.5.9".parse().unwrap(), base_url: url.join("3.5.9").unwrap()},
-            AvailableToolchain{version: "3.5.8".parse().unwrap(), base_url: url.join("3.5.8").unwrap()},
-            AvailableToolchain{version: "3.5.7".parse().unwrap(), base_url: url.join("3.5.7").unwrap()},
-            AvailableToolchain{version: "3.5.6".parse().unwrap(), base_url: url.join("3.5.6").unwrap()},
-            AvailableToolchain{version: "3.5.5".parse().unwrap(), base_url: url.join("3.5.5").unwrap()},
-            AvailableToolchain{version: "3.5.4".parse().unwrap(), base_url: url.join("3.5.4").unwrap()},
-            AvailableToolchain{version: "3.5.3".parse().unwrap(), base_url: url.join("3.5.3").unwrap()},
-            AvailableToolchain{version: "3.5.2".parse().unwrap(), base_url: url.join("3.5.2").unwrap()},
-            AvailableToolchain{version: "3.5.1".parse().unwrap(), base_url: url.join("3.5.1").unwrap()},
-            AvailableToolchain{version: "3.5.0".parse().unwrap(), base_url: url.join("3.5.0").unwrap()},
-            AvailableToolchain{version: "3.4.10".parse().unwrap(), base_url: url.join("3.4.10").unwrap()},
-            AvailableToolchain{version: "3.4.9".parse().unwrap(), base_url: url.join("3.4.9").unwrap()},
-            AvailableToolchain{version: "3.4.8".parse().unwrap(), base_url: url.join("3.4.8").unwrap()},
-            AvailableToolchain{version: "3.4.7".parse().unwrap(), base_url: url.join("3.4.7").unwrap()},
-            AvailableToolchain{version: "3.4.6".parse().unwrap(), base_url: url.join("3.4.6").unwrap()},
-            AvailableToolchain{version: "3.4.5".parse().unwrap(), base_url: url.join("3.4.5").unwrap()},
-            AvailableToolchain{version: "3.4.4".parse().unwrap(), base_url: url.join("3.4.4").unwrap()},
-            AvailableToolchain{version: "3.4.3".parse().unwrap(), base_url: url.join("3.4.3").unwrap()},
-            AvailableToolchain{version: "3.4.2".parse().unwrap(), base_url: url.join("3.4.2").unwrap()},
-            AvailableToolchain{version: "3.4.1".parse().unwrap(), base_url: url.join("3.4.1").unwrap()},
-            AvailableToolchain{version: "3.4.0".parse().unwrap(), base_url: url.join("3.4.0").unwrap()},
-            AvailableToolchain{version: "3.3.7".parse().unwrap(), base_url: url.join("3.3.7").unwrap()},
-            AvailableToolchain{version: "3.3.6".parse().unwrap(), base_url: url.join("3.3.6").unwrap()},
-            AvailableToolchain{version: "3.3.5".parse().unwrap(), base_url: url.join("3.3.5").unwrap()},
-            AvailableToolchain{version: "3.3.4".parse().unwrap(), base_url: url.join("3.3.4").unwrap()},
-            AvailableToolchain{version: "3.3.3".parse().unwrap(), base_url: url.join("3.3.3").unwrap()},
-            AvailableToolchain{version: "3.3.2".parse().unwrap(), base_url: url.join("3.3.2").unwrap()},
-            AvailableToolchain{version: "3.3.1".parse().unwrap(), base_url: url.join("3.3.1").unwrap()},
-            AvailableToolchain{version: "3.3.0".parse().unwrap(), base_url: url.join("3.3.0").unwrap()},
-            AvailableToolchain{version: "3.2.6".parse().unwrap(), base_url: url.join("3.2.6").unwrap()},
-            AvailableToolchain{version: "3.2.5".parse().unwrap(), base_url: url.join("3.2.5").unwrap()},
-            AvailableToolchain{version: "3.2.4".parse().unwrap(), base_url: url.join("3.2.4").unwrap()},
-            AvailableToolchain{version: "3.2.3".parse().unwrap(), base_url: url.join("3.2.3").unwrap()},
-            AvailableToolchain{version: "3.2.2".parse().unwrap(), base_url: url.join("3.2.2").unwrap()},
-            AvailableToolchain{version: "3.2.1".parse().unwrap(), base_url: url.join("3.2.1").unwrap()},
-            AvailableToolchain{version: "3.2.0".parse().unwrap(), base_url: url.join("3.2").unwrap()},
-            AvailableToolchain{version: "3.1.5".parse().unwrap(), base_url: url.join("3.1.5").unwrap()},
-            AvailableToolchain{version: "3.1.4".parse().unwrap(), base_url: url.join("3.1.4").unwrap()},
-            AvailableToolchain{version: "3.1.3".parse().unwrap(), base_url: url.join("3.1.3").unwrap()},
-            AvailableToolchain{version: "3.1.2".parse().unwrap(), base_url: url.join("3.1.2").unwrap()},
-            AvailableToolchain{version: "3.1.1".parse().unwrap(), base_url: url.join("3.1.1").unwrap()},
-            AvailableToolchain{version: "3.1.0".parse().unwrap(), base_url: url.join("3.1").unwrap()},
-            AvailableToolchain{version: "3.0.1".parse().unwrap(), base_url: url.join("3.0.1").unwrap()},
-            AvailableToolchain{version: "3.0.0".parse().unwrap(), base_url: url.join("3.0").unwrap()},
-            AvailableToolchain{version: "2.7.17".parse().unwrap(), base_url: url.join("2.7.17").unwrap()},
-            AvailableToolchain{version: "2.7.16".parse().unwrap(), base_url: url.join("2.7.16").unwrap()},
-            AvailableToolchain{version: "2.7.15".parse().unwrap(), base_url: url.join("2.7.15").unwrap()},
-            AvailableToolchain{version: "2.7.14".parse().unwrap(), base_url: url.join("2.7.14").unwrap()},
-            AvailableToolchain{version: "2.7.13".parse().unwrap(), base_url: url.join("2.7.13").unwrap()},
-            AvailableToolchain{version: "2.7.12".parse().unwrap(), base_url: url.join("2.7.12").unwrap()},
-            AvailableToolchain{version: "2.7.11".parse().unwrap(), base_url: url.join("2.7.11").unwrap()},
-            AvailableToolchain{version: "2.7.10".parse().unwrap(), base_url: url.join("2.7.10").unwrap()},
-            AvailableToolchain{version: "2.7.9".parse().unwrap(), base_url: url.join("2.7.9").unwrap()},
-            AvailableToolchain{version: "2.7.8".parse().unwrap(), base_url: url.join("2.7.8").unwrap()},
-            AvailableToolchain{version: "2.7.7".parse().unwrap(), base_url: url.join("2.7.7").unwrap()},
-            AvailableToolchain{version: "2.7.6".parse().unwrap(), base_url: url.join("2.7.6").unwrap()},
-            AvailableToolchain{version: "2.7.5".parse().unwrap(), base_url: url.join("2.7.5").unwrap()},
-            AvailableToolchain{version: "2.7.4".parse().unwrap(), base_url: url.join("2.7.4").unwrap()},
-            AvailableToolchain{version: "2.7.3".parse().unwrap(), base_url: url.join("2.7.3").unwrap()},
-            AvailableToolchain{version: "2.7.2".parse().unwrap(), base_url: url.join("2.7.2").unwrap()},
-            AvailableToolchain{version: "2.7.1".parse().unwrap(), base_url: url.join("2.7.1").unwrap()},
-            AvailableToolchain{version: "2.7.0".parse().unwrap(), base_url: url.join("2.7").unwrap()},
-            AvailableToolchain{version: "2.6.9".parse().unwrap(), base_url: url.join("2.6.9").unwrap()},
-            AvailableToolchain{version: "2.6.8".parse().unwrap(), base_url: url.join("2.6.8").unwrap()},
-            AvailableToolchain{version: "2.6.7".parse().unwrap(), base_url: url.join("2.6.7").unwrap()},
-            AvailableToolchain{version: "2.6.6".parse().unwrap(), base_url: url.join("2.6.6").unwrap()},
-            AvailableToolchain{version: "2.6.5".parse().unwrap(), base_url: url.join("2.6.5").unwrap()},
-            AvailableToolchain{version: "2.6.4".parse().unwrap(), base_url: url.join("2.6.4").unwrap()},
-            AvailableToolchain{version: "2.6.3".parse().unwrap(), base_url: url.join("2.6.3").unwrap()},
-            AvailableToolchain{version: "2.6.2".parse().unwrap(), base_url: url.join("2.6.2").unwrap()},
-            AvailableToolchain{version: "2.6.1".parse().unwrap(), base_url: url.join("2.6.1").unwrap()},
-            AvailableToolchain{version: "2.6.0".parse().unwrap(), base_url: url.join("2.6").unwrap()},
-            AvailableToolchain{version: "2.5.6".parse().unwrap(), base_url: url.join("2.5.6").unwrap()},
-            AvailableToolchain{version: "2.5.5".parse().unwrap(), base_url: url.join("2.5.5").unwrap()},
-            AvailableToolchain{version: "2.5.4".parse().unwrap(), base_url: url.join("2.5.4").unwrap()},
-            AvailableToolchain{version: "2.5.3".parse().unwrap(), base_url: url.join("2.5.3").unwrap()},
-            AvailableToolchain{version: "2.5.2".parse().unwrap(), base_url: url.join("2.5.2").unwrap()},
-            AvailableToolchain{version: "2.5.1".parse().unwrap(), base_url: url.join("2.5.1").unwrap()},
-            AvailableToolchain{version: "2.5.0".parse().unwrap(), base_url: url.join("2.5").unwrap()},
-            AvailableToolchain{version: "2.4.6".parse().unwrap(), base_url: url.join("2.4.6").unwrap()},
-            AvailableToolchain{version: "2.4.5".parse().unwrap(), base_url: url.join("2.4.5").unwrap()},
-            AvailableToolchain{version: "2.4.4".parse().unwrap(), base_url: url.join("2.4.4").unwrap()},
-            AvailableToolchain{version: "2.4.3".parse().unwrap(), base_url: url.join("2.4.3").unwrap()},
-            AvailableToolchain{version: "2.4.2".parse().unwrap(), base_url: url.join("2.4.2").unwrap()},
-            AvailableToolchain{version: "2.4.1".parse().unwrap(), base_url: url.join("2.4.1").unwrap()},
-            AvailableToolchain{version: "2.4.0".parse().unwrap(), base_url: url.join("2.4").unwrap()},
-            AvailableToolchain{version: "2.3.7".parse().unwrap(), base_url: url.join("2.3.7").unwrap()},
-            AvailableToolchain{version: "2.3.6".parse().unwrap(), base_url: url.join("2.3.6").unwrap()},
-            AvailableToolchain{version: "2.3.5".parse().unwrap(), base_url: url.join("2.3.5").unwrap()},
-            AvailableToolchain{version: "2.3.4".parse().unwrap(), base_url: url.join("2.3.4").unwrap()},
-            AvailableToolchain{version: "2.3.3".parse().unwrap(), base_url: url.join("2.3.3").unwrap()},
-            AvailableToolchain{version: "2.3.2".parse().unwrap(), base_url: url.join("2.3.2").unwrap()},
-            AvailableToolchain{version: "2.3.1".parse().unwrap(), base_url: url.join("2.3.1").unwrap()},
-            AvailableToolchain{version: "2.3.0".parse().unwrap(), base_url: url.join("2.3").unwrap()},
-            AvailableToolchain{version: "2.2.3".parse().unwrap(), base_url: url.join("2.2.3").unwrap()},
-            AvailableToolchain{version: "2.2.2".parse().unwrap(), base_url: url.join("2.2.2").unwrap()},
-            AvailableToolchain{version: "2.2.1".parse().unwrap(), base_url: url.join("2.2.1").unwrap()},
-            AvailableToolchain{version: "2.2.0".parse().unwrap(), base_url: url.join("2.2").unwrap()},
-            AvailableToolchain{version: "2.1.3".parse().unwrap(), base_url: url.join("2.1.3").unwrap()},
-            AvailableToolchain{version: "2.1.2".parse().unwrap(), base_url: url.join("2.1.2").unwrap()},
-            AvailableToolchain{version: "2.1.1".parse().unwrap(), base_url: url.join("2.1.1").unwrap()},
-            AvailableToolchain{version: "2.1.0".parse().unwrap(), base_url: url.join("2.1").unwrap()},
-            AvailableToolchain{version: "2.0.1".parse().unwrap(), base_url: url.join("2.0.1").unwrap()},
-            AvailableToolchain{version: "2.0.0".parse().unwrap(), base_url: url.join("2.0").unwrap()},
+            AvailableToolchain{version: "3.8.0".parse().unwrap(), url: url.join("3.8.0").unwrap(), source_tar_gz: String::from("Python-3.8.0.tgz")},
+            AvailableToolchain{version: "3.7.5".parse().unwrap(), url: url.join("3.7.5").unwrap(), source_tar_gz: String::from("Python-3.7.5.tgz")},
+            AvailableToolchain{version: "3.7.4".parse().unwrap(), url: url.join("3.7.4").unwrap(), source_tar_gz: String::from("Python-3.7.4.tgz")},
+            AvailableToolchain{version: "3.7.3".parse().unwrap(), url: url.join("3.7.3").unwrap(), source_tar_gz: String::from("Python-3.7.3.tgz")},
+            AvailableToolchain{version: "3.7.2".parse().unwrap(), url: url.join("3.7.2").unwrap(), source_tar_gz: String::from("Python-3.7.2.tgz")},
+            AvailableToolchain{version: "3.7.1".parse().unwrap(), url: url.join("3.7.1").unwrap(), source_tar_gz: String::from("Python-3.7.1.tgz")},
+            AvailableToolchain{version: "3.7.0".parse().unwrap(), url: url.join("3.7.0").unwrap(), source_tar_gz: String::from("Python-3.7.0.tgz")},
+            AvailableToolchain{version: "3.6.9".parse().unwrap(), url: url.join("3.6.9").unwrap(), source_tar_gz: String::from("Python-3.6.9.tgz")},
+            AvailableToolchain{version: "3.6.8".parse().unwrap(), url: url.join("3.6.8").unwrap(), source_tar_gz: String::from("Python-3.6.8.tgz")},
+            AvailableToolchain{version: "3.6.7".parse().unwrap(), url: url.join("3.6.7").unwrap(), source_tar_gz: String::from("Python-3.6.7.tgz")},
+            AvailableToolchain{version: "3.6.6".parse().unwrap(), url: url.join("3.6.6").unwrap(), source_tar_gz: String::from("Python-3.6.6.tgz")},
+            AvailableToolchain{version: "3.6.5".parse().unwrap(), url: url.join("3.6.5").unwrap(), source_tar_gz: String::from("Python-3.6.5.tgz")},
+            AvailableToolchain{version: "3.6.4".parse().unwrap(), url: url.join("3.6.4").unwrap(), source_tar_gz: String::from("Python-3.6.4.tgz")},
+            AvailableToolchain{version: "3.6.3".parse().unwrap(), url: url.join("3.6.3").unwrap(), source_tar_gz: String::from("Python-3.6.3.tgz")},
+            AvailableToolchain{version: "3.6.2".parse().unwrap(), url: url.join("3.6.2").unwrap(), source_tar_gz: String::from("Python-3.6.2.tgz")},
+            AvailableToolchain{version: "3.6.1".parse().unwrap(), url: url.join("3.6.1").unwrap(), source_tar_gz: String::from("Python-3.6.1.tgz")},
+            AvailableToolchain{version: "3.6.0".parse().unwrap(), url: url.join("3.6.0").unwrap(), source_tar_gz: String::from("Python-3.6.0.tgz")},
+            AvailableToolchain{version: "3.5.9".parse().unwrap(), url: url.join("3.5.9").unwrap(), source_tar_gz: String::from("Python-3.5.9.tgz")},
+            AvailableToolchain{version: "3.5.8".parse().unwrap(), url: url.join("3.5.8").unwrap(), source_tar_gz: String::from("Python-3.5.8.tgz")},
+            AvailableToolchain{version: "3.5.7".parse().unwrap(), url: url.join("3.5.7").unwrap(), source_tar_gz: String::from("Python-3.5.7.tgz")},
+            AvailableToolchain{version: "3.5.6".parse().unwrap(), url: url.join("3.5.6").unwrap(), source_tar_gz: String::from("Python-3.5.6.tgz")},
+            AvailableToolchain{version: "3.5.5".parse().unwrap(), url: url.join("3.5.5").unwrap(), source_tar_gz: String::from("Python-3.5.5.tgz")},
+            AvailableToolchain{version: "3.5.4".parse().unwrap(), url: url.join("3.5.4").unwrap(), source_tar_gz: String::from("Python-3.5.4.tgz")},
+            AvailableToolchain{version: "3.5.3".parse().unwrap(), url: url.join("3.5.3").unwrap(), source_tar_gz: String::from("Python-3.5.3.tgz")},
+            AvailableToolchain{version: "3.5.2".parse().unwrap(), url: url.join("3.5.2").unwrap(), source_tar_gz: String::from("Python-3.5.2.tgz")},
+            AvailableToolchain{version: "3.5.1".parse().unwrap(), url: url.join("3.5.1").unwrap(), source_tar_gz: String::from("Python-3.5.1.tgz")},
+            AvailableToolchain{version: "3.5.0".parse().unwrap(), url: url.join("3.5.0").unwrap(), source_tar_gz: String::from("Python-3.5.0.tgz")},
+            AvailableToolchain{version: "3.4.10".parse().unwrap(), url: url.join("3.4.10").unwrap(), source_tar_gz: String::from("Python-3.4.10.tgz")},
+            AvailableToolchain{version: "3.4.9".parse().unwrap(), url: url.join("3.4.9").unwrap(), source_tar_gz: String::from("Python-3.4.9.tgz")},
+            AvailableToolchain{version: "3.4.8".parse().unwrap(), url: url.join("3.4.8").unwrap(), source_tar_gz: String::from("Python-3.4.8.tgz")},
+            AvailableToolchain{version: "3.4.7".parse().unwrap(), url: url.join("3.4.7").unwrap(), source_tar_gz: String::from("Python-3.4.7.tgz")},
+            AvailableToolchain{version: "3.4.6".parse().unwrap(), url: url.join("3.4.6").unwrap(), source_tar_gz: String::from("Python-3.4.6.tgz")},
+            AvailableToolchain{version: "3.4.5".parse().unwrap(), url: url.join("3.4.5").unwrap(), source_tar_gz: String::from("Python-3.4.5.tgz")},
+            AvailableToolchain{version: "3.4.4".parse().unwrap(), url: url.join("3.4.4").unwrap(), source_tar_gz: String::from("Python-3.4.4.tgz")},
+            AvailableToolchain{version: "3.4.3".parse().unwrap(), url: url.join("3.4.3").unwrap(), source_tar_gz: String::from("Python-3.4.3.tgz")},
+            AvailableToolchain{version: "3.4.2".parse().unwrap(), url: url.join("3.4.2").unwrap(), source_tar_gz: String::from("Python-3.4.2.tgz")},
+            AvailableToolchain{version: "3.4.1".parse().unwrap(), url: url.join("3.4.1").unwrap(), source_tar_gz: String::from("Python-3.4.1.tgz")},
+            AvailableToolchain{version: "3.4.0".parse().unwrap(), url: url.join("3.4.0").unwrap(), source_tar_gz: String::from("Python-3.4.0.tgz")},
+            AvailableToolchain{version: "3.3.7".parse().unwrap(), url: url.join("3.3.7").unwrap(), source_tar_gz: String::from("Python-3.3.7.tgz")},
+            AvailableToolchain{version: "3.3.6".parse().unwrap(), url: url.join("3.3.6").unwrap(), source_tar_gz: String::from("Python-3.3.6.tgz")},
+            AvailableToolchain{version: "3.3.5".parse().unwrap(), url: url.join("3.3.5").unwrap(), source_tar_gz: String::from("Python-3.3.5.tgz")},
+            AvailableToolchain{version: "3.3.4".parse().unwrap(), url: url.join("3.3.4").unwrap(), source_tar_gz: String::from("Python-3.3.4.tgz")},
+            AvailableToolchain{version: "3.3.3".parse().unwrap(), url: url.join("3.3.3").unwrap(), source_tar_gz: String::from("Python-3.3.3.tgz")},
+            AvailableToolchain{version: "3.3.2".parse().unwrap(), url: url.join("3.3.2").unwrap(), source_tar_gz: String::from("Python-3.3.2.tgz")},
+            AvailableToolchain{version: "3.3.1".parse().unwrap(), url: url.join("3.3.1").unwrap(), source_tar_gz: String::from("Python-3.3.1.tgz")},
+            AvailableToolchain{version: "3.3.0".parse().unwrap(), url: url.join("3.3.0").unwrap(), source_tar_gz: String::from("Python-3.3.0.tgz")},
+            AvailableToolchain{version: "3.2.6".parse().unwrap(), url: url.join("3.2.6").unwrap(), source_tar_gz: String::from("Python-3.2.6.tgz")},
+            AvailableToolchain{version: "3.2.5".parse().unwrap(), url: url.join("3.2.5").unwrap(), source_tar_gz: String::from("Python-3.2.5.tgz")},
+            AvailableToolchain{version: "3.2.4".parse().unwrap(), url: url.join("3.2.4").unwrap(), source_tar_gz: String::from("Python-3.2.4.tgz")},
+            AvailableToolchain{version: "3.2.3".parse().unwrap(), url: url.join("3.2.3").unwrap(), source_tar_gz: String::from("Python-3.2.3.tgz")},
+            AvailableToolchain{version: "3.2.2".parse().unwrap(), url: url.join("3.2.2").unwrap(), source_tar_gz: String::from("Python-3.2.2.tgz")},
+            AvailableToolchain{version: "3.2.1".parse().unwrap(), url: url.join("3.2.1").unwrap(), source_tar_gz: String::from("Python-3.2.1.tgz")},
+            AvailableToolchain{version: "3.2.0".parse().unwrap(), url: url.join("3.2").unwrap(), source_tar_gz: String::from("Python-3.2.tgz")},
+            AvailableToolchain{version: "3.1.5".parse().unwrap(), url: url.join("3.1.5").unwrap(), source_tar_gz: String::from("Python-3.1.5.tgz")},
+            AvailableToolchain{version: "3.1.4".parse().unwrap(), url: url.join("3.1.4").unwrap(), source_tar_gz: String::from("Python-3.1.4.tgz")},
+            AvailableToolchain{version: "3.1.3".parse().unwrap(), url: url.join("3.1.3").unwrap(), source_tar_gz: String::from("Python-3.1.3.tgz")},
+            AvailableToolchain{version: "3.1.2".parse().unwrap(), url: url.join("3.1.2").unwrap(), source_tar_gz: String::from("Python-3.1.2.tgz")},
+            AvailableToolchain{version: "3.1.1".parse().unwrap(), url: url.join("3.1.1").unwrap(), source_tar_gz: String::from("Python-3.1.1.tgz")},
+            AvailableToolchain{version: "3.1.0".parse().unwrap(), url: url.join("3.1").unwrap(), source_tar_gz: String::from("Python-3.1.tgz")},
+            AvailableToolchain{version: "3.0.1".parse().unwrap(), url: url.join("3.0.1").unwrap(), source_tar_gz: String::from("Python-3.0.1.tgz")},
+            AvailableToolchain{version: "3.0.0".parse().unwrap(), url: url.join("3.0").unwrap(), source_tar_gz: String::from("Python-3.0.tgz")},
+            AvailableToolchain{version: "2.7.17".parse().unwrap(), url: url.join("2.7.17").unwrap(), source_tar_gz: String::from("Python-2.7.17.tgz")},
+            AvailableToolchain{version: "2.7.16".parse().unwrap(), url: url.join("2.7.16").unwrap(), source_tar_gz: String::from("Python-2.7.16.tgz")},
+            AvailableToolchain{version: "2.7.15".parse().unwrap(), url: url.join("2.7.15").unwrap(), source_tar_gz: String::from("Python-2.7.15.tgz")},
+            AvailableToolchain{version: "2.7.14".parse().unwrap(), url: url.join("2.7.14").unwrap(), source_tar_gz: String::from("Python-2.7.14.tgz")},
+            AvailableToolchain{version: "2.7.13".parse().unwrap(), url: url.join("2.7.13").unwrap(), source_tar_gz: String::from("Python-2.7.13.tgz")},
+            AvailableToolchain{version: "2.7.12".parse().unwrap(), url: url.join("2.7.12").unwrap(), source_tar_gz: String::from("Python-2.7.12.tgz")},
+            AvailableToolchain{version: "2.7.11".parse().unwrap(), url: url.join("2.7.11").unwrap(), source_tar_gz: String::from("Python-2.7.11.tgz")},
+            AvailableToolchain{version: "2.7.10".parse().unwrap(), url: url.join("2.7.10").unwrap(), source_tar_gz: String::from("Python-2.7.10.tgz")},
+            AvailableToolchain{version: "2.7.9".parse().unwrap(), url: url.join("2.7.9").unwrap(), source_tar_gz: String::from("Python-2.7.9.tgz")},
+            AvailableToolchain{version: "2.7.8".parse().unwrap(), url: url.join("2.7.8").unwrap(), source_tar_gz: String::from("Python-2.7.8.tgz")},
+            AvailableToolchain{version: "2.7.7".parse().unwrap(), url: url.join("2.7.7").unwrap(), source_tar_gz: String::from("Python-2.7.7.tgz")},
+            AvailableToolchain{version: "2.7.6".parse().unwrap(), url: url.join("2.7.6").unwrap(), source_tar_gz: String::from("Python-2.7.6.tgz")},
+            AvailableToolchain{version: "2.7.5".parse().unwrap(), url: url.join("2.7.5").unwrap(), source_tar_gz: String::from("Python-2.7.5.tgz")},
+            AvailableToolchain{version: "2.7.4".parse().unwrap(), url: url.join("2.7.4").unwrap(), source_tar_gz: String::from("Python-2.7.4.tgz")},
+            AvailableToolchain{version: "2.7.3".parse().unwrap(), url: url.join("2.7.3").unwrap(), source_tar_gz: String::from("Python-2.7.3.tgz")},
+            AvailableToolchain{version: "2.7.2".parse().unwrap(), url: url.join("2.7.2").unwrap(), source_tar_gz: String::from("Python-2.7.2.tgz")},
+            AvailableToolchain{version: "2.7.1".parse().unwrap(), url: url.join("2.7.1").unwrap(), source_tar_gz: String::from("Python-2.7.1.tgz")},
+            AvailableToolchain{version: "2.7.0".parse().unwrap(), url: url.join("2.7").unwrap(), source_tar_gz: String::from("Python-2.7.tgz")},
+            AvailableToolchain{version: "2.6.9".parse().unwrap(), url: url.join("2.6.9").unwrap(), source_tar_gz: String::from("Python-2.6.9.tgz")},
+            AvailableToolchain{version: "2.6.8".parse().unwrap(), url: url.join("2.6.8").unwrap(), source_tar_gz: String::from("Python-2.6.8.tgz")},
+            AvailableToolchain{version: "2.6.7".parse().unwrap(), url: url.join("2.6.7").unwrap(), source_tar_gz: String::from("Python-2.6.7.tgz")},
+            AvailableToolchain{version: "2.6.6".parse().unwrap(), url: url.join("2.6.6").unwrap(), source_tar_gz: String::from("Python-2.6.6.tgz")},
+            AvailableToolchain{version: "2.6.5".parse().unwrap(), url: url.join("2.6.5").unwrap(), source_tar_gz: String::from("Python-2.6.5.tgz")},
+            AvailableToolchain{version: "2.6.4".parse().unwrap(), url: url.join("2.6.4").unwrap(), source_tar_gz: String::from("Python-2.6.4.tgz")},
+            AvailableToolchain{version: "2.6.3".parse().unwrap(), url: url.join("2.6.3").unwrap(), source_tar_gz: String::from("Python-2.6.3.tgz")},
+            AvailableToolchain{version: "2.6.2".parse().unwrap(), url: url.join("2.6.2").unwrap(), source_tar_gz: String::from("Python-2.6.2.tgz")},
+            AvailableToolchain{version: "2.6.1".parse().unwrap(), url: url.join("2.6.1").unwrap(), source_tar_gz: String::from("Python-2.6.1.tgz")},
+            AvailableToolchain{version: "2.6.0".parse().unwrap(), url: url.join("2.6").unwrap(), source_tar_gz: String::from("Python-2.6.tgz")},
+            AvailableToolchain{version: "2.5.6".parse().unwrap(), url: url.join("2.5.6").unwrap(), source_tar_gz: String::from("Python-2.5.6.tgz")},
+            AvailableToolchain{version: "2.5.5".parse().unwrap(), url: url.join("2.5.5").unwrap(), source_tar_gz: String::from("Python-2.5.5.tgz")},
+            AvailableToolchain{version: "2.5.4".parse().unwrap(), url: url.join("2.5.4").unwrap(), source_tar_gz: String::from("Python-2.5.4.tgz")},
+            AvailableToolchain{version: "2.5.3".parse().unwrap(), url: url.join("2.5.3").unwrap(), source_tar_gz: String::from("Python-2.5.3.tgz")},
+            AvailableToolchain{version: "2.5.2".parse().unwrap(), url: url.join("2.5.2").unwrap(), source_tar_gz: String::from("Python-2.5.2.tgz")},
+            AvailableToolchain{version: "2.5.1".parse().unwrap(), url: url.join("2.5.1").unwrap(), source_tar_gz: String::from("Python-2.5.1.tgz")},
+            AvailableToolchain{version: "2.5.0".parse().unwrap(), url: url.join("2.5").unwrap(), source_tar_gz: String::from("Python-2.5.tgz")},
+            AvailableToolchain{version: "2.4.6".parse().unwrap(), url: url.join("2.4.6").unwrap(), source_tar_gz: String::from("Python-2.4.6.tgz")},
+            AvailableToolchain{version: "2.4.5".parse().unwrap(), url: url.join("2.4.5").unwrap(), source_tar_gz: String::from("Python-2.4.5.tgz")},
+            AvailableToolchain{version: "2.4.4".parse().unwrap(), url: url.join("2.4.4").unwrap(), source_tar_gz: String::from("Python-2.4.4.tgz")},
+            AvailableToolchain{version: "2.4.3".parse().unwrap(), url: url.join("2.4.3").unwrap(), source_tar_gz: String::from("Python-2.4.3.tgz")},
+            AvailableToolchain{version: "2.4.2".parse().unwrap(), url: url.join("2.4.2").unwrap(), source_tar_gz: String::from("Python-2.4.2.tgz")},
+            AvailableToolchain{version: "2.4.1".parse().unwrap(), url: url.join("2.4.1").unwrap(), source_tar_gz: String::from("Python-2.4.1.tgz")},
+            AvailableToolchain{version: "2.4.0".parse().unwrap(), url: url.join("2.4").unwrap(), source_tar_gz: String::from("Python-2.4.tgz")},
+            AvailableToolchain{version: "2.3.7".parse().unwrap(), url: url.join("2.3.7").unwrap(), source_tar_gz: String::from("Python-2.3.7.tgz")},
+            AvailableToolchain{version: "2.3.6".parse().unwrap(), url: url.join("2.3.6").unwrap(), source_tar_gz: String::from("Python-2.3.6.tgz")},
+            AvailableToolchain{version: "2.3.5".parse().unwrap(), url: url.join("2.3.5").unwrap(), source_tar_gz: String::from("Python-2.3.5.tgz")},
+            AvailableToolchain{version: "2.3.4".parse().unwrap(), url: url.join("2.3.4").unwrap(), source_tar_gz: String::from("Python-2.3.4.tgz")},
+            AvailableToolchain{version: "2.3.3".parse().unwrap(), url: url.join("2.3.3").unwrap(), source_tar_gz: String::from("Python-2.3.3.tgz")},
+            AvailableToolchain{version: "2.3.2".parse().unwrap(), url: url.join("2.3.2").unwrap(), source_tar_gz: String::from("Python-2.3.2.tgz")},
+            AvailableToolchain{version: "2.3.1".parse().unwrap(), url: url.join("2.3.1").unwrap(), source_tar_gz: String::from("Python-2.3.1.tgz")},
+            AvailableToolchain{version: "2.3.0".parse().unwrap(), url: url.join("2.3").unwrap(), source_tar_gz: String::from("Python-2.3.tgz")},
+            AvailableToolchain{version: "2.2.3".parse().unwrap(), url: url.join("2.2.3").unwrap(), source_tar_gz: String::from("Python-2.2.3.tgz")},
+            AvailableToolchain{version: "2.2.2".parse().unwrap(), url: url.join("2.2.2").unwrap(), source_tar_gz: String::from("Python-2.2.2.tgz")},
+            AvailableToolchain{version: "2.2.1".parse().unwrap(), url: url.join("2.2.1").unwrap(), source_tar_gz: String::from("Python-2.2.1.tgz")},
+            AvailableToolchain{version: "2.2.0".parse().unwrap(), url: url.join("2.2").unwrap(), source_tar_gz: String::from("Python-2.2.tgz")},
+            AvailableToolchain{version: "2.1.3".parse().unwrap(), url: url.join("2.1.3").unwrap(), source_tar_gz: String::from("Python-2.1.3.tgz")},
+            AvailableToolchain{version: "2.0.1".parse().unwrap(), url: url.join("2.0.1").unwrap(), source_tar_gz: String::from("Python-2.0.1.tgz")},
         ];
         assert_eq!(parsed, expected);
     }

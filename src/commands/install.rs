@@ -94,7 +94,7 @@ pub fn run(
             log::info!(
                 "Installing Python {} (from {})",
                 requested_version.version,
-                requested_version.base_url
+                requested_version.url
             );
 
             // Install extras?
