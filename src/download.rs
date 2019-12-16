@@ -4,6 +4,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use anyhow::Context;
+use async_trait::async_trait;
 use hyper::{body::HttpBody as _, Client, Uri};
 use hyper_tls::HttpsConnector;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -13,6 +15,86 @@ use crate::{
     utils::{self, directory::PycorsPathsProviderFromEnv},
     Result,
 };
+
+#[async_trait]
+pub trait Downloader {
+    async fn get(&mut self, url: &Url) -> Result<()>;
+    async fn next_chunk(&mut self) -> Option<Result<bytes::Bytes>>;
+}
+#[cfg(test)]
+use std::future::Future;
+#[cfg(test)]
+use std::pin::Pin;
+
+#[cfg(test)]
+mockall::mock! {
+    Downloader {
+        fn get(&mut self, url: &Url) -> Pin<Box<dyn Future<Output = Result<()>> + Send>>;
+        fn next_chunk(&mut self) -> Pin<Box<dyn Future<Output = Option<Result<bytes::Bytes>>> + Send>>;
+    }
+}
+
+pub struct DownloaderOnline {
+    client: hyper::Client<hyper_tls::HttpsConnector<hyper::client::HttpConnector>>,
+    response: Option<hyper::Response<hyper::Body>>,
+    content_length: Option<u64>,
+}
+
+impl DownloaderOnline {
+    pub fn new() -> DownloaderOnline {
+        let https = {
+            let mut connector = HttpsConnector::new();
+            connector.https_only(true);
+            connector
+        };
+        let client = Client::builder().build::<_, hyper::Body>(https);
+        DownloaderOnline {
+            client,
+            response: None,
+            content_length: None,
+        }
+    }
+}
+
+#[async_trait]
+impl Downloader for DownloaderOnline {
+    async fn get(&mut self, url: &Url) -> Result<()> {
+        let uri = Uri::builder()
+            .scheme(url.scheme())
+            .authority(url.host_str().unwrap())
+            .path_and_query(url.path())
+            .build()?;
+        let response = self.client.get(uri).await?;
+
+        let headers = response.headers().clone();
+        let content_length = match headers.get(hyper::header::CONTENT_LENGTH).cloned() {
+            Some(ct_len) => {
+                let ct_len: u64 = ct_len.to_str()?.parse()?;
+                log::debug!("Downloading {} bytes...", ct_len);
+                Some(ct_len)
+            }
+            None => {
+                log::warn!("Could not find out file size");
+                None
+            }
+        };
+
+        self.response = Some(response);
+        self.content_length = content_length;
+
+        Ok(())
+    }
+
+    async fn next_chunk(&mut self) -> Option<Result<bytes::Bytes>> {
+        match &mut self.response {
+            None => None,
+            Some(response) => response
+                .data()
+                .await
+                .map(|v| v.with_context(|| "Failed to get next chunk")),
+        }
+    }
+}
 
 pub async fn download_to_string<S>(url: S, with_progress_bar: bool) -> Result<String>
 where
