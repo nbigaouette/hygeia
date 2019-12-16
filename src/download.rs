@@ -6,6 +6,8 @@ use std::{
 
 use anyhow::Context;
 use async_trait::async_trait;
+use bytes::Bytes;
+use futures::io::AsyncWrite;
 use hyper::{body::HttpBody as _, Client, Uri};
 use hyper_tls::HttpsConnector;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -18,51 +20,74 @@ use crate::{
 
 #[async_trait]
 pub trait Downloader {
-    async fn get(&mut self, url: &Url) -> Result<()>;
-    async fn next_chunk(&mut self) -> Option<Result<bytes::Bytes>>;
+    async fn get(&mut self) -> Result<()>;
+    async fn next_chunk(&mut self) -> Option<Result<Bytes>>;
+    fn content_length(&self) -> Option<u64>;
+    fn url(&self) -> Url;
 }
-#[cfg(test)]
-use std::future::Future;
-#[cfg(test)]
-use std::pin::Pin;
 
-#[cfg(test)]
-mockall::mock! {
-    Downloader {
-        fn get(&mut self, url: &Url) -> Pin<Box<dyn Future<Output = Result<()>> + Send>>;
-        fn next_chunk(&mut self) -> Pin<Box<dyn Future<Output = Option<Result<bytes::Bytes>>> + Send>>;
+async fn to_writer<D, W>(d: &mut D, w: &mut W, with_progress_bar: bool) -> Result<()>
+where
+    D: Downloader,
+    W: AsyncWrite + Send + Unpin,
+{
+    let pb = if with_progress_bar {
+        let message = format!("Downloading {:?}...", d.url());
+        Some(create_download_progress_bar(&message, d.content_length()))
+    } else {
+        None
+    };
+
+    while let Some(next) = d.next_chunk().await {
+        let chunk = next?;
+        if let Some(pb) = pb.as_ref() {
+            pb.inc(chunk.len() as u64)
+        }
+        futures::io::AsyncWriteExt::write_all(w, &chunk[..]).await?;
     }
+    Ok(())
 }
 
-pub struct DownloaderOnline {
+pub struct HyperDownloader {
+    url: Url,
     client: hyper::Client<hyper_tls::HttpsConnector<hyper::client::HttpConnector>>,
     response: Option<hyper::Response<hyper::Body>>,
     content_length: Option<u64>,
 }
 
-impl DownloaderOnline {
-    pub fn new() -> DownloaderOnline {
+impl HyperDownloader {
+    pub fn new<S>(url: S) -> Result<HyperDownloader>
+    where
+        S: AsRef<str>,
+    {
         let https = {
             let mut connector = HttpsConnector::new();
             connector.https_only(true);
             connector
         };
         let client = Client::builder().build::<_, hyper::Body>(https);
-        DownloaderOnline {
+        let url = url.as_ref();
+        let url: Url = url
+            .parse()
+            .with_context(|| format!("Failed to parse url: {}", url))?;
+        Ok(HyperDownloader {
+            url,
             client,
             response: None,
             content_length: None,
-        }
+        })
     }
 }
 
 #[async_trait]
-impl Downloader for DownloaderOnline {
-    async fn get(&mut self, url: &Url) -> Result<()> {
+impl Downloader for HyperDownloader {
+    async fn get(&mut self) -> Result<()> {
+        log::info!("Downloading {}...", self.url);
+
         let uri = Uri::builder()
-            .scheme(url.scheme())
-            .authority(url.host_str().unwrap())
-            .path_and_query(url.path())
+            .scheme(self.url.scheme())
+            .authority(self.url.host_str().unwrap())
+            .path_and_query(self.url.path())
             .build()?;
         let response = self.client.get(uri).await?;
 
@@ -85,7 +110,7 @@ impl Downloader for DownloaderOnline {
         Ok(())
     }
 
-    async fn next_chunk(&mut self) -> Option<Result<bytes::Bytes>> {
+    async fn next_chunk(&mut self) -> Option<Result<Bytes>> {
         match &mut self.response {
             None => None,
             Some(response) => response
@@ -94,14 +119,24 @@ impl Downloader for DownloaderOnline {
                 .map(|v| v.with_context(|| "Failed to get next chunk")),
         }
     }
+
+    fn content_length(&self) -> Option<u64> {
+        self.content_length
+    }
+
+    fn url(&self) -> Url {
+        self.url.clone()
+    }
 }
 
-pub async fn download_to_string<S>(url: S, with_progress_bar: bool) -> Result<String>
+pub async fn download_to_string<D>(downloader: &mut D, with_progress_bar: bool) -> Result<String>
 where
-    S: AsRef<str>,
+    D: Downloader,
 {
-    let url: Url = url.as_ref().parse()?;
-    Ok(String::from_utf8(download(&url, with_progress_bar).await?)?)
+    downloader.get().await?;
+    let mut writer: Vec<u8> = Vec::new();
+    to_writer(downloader, &mut writer, with_progress_bar).await?;
+    Ok(String::from_utf8(writer)?)
 }
 
 pub async fn download_source(url: &Url, with_progress_bar: bool) -> Result<()> {
@@ -241,48 +276,83 @@ fn create_download_progress_bar(msg: &str, length: Option<u64>) -> ProgressBar {
 mod tests {
     use super::*;
 
-    use bytes::Bytes;
-    use mockall::Sequence;
+    struct MockDownloader {
+        chunks: Vec<Result<Bytes>>,
+    }
+
+    impl MockDownloader {
+        fn new(chunks: Vec<Result<Bytes>>) -> MockDownloader {
+            // We use Vec::pop() to yields elements, so revert the vector here
+            MockDownloader {
+                chunks: chunks.into_iter().rev().collect(),
+            }
+        }
+    }
+
+    #[async_trait]
+    impl Downloader for MockDownloader {
+        async fn get(&mut self) -> Result<()> {
+            Ok(())
+        }
+        async fn next_chunk(&mut self) -> Option<Result<Bytes>> {
+            let o: Option<Result<Bytes>> = self.chunks.pop();
+            o
+        }
+        fn content_length(&self) -> Option<u64> {
+            None
+        }
+        fn url(&self) -> Url {
+            Url::parse("https://example.com/python.tar.gz").unwrap()
+        }
+    }
 
     #[test]
     fn download_success_manual_next_chunk() {
-        let mut mock_downloader = MockDownloader::default();
+        let mut mock_downloader = MockDownloader::new(vec![
+            Ok(Bytes::from_static(&[1, 2, 3, 4])),
+            Ok(Bytes::from_static(&[5, 6, 7, 8])),
+        ]);
         let expected_downloaded_data: Vec<Bytes> = vec![
             Bytes::from_static(&[1, 2, 3, 4]),
             Bytes::from_static(&[5, 6, 7, 8]),
         ];
-        let mut seq = Sequence::new();
-        mock_downloader
-            .expect_get()
-            .times(1)
-            .in_sequence(&mut seq)
-            .returning(|_| Box::pin(futures::future::ready(Ok(()))));
-        mock_downloader
-            .expect_next_chunk()
-            .times(1)
-            .in_sequence(&mut seq)
-            .returning(|| {
-                Box::pin(futures::future::ready(Some(Ok(Bytes::from_static(&[
-                    1, 2, 3, 4,
-                ])))))
-            });
-        mock_downloader
-            .expect_next_chunk()
-            .times(1)
-            .in_sequence(&mut seq)
-            .returning(|| {
-                Box::pin(futures::future::ready(Some(Ok(Bytes::from_static(&[
-                    5, 6, 7, 8,
-                ])))))
-            });
-        let url = Url::parse("https://example.com/dummmy.tar.gz").unwrap();
+
         let data: Vec<Bytes> = futures::executor::block_on(async {
-            mock_downloader.get(&url).await.unwrap();
+            mock_downloader.get().await.unwrap();
             vec![
                 mock_downloader.next_chunk().await.unwrap().unwrap(),
                 mock_downloader.next_chunk().await.unwrap().unwrap(),
             ]
         });
         assert_eq!(data, expected_downloaded_data);
+    }
+    #[test]
+    fn download_success_to_writer() {
+        let mut mock_downloader = MockDownloader::new(vec![
+            Ok(Bytes::from_static(&[1, 2, 3, 4])),
+            Ok(Bytes::from_static(&[5, 6, 7, 8])),
+        ]);
+
+        let mut writer: Vec<u8> = Vec::new();
+
+        futures::executor::block_on(async {
+            mock_downloader.get().await.unwrap();
+            to_writer(&mut mock_downloader, &mut writer, false)
+                .await
+                .unwrap();
+        });
+
+        assert_eq!(writer, vec![1, 2, 3, 4, 5, 6, 7, 8]);
+    }
+
+    #[test]
+    fn download_to_string_success() {
+        let first_chunk = Bytes::from("Hello ");
+        let second_chunk = Bytes::from("world");
+        let mut mock_downloader = MockDownloader::new(vec![Ok(first_chunk), Ok(second_chunk)]);
+
+        let downloaded =
+            futures::executor::block_on(download_to_string(&mut mock_downloader, false)).unwrap();
+        assert_eq!(downloaded, "Hello world");
     }
 }

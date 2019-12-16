@@ -14,7 +14,7 @@ use url::Url;
 
 use crate::{
     constants::PYTHON_SOURCE_INDEX_URL,
-    download::download_to_string,
+    download::{download_to_string, HyperDownloader},
     utils::directory::{PycorsHomeProviderTrait, PycorsPathsProvider},
 };
 
@@ -33,13 +33,12 @@ pub struct ToolchainsCacheFetchOnline;
 
 impl ToolchainsCacheFetch for ToolchainsCacheFetchOnline {
     fn get(&self) -> Result<String> {
-        let mut rt = tokio::runtime::Runtime::new()?;
-        // HTML file is too small to bother with a progress bar
+        let mut downloader = HyperDownloader::new(PYTHON_SOURCE_INDEX_URL)?;
+        // HTML file is too small to bother with a prog
         let with_progress_bar = false;
-        let index_html: String = rt.block_on(download_to_string(
-            PYTHON_SOURCE_INDEX_URL,
-            with_progress_bar,
-        ))?;
+        let index_html: String =
+            futures::executor::block_on(download_to_string(&mut downloader, with_progress_bar))?;
+
         Ok(index_html)
     }
 }
