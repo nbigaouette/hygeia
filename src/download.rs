@@ -236,3 +236,53 @@ fn create_download_progress_bar(msg: &str, length: Option<u64>) -> ProgressBar {
 
     pb
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use bytes::Bytes;
+    use mockall::Sequence;
+
+    #[test]
+    fn download_success_manual_next_chunk() {
+        let mut mock_downloader = MockDownloader::default();
+        let expected_downloaded_data: Vec<Bytes> = vec![
+            Bytes::from_static(&[1, 2, 3, 4]),
+            Bytes::from_static(&[5, 6, 7, 8]),
+        ];
+        let mut seq = Sequence::new();
+        mock_downloader
+            .expect_get()
+            .times(1)
+            .in_sequence(&mut seq)
+            .returning(|_| Box::pin(futures::future::ready(Ok(()))));
+        mock_downloader
+            .expect_next_chunk()
+            .times(1)
+            .in_sequence(&mut seq)
+            .returning(|| {
+                Box::pin(futures::future::ready(Some(Ok(Bytes::from_static(&[
+                    1, 2, 3, 4,
+                ])))))
+            });
+        mock_downloader
+            .expect_next_chunk()
+            .times(1)
+            .in_sequence(&mut seq)
+            .returning(|| {
+                Box::pin(futures::future::ready(Some(Ok(Bytes::from_static(&[
+                    5, 6, 7, 8,
+                ])))))
+            });
+        let url = Url::parse("https://example.com/dummmy.tar.gz").unwrap();
+        let data: Vec<Bytes> = futures::executor::block_on(async {
+            mock_downloader.get(&url).await.unwrap();
+            vec![
+                mock_downloader.next_chunk().await.unwrap().unwrap(),
+                mock_downloader.next_chunk().await.unwrap().unwrap(),
+            ]
+        });
+        assert_eq!(data, expected_downloaded_data);
+    }
+}
