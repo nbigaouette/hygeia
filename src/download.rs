@@ -178,7 +178,7 @@ async fn download(url: &Url, with_progress_bar: bool) -> Result<Vec<u8>> {
     let mut response = client.get(uri).await?;
 
     if !response.status().is_success() {
-        anyhow::bail!("Failed to query python.org: {:?}", response);
+        anyhow::bail!("Failed to query {:?}: {:?}", url.host_str(), response);
     }
 
     // Create a progress bar
