@@ -7,16 +7,12 @@ use std::{
 use anyhow::Context;
 use async_trait::async_trait;
 use bytes::Bytes;
-use futures::io::AsyncWrite;
 use hyper::{body::HttpBody as _, Client, Uri};
 use hyper_tls::HttpsConnector;
 use indicatif::{ProgressBar, ProgressStyle};
 use url::Url;
 
-use crate::{
-    utils::{self, directory::PycorsPathsProviderFromEnv},
-    Result,
-};
+use crate::{utils, Result};
 
 #[async_trait]
 pub trait Downloader {
@@ -24,15 +20,31 @@ pub trait Downloader {
     async fn next_chunk(&mut self) -> Option<Result<Bytes>>;
     fn content_length(&self) -> Option<u64>;
     fn url(&self) -> Url;
+    fn filename(&self) -> Result<String> {
+        let url = self.url();
+        let filename = match url
+            .path_segments()
+            .ok_or_else(|| anyhow::anyhow!("cannot extract path segments from {:?}", url))?
+            .last()
+            .ok_or_else(|| anyhow::anyhow!("cannot extract filename from {:?}", url))?
+        {
+            "" => url.as_str(),
+            filename => filename,
+        };
+        Ok(filename.to_owned())
+    }
 }
 
 async fn to_writer<D, W>(d: &mut D, w: &mut W, with_progress_bar: bool) -> Result<()>
 where
     D: Downloader,
-    W: AsyncWrite + Send + Unpin,
+    W: Write,
 {
     let pb = if with_progress_bar {
-        let message = format!("Downloading {:?}...", d.url());
+        let message = format!(
+            "Downloading {:?}...",
+            d.filename().unwrap_or_else(|_| String::new())
+        );
         Some(create_download_progress_bar(&message, d.content_length()))
     } else {
         None
@@ -43,7 +55,7 @@ where
         if let Some(pb) = pb.as_ref() {
             pb.inc(chunk.len() as u64)
         }
-        futures::io::AsyncWriteExt::write_all(w, &chunk[..]).await?;
+        w.write_all(&chunk[..])?;
     }
     Ok(())
 }
@@ -139,118 +151,49 @@ where
     Ok(String::from_utf8(writer)?)
 }
 
-pub async fn download_source(url: &Url, with_progress_bar: bool) -> Result<()> {
-    let download_dir = PycorsPathsProviderFromEnv::new().downloaded();
-    download_to_path(url, download_dir, with_progress_bar).await
-}
-
-pub async fn download_to_path<S, P>(url: S, download_to: P, with_progress_bar: bool) -> Result<()>
+pub async fn download_to_path<D, P>(
+    downloader: &mut D,
+    download_to: P,
+    with_progress_bar: bool,
+) -> Result<()>
 where
     P: AsRef<Path>,
-    S: AsRef<str>,
+    D: Downloader,
 {
-    _download_to_path(url.as_ref(), download_to.as_ref(), with_progress_bar).await
+    _download_to_path(downloader, download_to.as_ref(), with_progress_bar).await
 }
 
-async fn _download_to_path(url: &str, download_to: &Path, with_progress_bar: bool) -> Result<()> {
+pub async fn _download_to_path<D>(
+    downloader: &mut D,
+    download_to: &Path,
+    with_progress_bar: bool,
+) -> Result<()>
+where
+    D: Downloader,
+{
     if !utils::path_exists(&download_to) {
         log::debug!("Directory {:?} does not exists. Creating.", download_to);
         create_dir_all(&download_to)?;
     }
 
-    let url: Url = url.parse()?;
-
-    let filename = url
-        .path_segments()
-        .ok_or_else(|| anyhow::anyhow!("Could not extract filename from url"))?
-        .last()
-        .ok_or_else(|| anyhow::anyhow!("Could not get last segment from url path"))?
-        .to_string();
+    let filename = downloader.filename()?;
 
     let mut file_path = PathBuf::new();
     file_path.push(download_to);
     file_path.push(&filename);
 
     if file_path.exists() {
-        println!("skipped: file {} already downloaded.", filename);
+        log::warn!("skipped: file {} already downloaded.", filename);
         Ok(())
     } else {
-        let downloaded_data = download(&url, with_progress_bar).await?;
-
         let mut output = BufWriter::new(File::create(&file_path)?);
-        output.write_all(&downloaded_data)?;
+
+        downloader.get().await?;
+
+        to_writer(downloader, &mut output, with_progress_bar).await?;
 
         Ok(())
     }
-}
-
-async fn download(url: &Url, with_progress_bar: bool) -> Result<Vec<u8>> {
-    // Based on: https://users.rust-lang.org/t/using-async-std-was-reqwest/32735/16
-    log::info!("Downloading {}...", url);
-
-    let https = {
-        let mut connector = HttpsConnector::new();
-        connector.https_only(true);
-        connector
-    };
-    let client = Client::builder().build::<_, hyper::Body>(https);
-
-    let uri = Uri::builder()
-        .scheme(url.scheme())
-        .authority(url.host_str().unwrap())
-        .path_and_query(url.path())
-        .build()?;
-    let filename: &str = match url
-        .path_segments()
-        .ok_or_else(|| anyhow::anyhow!("cannot extract path segments from {:?}", url))?
-        .last()
-        .ok_or_else(|| anyhow::anyhow!("cannot extract filename from {:?}", url))?
-    {
-        "" => url.as_str(),
-        filename => filename,
-    };
-
-    let mut response = client.get(uri).await?;
-
-    if !response.status().is_success() {
-        anyhow::bail!("Failed to query {:?}: {:?}", url.host_str(), response);
-    }
-
-    // Create a progress bar
-    let headers = response.headers().clone();
-    let ct_len = match headers.get(hyper::header::CONTENT_LENGTH).cloned() {
-        Some(ct_len) => {
-            let ct_len: u64 = ct_len.to_str()?.parse()?;
-            log::debug!("Downloading {} bytes...", ct_len);
-            Some(ct_len)
-        }
-        None => {
-            log::warn!("Could not find out file size");
-            None
-        }
-    };
-
-    let message = format!("Downloading {:?}...", filename);
-    let pb = if with_progress_bar {
-        Some(create_download_progress_bar(&message, ct_len))
-    } else {
-        None
-    };
-
-    let mut output: Vec<u8> = Vec::with_capacity(1024);
-    while let Some(next) = response.data().await {
-        let chunk = next?;
-        if let Some(pb) = pb.as_ref() {
-            pb.inc(chunk.len() as u64)
-        }
-        output.write_all(&chunk[..])?;
-    }
-
-    if let Some(pb) = pb {
-        pb.finish()
-    }
-
-    Ok(output)
 }
 
 fn create_download_progress_bar(msg: &str, length: Option<u64>) -> ProgressBar {

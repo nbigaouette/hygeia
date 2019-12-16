@@ -12,7 +12,7 @@ use crate::{
     cache::{AvailableToolchainsCache, ToolchainsCacheFetchOnline},
     commands,
     constants::{EXECUTABLE_NAME, TOOLCHAIN_FILE},
-    download::download_source,
+    download::{download_to_path, HyperDownloader},
     toolchain::{find_installed_toolchains, installed::InstalledToolchain, ToolchainFile},
     utils::directory::PycorsPathsProviderFromEnv,
 };
@@ -94,7 +94,7 @@ pub fn run(
             log::info!(
                 "Installing Python {} (from {})",
                 requested_version.version,
-                requested_version.url
+                requested_version.base_url
             );
 
             // Install extras?
@@ -108,13 +108,15 @@ pub fn run(
                 };
 
             // Configure make make install
-            let url_to_download = requested_version
-                .url
-                .join(&requested_version.source_tar_gz)?;
             let with_progress_bar = true;
-            // FIXME: Create progress bar outside of download_source()
             let mut rt = tokio::runtime::Runtime::new()?;
-            rt.block_on(download_source(&url_to_download, with_progress_bar))?;
+            let mut downloader = HyperDownloader::new(requested_version.source_url())?;
+            let download_dir = PycorsPathsProviderFromEnv::new().downloaded();
+            rt.block_on(download_to_path(
+                &mut downloader,
+                download_dir,
+                with_progress_bar,
+            ))?;
             // FIXME: Validate downloaded package with checksum
             // FIXME: Validate downloaded package with signature
             install_package(&requested_version.version, install_extra_packages)?;

@@ -7,7 +7,7 @@ use semver::Version;
 
 use crate::{
     commands::{self, install::pip::install_extra_pip_packages},
-    download::download_to_path,
+    download::{download_to_path, HyperDownloader},
     os::windows::build_filename_zip,
     utils::{self, directory::PycorsPathsProviderFromEnv},
     Result,
@@ -63,10 +63,15 @@ pub fn install_package(
     // Install pip
     let cache_dir = PycorsPathsProviderFromEnv::new().cache();
     let get_pip_py = cache_dir.join("get-pip.py");
-    let mut rt = tokio::runtime::Runtime::new()?;
     // File is too small to bother for a progress bar
     let with_progress_bar = false;
-    rt.block_on(download_to_path(GET_PIP_URL, &cache_dir, with_progress_bar))?;
+    let mut downloader = HyperDownloader::new(GET_PIP_URL)?;
+    futures::executor::block_on(download_to_path(
+        &mut downloader,
+        &cache_dir,
+        with_progress_bar,
+    ))?;
+
     utils::run_cmd_template(
         &version,
         "Install pip",
