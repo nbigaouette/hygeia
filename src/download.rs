@@ -219,6 +219,8 @@ fn create_download_progress_bar(msg: &str, length: Option<u64>) -> ProgressBar {
 mod tests {
     use super::*;
 
+    use std::{env, fs};
+
     struct MockDownloader {
         chunks: Vec<Result<Bytes>>,
     }
@@ -246,6 +248,57 @@ mod tests {
         }
         fn url(&self) -> Url {
             Url::parse("https://example.com/python.tar.gz").unwrap()
+        }
+    }
+
+    fn temp_dir() -> PathBuf {
+        env::temp_dir()
+            .join(crate::constants::EXECUTABLE_NAME)
+            .join("download")
+    }
+
+    #[test]
+    fn hyper_downloader_success_new() {
+        let url = "http://example.com/";
+        let downloader = HyperDownloader::new(url).unwrap();
+        assert_eq!(downloader.url(), Url::parse(url).unwrap());
+    }
+
+    #[test]
+    #[should_panic]
+    fn hyper_downloader_failure_new_bad_url() {
+        HyperDownloader::new("Invalid url").unwrap();
+    }
+
+    #[test]
+    fn hyper_downloader_success_get() {
+        let mut rt = tokio::runtime::Runtime::new().unwrap();
+        let download_dir = temp_dir().join("hyper_downloader_success_get");
+        let downloaded_file = download_dir.join("index.html");
+        if download_dir.exists() {
+            fs::remove_dir_all(&download_dir).unwrap();
+        }
+        let with_progress_bar = false;
+
+        {
+            let mut downloader = HyperDownloader::new("https://example.com/").unwrap();
+            rt.block_on(async {
+                download_to_path(&mut downloader, &download_dir, with_progress_bar).await
+            })
+            .unwrap();
+            assert_eq!(
+                downloader.content_length().unwrap(),
+                fs::metadata(&downloaded_file).unwrap().len()
+            );
+        }
+        // Downloading a second time should skip download since already downloaded
+        {
+            let mut downloader = HyperDownloader::new("https://example.com/").unwrap();
+            rt.block_on(async {
+                download_to_path(&mut downloader, &download_dir, with_progress_bar).await
+            })
+            .unwrap();
+            assert_eq!(downloader.content_length(), None);
         }
     }
 
