@@ -28,7 +28,7 @@ pub trait Downloader {
             .last()
             .ok_or_else(|| anyhow::anyhow!("cannot extract filename from {:?}", url))?
         {
-            "" => url.as_str(),
+            "" => "index.html",
             filename => filename,
         };
         Ok(filename.to_owned())
