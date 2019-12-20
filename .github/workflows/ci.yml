@@ -125,7 +125,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Run tarpaulin
-        run: cargo tarpaulin --out Xml --verbose -- --test-threads=1
+        run: cargo tarpaulin --out Xml --verbose
       - name: Upload coverage to codecov.io
         # run: bash <(curl -s https://codecov.io/bash)
         uses: codecov/codecov-action@v1
