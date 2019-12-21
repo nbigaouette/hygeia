@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::Result;
 use chrono::{DateTime, Utc};
-use regex::Regex;
+use regex::{Regex, RegexBuilder};
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use serde_json;
@@ -13,17 +13,10 @@ use thiserror::Error;
 use url::Url;
 
 use crate::{
-    constants::PYTHON_BASE_URL,
-    download::download_to_string,
+    constants::PYTHON_SOURCE_INDEX_URL,
+    download::{download_to_string, HyperDownloader},
     utils::directory::{PycorsHomeProviderTrait, PycorsPathsProvider},
 };
-
-// FIXME: Pre-releases are available inside 'https://www.python.org/ftp/python/MAJOR.MINOR.PATCH'
-//          This means that seeing 'MAJOR.MINOR.PATCH' in the index.html does not mean a
-//          release is available; a pre-release might have created the directory.
-// FIXME: Cache is re-created from scratch every time it is created. Save it to disk instead.
-
-// FIXME: Use https://www.python.org/downloads/source/ instead to get all links of releases!
 
 #[derive(Debug, Error)]
 pub enum CacheError {
@@ -40,8 +33,13 @@ pub struct ToolchainsCacheFetchOnline;
 
 impl ToolchainsCacheFetch for ToolchainsCacheFetchOnline {
     fn get(&self) -> Result<String> {
+        let mut downloader = HyperDownloader::new(PYTHON_SOURCE_INDEX_URL)?;
+        // HTML file is too small to bother with a prog
+        let with_progress_bar = false;
         let mut rt = tokio::runtime::Runtime::new()?;
-        let index_html: String = rt.block_on(download_to_string(PYTHON_BASE_URL))?;
+        let index_html: String =
+            rt.block_on(download_to_string(&mut downloader, with_progress_bar))?;
+
         Ok(index_html)
     }
 }
@@ -50,6 +48,18 @@ impl ToolchainsCacheFetch for ToolchainsCacheFetchOnline {
 pub struct AvailableToolchain {
     pub version: Version,
     pub base_url: Url,
+    pub source_tar_gz: String,
+}
+
+impl AvailableToolchain {
+    pub fn source_url(&self) -> Url {
+        let mut new_url = self.base_url.clone();
+        new_url
+            .path_segments_mut()
+            .unwrap()
+            .extend(&[&self.source_tar_gz]);
+        new_url
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -98,7 +108,12 @@ impl AvailableToolchainsCache {
                         cache_file,
                         e
                     );
-                    AvailableToolchainsCache::create(paths_provider, downloader)?
+                    AvailableToolchainsCache::create(paths_provider, downloader).map(
+                        |available_toolchains| {
+                            log::error!("Cache successfully recreated, moving on.");
+                            available_toolchains
+                        },
+                    )?
                 }
             }
         } else {
@@ -164,41 +179,43 @@ impl AvailableToolchainsCache {
 }
 
 fn parse_index_html(index_html: &str) -> Result<Vec<AvailableToolchain>> {
-    let re = Regex::new(r#"(?x)<a \s+ href="(?P<version>\d+[\d\.]+)/">"#)?;
-
-    let base_url =
-        Url::parse(PYTHON_BASE_URL).expect("Constant 'PYTHON_BASE_URL' should be parsable");
+    let re: Regex = RegexBuilder::new(
+        r#"<a href="/downloads/release/python-[^/]*/">Python (?P<version>[2-3].[0-9]+.[0-9]+[^ ]*)? - .*<a href="(?P<url>[^"]*)">Gzipped source tar"#
+    )
+    .dot_matches_new_line(true)  // (s)
+    .swap_greed(true)  // (U)
+        .build()?;
 
     let mut toolchains: Vec<AvailableToolchain> = re
         .captures_iter(index_html)
-        .filter_map(|caps| {
-            let v = &caps["version"];
-            let url = base_url.join(&v);
-            match url {
-                Ok(url) => Some((v.to_string(), url)),
-                Err(e) => {
-                    log::error!(
-                        "Failed to construct a url from version ({:?}), skipping: {:?}",
-                        v,
-                        e
-                    );
-                    None
-                }
+        .filter_map(|caps| match (caps.name("version"), caps.name("url")) {
+            (Some(version), Some(url)) => Some((version.as_str(), url.as_str())),
+            (Some(version), None) => {
+                log::error!("Failed to extract url for version {}", version.as_str());
+                None
             }
+            (None, Some(url)) => {
+                log::error!("Failed to extract version for url {}", url.as_str());
+                None
+            }
+            (None, None) => None,
         })
-        .filter_map(|(v, url)| {
-            // Add a `.0` for versions missing a patch number (f.e. `2.7`)
-            let dots = v.chars().filter(|c| *c == '.').count();
-            let v = if dots == 1 { format!("{}.0", v) } else { v };
-            match Version::parse(&v) {
-                Ok(version) => Some(AvailableToolchain {
-                    version,
-                    base_url: url,
-                }),
-                Err(e) => {
-                    log::error!("Failed to parse version ({:?}), skipping: {:?}", v, e);
-                    None
-                }
+        .map(|(version, url)| {
+            let version = Version::parse(
+                &version
+                    .replace("rc", "-rc") // release candidates
+                    .replace("a", "-a") // alpha
+                    .replace("b", "-b"), // beta
+            )
+            .unwrap();
+            let mut url = Url::parse(url).unwrap();
+            let source_tar_gz = url.path_segments().unwrap().last().unwrap().to_string();
+            url.path_segments_mut().unwrap().pop();
+            url.set_scheme("https").unwrap(); // 3.3.4, 3.3.5 has "http" instead of "https"
+            AvailableToolchain {
+                version,
+                base_url: url,
+                source_tar_gz,
             }
         })
         .collect();
@@ -370,134 +387,231 @@ mod tests {
 
     #[test]
     fn parse_html() {
-        let parsed: Vec<AvailableToolchain> = parse_index_html(INDEX_HTML).unwrap();
+        crate::tests::init_logger();
 
-        let url =
-            Url::parse(PYTHON_BASE_URL).expect("Constant 'PYTHON_BASE_URL' should be parsable");
+        let parsed: Vec<AvailableToolchain> = parse_index_html(INDEX_HTML).unwrap();
+        assert_eq!(parsed.len(), 213);
+
+        assert_eq!(
+            parsed[0].source_url(),
+            Url::parse("https://www.python.org/ftp/python/3.9.0/Python-3.9.0a1.tgz").unwrap()
+        );
 
         #[rustfmt::skip]
         let expected: Vec<AvailableToolchain> = vec![
-            AvailableToolchain{version: "3.8.0".parse().unwrap(), base_url: url.join("3.8.0").unwrap()},
-            AvailableToolchain{version: "3.7.5".parse().unwrap(), base_url: url.join("3.7.5").unwrap()},
-            AvailableToolchain{version: "3.7.4".parse().unwrap(), base_url: url.join("3.7.4").unwrap()},
-            AvailableToolchain{version: "3.7.3".parse().unwrap(), base_url: url.join("3.7.3").unwrap()},
-            AvailableToolchain{version: "3.7.2".parse().unwrap(), base_url: url.join("3.7.2").unwrap()},
-            AvailableToolchain{version: "3.7.1".parse().unwrap(), base_url: url.join("3.7.1").unwrap()},
-            AvailableToolchain{version: "3.7.0".parse().unwrap(), base_url: url.join("3.7.0").unwrap()},
-            AvailableToolchain{version: "3.6.9".parse().unwrap(), base_url: url.join("3.6.9").unwrap()},
-            AvailableToolchain{version: "3.6.8".parse().unwrap(), base_url: url.join("3.6.8").unwrap()},
-            AvailableToolchain{version: "3.6.7".parse().unwrap(), base_url: url.join("3.6.7").unwrap()},
-            AvailableToolchain{version: "3.6.6".parse().unwrap(), base_url: url.join("3.6.6").unwrap()},
-            AvailableToolchain{version: "3.6.5".parse().unwrap(), base_url: url.join("3.6.5").unwrap()},
-            AvailableToolchain{version: "3.6.4".parse().unwrap(), base_url: url.join("3.6.4").unwrap()},
-            AvailableToolchain{version: "3.6.3".parse().unwrap(), base_url: url.join("3.6.3").unwrap()},
-            AvailableToolchain{version: "3.6.2".parse().unwrap(), base_url: url.join("3.6.2").unwrap()},
-            AvailableToolchain{version: "3.6.1".parse().unwrap(), base_url: url.join("3.6.1").unwrap()},
-            AvailableToolchain{version: "3.6.0".parse().unwrap(), base_url: url.join("3.6.0").unwrap()},
-            AvailableToolchain{version: "3.5.9".parse().unwrap(), base_url: url.join("3.5.9").unwrap()},
-            AvailableToolchain{version: "3.5.8".parse().unwrap(), base_url: url.join("3.5.8").unwrap()},
-            AvailableToolchain{version: "3.5.7".parse().unwrap(), base_url: url.join("3.5.7").unwrap()},
-            AvailableToolchain{version: "3.5.6".parse().unwrap(), base_url: url.join("3.5.6").unwrap()},
-            AvailableToolchain{version: "3.5.5".parse().unwrap(), base_url: url.join("3.5.5").unwrap()},
-            AvailableToolchain{version: "3.5.4".parse().unwrap(), base_url: url.join("3.5.4").unwrap()},
-            AvailableToolchain{version: "3.5.3".parse().unwrap(), base_url: url.join("3.5.3").unwrap()},
-            AvailableToolchain{version: "3.5.2".parse().unwrap(), base_url: url.join("3.5.2").unwrap()},
-            AvailableToolchain{version: "3.5.1".parse().unwrap(), base_url: url.join("3.5.1").unwrap()},
-            AvailableToolchain{version: "3.5.0".parse().unwrap(), base_url: url.join("3.5.0").unwrap()},
-            AvailableToolchain{version: "3.4.10".parse().unwrap(), base_url: url.join("3.4.10").unwrap()},
-            AvailableToolchain{version: "3.4.9".parse().unwrap(), base_url: url.join("3.4.9").unwrap()},
-            AvailableToolchain{version: "3.4.8".parse().unwrap(), base_url: url.join("3.4.8").unwrap()},
-            AvailableToolchain{version: "3.4.7".parse().unwrap(), base_url: url.join("3.4.7").unwrap()},
-            AvailableToolchain{version: "3.4.6".parse().unwrap(), base_url: url.join("3.4.6").unwrap()},
-            AvailableToolchain{version: "3.4.5".parse().unwrap(), base_url: url.join("3.4.5").unwrap()},
-            AvailableToolchain{version: "3.4.4".parse().unwrap(), base_url: url.join("3.4.4").unwrap()},
-            AvailableToolchain{version: "3.4.3".parse().unwrap(), base_url: url.join("3.4.3").unwrap()},
-            AvailableToolchain{version: "3.4.2".parse().unwrap(), base_url: url.join("3.4.2").unwrap()},
-            AvailableToolchain{version: "3.4.1".parse().unwrap(), base_url: url.join("3.4.1").unwrap()},
-            AvailableToolchain{version: "3.4.0".parse().unwrap(), base_url: url.join("3.4.0").unwrap()},
-            AvailableToolchain{version: "3.3.7".parse().unwrap(), base_url: url.join("3.3.7").unwrap()},
-            AvailableToolchain{version: "3.3.6".parse().unwrap(), base_url: url.join("3.3.6").unwrap()},
-            AvailableToolchain{version: "3.3.5".parse().unwrap(), base_url: url.join("3.3.5").unwrap()},
-            AvailableToolchain{version: "3.3.4".parse().unwrap(), base_url: url.join("3.3.4").unwrap()},
-            AvailableToolchain{version: "3.3.3".parse().unwrap(), base_url: url.join("3.3.3").unwrap()},
-            AvailableToolchain{version: "3.3.2".parse().unwrap(), base_url: url.join("3.3.2").unwrap()},
-            AvailableToolchain{version: "3.3.1".parse().unwrap(), base_url: url.join("3.3.1").unwrap()},
-            AvailableToolchain{version: "3.3.0".parse().unwrap(), base_url: url.join("3.3.0").unwrap()},
-            AvailableToolchain{version: "3.2.6".parse().unwrap(), base_url: url.join("3.2.6").unwrap()},
-            AvailableToolchain{version: "3.2.5".parse().unwrap(), base_url: url.join("3.2.5").unwrap()},
-            AvailableToolchain{version: "3.2.4".parse().unwrap(), base_url: url.join("3.2.4").unwrap()},
-            AvailableToolchain{version: "3.2.3".parse().unwrap(), base_url: url.join("3.2.3").unwrap()},
-            AvailableToolchain{version: "3.2.2".parse().unwrap(), base_url: url.join("3.2.2").unwrap()},
-            AvailableToolchain{version: "3.2.1".parse().unwrap(), base_url: url.join("3.2.1").unwrap()},
-            AvailableToolchain{version: "3.2.0".parse().unwrap(), base_url: url.join("3.2").unwrap()},
-            AvailableToolchain{version: "3.1.5".parse().unwrap(), base_url: url.join("3.1.5").unwrap()},
-            AvailableToolchain{version: "3.1.4".parse().unwrap(), base_url: url.join("3.1.4").unwrap()},
-            AvailableToolchain{version: "3.1.3".parse().unwrap(), base_url: url.join("3.1.3").unwrap()},
-            AvailableToolchain{version: "3.1.2".parse().unwrap(), base_url: url.join("3.1.2").unwrap()},
-            AvailableToolchain{version: "3.1.1".parse().unwrap(), base_url: url.join("3.1.1").unwrap()},
-            AvailableToolchain{version: "3.1.0".parse().unwrap(), base_url: url.join("3.1").unwrap()},
-            AvailableToolchain{version: "3.0.1".parse().unwrap(), base_url: url.join("3.0.1").unwrap()},
-            AvailableToolchain{version: "3.0.0".parse().unwrap(), base_url: url.join("3.0").unwrap()},
-            AvailableToolchain{version: "2.7.17".parse().unwrap(), base_url: url.join("2.7.17").unwrap()},
-            AvailableToolchain{version: "2.7.16".parse().unwrap(), base_url: url.join("2.7.16").unwrap()},
-            AvailableToolchain{version: "2.7.15".parse().unwrap(), base_url: url.join("2.7.15").unwrap()},
-            AvailableToolchain{version: "2.7.14".parse().unwrap(), base_url: url.join("2.7.14").unwrap()},
-            AvailableToolchain{version: "2.7.13".parse().unwrap(), base_url: url.join("2.7.13").unwrap()},
-            AvailableToolchain{version: "2.7.12".parse().unwrap(), base_url: url.join("2.7.12").unwrap()},
-            AvailableToolchain{version: "2.7.11".parse().unwrap(), base_url: url.join("2.7.11").unwrap()},
-            AvailableToolchain{version: "2.7.10".parse().unwrap(), base_url: url.join("2.7.10").unwrap()},
-            AvailableToolchain{version: "2.7.9".parse().unwrap(), base_url: url.join("2.7.9").unwrap()},
-            AvailableToolchain{version: "2.7.8".parse().unwrap(), base_url: url.join("2.7.8").unwrap()},
-            AvailableToolchain{version: "2.7.7".parse().unwrap(), base_url: url.join("2.7.7").unwrap()},
-            AvailableToolchain{version: "2.7.6".parse().unwrap(), base_url: url.join("2.7.6").unwrap()},
-            AvailableToolchain{version: "2.7.5".parse().unwrap(), base_url: url.join("2.7.5").unwrap()},
-            AvailableToolchain{version: "2.7.4".parse().unwrap(), base_url: url.join("2.7.4").unwrap()},
-            AvailableToolchain{version: "2.7.3".parse().unwrap(), base_url: url.join("2.7.3").unwrap()},
-            AvailableToolchain{version: "2.7.2".parse().unwrap(), base_url: url.join("2.7.2").unwrap()},
-            AvailableToolchain{version: "2.7.1".parse().unwrap(), base_url: url.join("2.7.1").unwrap()},
-            AvailableToolchain{version: "2.7.0".parse().unwrap(), base_url: url.join("2.7").unwrap()},
-            AvailableToolchain{version: "2.6.9".parse().unwrap(), base_url: url.join("2.6.9").unwrap()},
-            AvailableToolchain{version: "2.6.8".parse().unwrap(), base_url: url.join("2.6.8").unwrap()},
-            AvailableToolchain{version: "2.6.7".parse().unwrap(), base_url: url.join("2.6.7").unwrap()},
-            AvailableToolchain{version: "2.6.6".parse().unwrap(), base_url: url.join("2.6.6").unwrap()},
-            AvailableToolchain{version: "2.6.5".parse().unwrap(), base_url: url.join("2.6.5").unwrap()},
-            AvailableToolchain{version: "2.6.4".parse().unwrap(), base_url: url.join("2.6.4").unwrap()},
-            AvailableToolchain{version: "2.6.3".parse().unwrap(), base_url: url.join("2.6.3").unwrap()},
-            AvailableToolchain{version: "2.6.2".parse().unwrap(), base_url: url.join("2.6.2").unwrap()},
-            AvailableToolchain{version: "2.6.1".parse().unwrap(), base_url: url.join("2.6.1").unwrap()},
-            AvailableToolchain{version: "2.6.0".parse().unwrap(), base_url: url.join("2.6").unwrap()},
-            AvailableToolchain{version: "2.5.6".parse().unwrap(), base_url: url.join("2.5.6").unwrap()},
-            AvailableToolchain{version: "2.5.5".parse().unwrap(), base_url: url.join("2.5.5").unwrap()},
-            AvailableToolchain{version: "2.5.4".parse().unwrap(), base_url: url.join("2.5.4").unwrap()},
-            AvailableToolchain{version: "2.5.3".parse().unwrap(), base_url: url.join("2.5.3").unwrap()},
-            AvailableToolchain{version: "2.5.2".parse().unwrap(), base_url: url.join("2.5.2").unwrap()},
-            AvailableToolchain{version: "2.5.1".parse().unwrap(), base_url: url.join("2.5.1").unwrap()},
-            AvailableToolchain{version: "2.5.0".parse().unwrap(), base_url: url.join("2.5").unwrap()},
-            AvailableToolchain{version: "2.4.6".parse().unwrap(), base_url: url.join("2.4.6").unwrap()},
-            AvailableToolchain{version: "2.4.5".parse().unwrap(), base_url: url.join("2.4.5").unwrap()},
-            AvailableToolchain{version: "2.4.4".parse().unwrap(), base_url: url.join("2.4.4").unwrap()},
-            AvailableToolchain{version: "2.4.3".parse().unwrap(), base_url: url.join("2.4.3").unwrap()},
-            AvailableToolchain{version: "2.4.2".parse().unwrap(), base_url: url.join("2.4.2").unwrap()},
-            AvailableToolchain{version: "2.4.1".parse().unwrap(), base_url: url.join("2.4.1").unwrap()},
-            AvailableToolchain{version: "2.4.0".parse().unwrap(), base_url: url.join("2.4").unwrap()},
-            AvailableToolchain{version: "2.3.7".parse().unwrap(), base_url: url.join("2.3.7").unwrap()},
-            AvailableToolchain{version: "2.3.6".parse().unwrap(), base_url: url.join("2.3.6").unwrap()},
-            AvailableToolchain{version: "2.3.5".parse().unwrap(), base_url: url.join("2.3.5").unwrap()},
-            AvailableToolchain{version: "2.3.4".parse().unwrap(), base_url: url.join("2.3.4").unwrap()},
-            AvailableToolchain{version: "2.3.3".parse().unwrap(), base_url: url.join("2.3.3").unwrap()},
-            AvailableToolchain{version: "2.3.2".parse().unwrap(), base_url: url.join("2.3.2").unwrap()},
-            AvailableToolchain{version: "2.3.1".parse().unwrap(), base_url: url.join("2.3.1").unwrap()},
-            AvailableToolchain{version: "2.3.0".parse().unwrap(), base_url: url.join("2.3").unwrap()},
-            AvailableToolchain{version: "2.2.3".parse().unwrap(), base_url: url.join("2.2.3").unwrap()},
-            AvailableToolchain{version: "2.2.2".parse().unwrap(), base_url: url.join("2.2.2").unwrap()},
-            AvailableToolchain{version: "2.2.1".parse().unwrap(), base_url: url.join("2.2.1").unwrap()},
-            AvailableToolchain{version: "2.2.0".parse().unwrap(), base_url: url.join("2.2").unwrap()},
-            AvailableToolchain{version: "2.1.3".parse().unwrap(), base_url: url.join("2.1.3").unwrap()},
-            AvailableToolchain{version: "2.1.2".parse().unwrap(), base_url: url.join("2.1.2").unwrap()},
-            AvailableToolchain{version: "2.1.1".parse().unwrap(), base_url: url.join("2.1.1").unwrap()},
-            AvailableToolchain{version: "2.1.0".parse().unwrap(), base_url: url.join("2.1").unwrap()},
-            AvailableToolchain{version: "2.0.1".parse().unwrap(), base_url: url.join("2.0.1").unwrap()},
-            AvailableToolchain{version: "2.0.0".parse().unwrap(), base_url: url.join("2.0").unwrap()},
+            AvailableToolchain { version: "3.9.0-a1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.9.0".parse().unwrap(), source_tar_gz: "Python-3.9.0a1.tgz".into() },
+            AvailableToolchain { version: "3.8.1-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.8.1".parse().unwrap(), source_tar_gz: "Python-3.8.1rc1.tgz".into() },
+            AvailableToolchain { version: "3.8.0".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.8.0".parse().unwrap(), source_tar_gz: "Python-3.8.0.tgz".into() },
+            AvailableToolchain { version: "3.8.0-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.8.0".parse().unwrap(), source_tar_gz: "Python-3.8.0rc1.tgz".into() },
+            AvailableToolchain { version: "3.8.0-b4".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.8.0".parse().unwrap(), source_tar_gz: "Python-3.8.0b4.tgz".into() },
+            AvailableToolchain { version: "3.8.0-b3".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.8.0".parse().unwrap(), source_tar_gz: "Python-3.8.0b3.tgz".into() },
+            AvailableToolchain { version: "3.8.0-b2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.8.0".parse().unwrap(), source_tar_gz: "Python-3.8.0b2.tgz".into() },
+            AvailableToolchain { version: "3.8.0-b1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.8.0".parse().unwrap(), source_tar_gz: "Python-3.8.0b1.tgz".into() },
+            AvailableToolchain { version: "3.8.0-a4".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.8.0".parse().unwrap(), source_tar_gz: "Python-3.8.0a4.tgz".into() },
+            AvailableToolchain { version: "3.8.0-a3".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.8.0".parse().unwrap(), source_tar_gz: "Python-3.8.0a3.tgz".into() },
+            AvailableToolchain { version: "3.8.0-a2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.8.0".parse().unwrap(), source_tar_gz: "Python-3.8.0a2.tgz".into() },
+            AvailableToolchain { version: "3.8.0-a1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.8.0".parse().unwrap(), source_tar_gz: "Python-3.8.0a1.tgz".into() },
+            AvailableToolchain { version: "3.7.6-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.7.6".parse().unwrap(), source_tar_gz: "Python-3.7.6rc1.tgz".into() },
+            AvailableToolchain { version: "3.7.5".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.7.5".parse().unwrap(), source_tar_gz: "Python-3.7.5.tgz".into() },
+            AvailableToolchain { version: "3.7.5-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.7.5".parse().unwrap(), source_tar_gz: "Python-3.7.5rc1.tgz".into() },
+            AvailableToolchain { version: "3.7.4".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.7.4".parse().unwrap(), source_tar_gz: "Python-3.7.4.tgz".into() },
+            AvailableToolchain { version: "3.7.4-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.7.4".parse().unwrap(), source_tar_gz: "Python-3.7.4rc1.tgz".into() },
+            AvailableToolchain { version: "3.7.3".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.7.3".parse().unwrap(), source_tar_gz: "Python-3.7.3.tgz".into() },
+            AvailableToolchain { version: "3.7.3-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.7.3".parse().unwrap(), source_tar_gz: "Python-3.7.3rc1.tgz".into() },
+            AvailableToolchain { version: "3.7.2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.7.2".parse().unwrap(), source_tar_gz: "Python-3.7.2.tgz".into() },
+            AvailableToolchain { version: "3.7.2-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.7.2".parse().unwrap(), source_tar_gz: "Python-3.7.2rc1.tgz".into() },
+            AvailableToolchain { version: "3.7.1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.7.1".parse().unwrap(), source_tar_gz: "Python-3.7.1.tgz".into() },
+            AvailableToolchain { version: "3.7.1-rc2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.7.1".parse().unwrap(), source_tar_gz: "Python-3.7.1rc2.tgz".into() },
+            AvailableToolchain { version: "3.7.1-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.7.1".parse().unwrap(), source_tar_gz: "Python-3.7.1rc1.tgz".into() },
+            AvailableToolchain { version: "3.7.0".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.7.0".parse().unwrap(), source_tar_gz: "Python-3.7.0.tgz".into() },
+            AvailableToolchain { version: "3.7.0-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.7.0".parse().unwrap(), source_tar_gz: "Python-3.7.0rc1.tgz".into() },
+            AvailableToolchain { version: "3.7.0-b5".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.7.0".parse().unwrap(), source_tar_gz: "Python-3.7.0b5.tgz".into() },
+            AvailableToolchain { version: "3.7.0-b2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.7.0".parse().unwrap(), source_tar_gz: "Python-3.7.0b2.tgz".into() },
+            AvailableToolchain { version: "3.7.0-b1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.7.0".parse().unwrap(), source_tar_gz: "Python-3.7.0b1.tgz".into() },
+            AvailableToolchain { version: "3.7.0-a4".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.7.0".parse().unwrap(), source_tar_gz: "Python-3.7.0a4.tgz".into() },
+            AvailableToolchain { version: "3.7.0-a3".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.7.0".parse().unwrap(), source_tar_gz: "Python-3.7.0a3.tgz".into() },
+            AvailableToolchain { version: "3.7.0-a2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.7.0".parse().unwrap(), source_tar_gz: "Python-3.7.0a2.tgz".into() },
+            AvailableToolchain { version: "3.7.0-a1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.7.0".parse().unwrap(), source_tar_gz: "Python-3.7.0a1.tgz".into() },
+            AvailableToolchain { version: "3.6.10-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.10".parse().unwrap(), source_tar_gz: "Python-3.6.10rc1.tgz".into() },
+            AvailableToolchain { version: "3.6.9".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.9".parse().unwrap(), source_tar_gz: "Python-3.6.9.tgz".into() },
+            AvailableToolchain { version: "3.6.9-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.9".parse().unwrap(), source_tar_gz: "Python-3.6.9rc1.tgz".into() },
+            AvailableToolchain { version: "3.6.8".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.8".parse().unwrap(), source_tar_gz: "Python-3.6.8.tgz".into() },
+            AvailableToolchain { version: "3.6.8-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.8".parse().unwrap(), source_tar_gz: "Python-3.6.8rc1.tgz".into() },
+            AvailableToolchain { version: "3.6.7".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.7".parse().unwrap(), source_tar_gz: "Python-3.6.7.tgz".into() },
+            AvailableToolchain { version: "3.6.7-rc2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.7".parse().unwrap(), source_tar_gz: "Python-3.6.7rc2.tgz".into() },
+            AvailableToolchain { version: "3.6.7-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.7".parse().unwrap(), source_tar_gz: "Python-3.6.7rc1.tgz".into() },
+            AvailableToolchain { version: "3.6.6".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.6".parse().unwrap(), source_tar_gz: "Python-3.6.6.tgz".into() },
+            AvailableToolchain { version: "3.6.6-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.6".parse().unwrap(), source_tar_gz: "Python-3.6.6rc1.tgz".into() },
+            AvailableToolchain { version: "3.6.5".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.5".parse().unwrap(), source_tar_gz: "Python-3.6.5.tgz".into() },
+            AvailableToolchain { version: "3.6.5-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.5".parse().unwrap(), source_tar_gz: "Python-3.6.5rc1.tgz".into() },
+            AvailableToolchain { version: "3.6.4".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.4".parse().unwrap(), source_tar_gz: "Python-3.6.4.tgz".into() },
+            AvailableToolchain { version: "3.6.4-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.4".parse().unwrap(), source_tar_gz: "Python-3.6.4rc1.tgz".into() },
+            AvailableToolchain { version: "3.6.3".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.3".parse().unwrap(), source_tar_gz: "Python-3.6.3.tgz".into() },
+            AvailableToolchain { version: "3.6.3-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.3".parse().unwrap(), source_tar_gz: "Python-3.6.3rc1.tgz".into() },
+            AvailableToolchain { version: "3.6.2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.2".parse().unwrap(), source_tar_gz: "Python-3.6.2.tgz".into() },
+            AvailableToolchain { version: "3.6.2-rc2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.2".parse().unwrap(), source_tar_gz: "Python-3.6.2rc2.tgz".into() },
+            AvailableToolchain { version: "3.6.2-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.2".parse().unwrap(), source_tar_gz: "Python-3.6.2rc1.tgz".into() },
+            AvailableToolchain { version: "3.6.1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.1".parse().unwrap(), source_tar_gz: "Python-3.6.1.tgz".into() },
+            AvailableToolchain { version: "3.6.1-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.1".parse().unwrap(), source_tar_gz: "Python-3.6.1rc1.tgz".into() },
+            AvailableToolchain { version: "3.6.0".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.0".parse().unwrap(), source_tar_gz: "Python-3.6.0.tgz".into() },
+            AvailableToolchain { version: "3.6.0-rc2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.0".parse().unwrap(), source_tar_gz: "Python-3.6.0rc2.tgz".into() },
+            AvailableToolchain { version: "3.6.0-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.0".parse().unwrap(), source_tar_gz: "Python-3.6.0rc1.tgz".into() },
+            AvailableToolchain { version: "3.6.0-b4".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.0".parse().unwrap(), source_tar_gz: "Python-3.6.0b4.tgz".into() },
+            AvailableToolchain { version: "3.6.0-b3".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.0".parse().unwrap(), source_tar_gz: "Python-3.6.0b3.tgz".into() },
+            AvailableToolchain { version: "3.6.0-b2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.0".parse().unwrap(), source_tar_gz: "Python-3.6.0b2.tgz".into() },
+            AvailableToolchain { version: "3.6.0-b1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.0".parse().unwrap(), source_tar_gz: "Python-3.6.0b1.tgz".into() },
+            AvailableToolchain { version: "3.6.0-a4".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.0".parse().unwrap(), source_tar_gz: "Python-3.6.0a4.tgz".into() },
+            AvailableToolchain { version: "3.6.0-a3".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.0".parse().unwrap(), source_tar_gz: "Python-3.6.0a3.tgz".into() },
+            AvailableToolchain { version: "3.6.0-a2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.0".parse().unwrap(), source_tar_gz: "Python-3.6.0a2.tgz".into() },
+            AvailableToolchain { version: "3.6.0-a1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.6.0".parse().unwrap(), source_tar_gz: "Python-3.6.0a1.tgz".into() },
+            AvailableToolchain { version: "3.5.9".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.9".parse().unwrap(), source_tar_gz: "Python-3.5.9.tgz".into() },
+            AvailableToolchain { version: "3.5.8".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.8".parse().unwrap(), source_tar_gz: "Python-3.5.8.tgz".into() },
+            AvailableToolchain { version: "3.5.8-rc2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.8".parse().unwrap(), source_tar_gz: "Python-3.5.8rc2.tgz".into() },
+            AvailableToolchain { version: "3.5.8-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.8".parse().unwrap(), source_tar_gz: "Python-3.5.8rc1.tgz".into() },
+            AvailableToolchain { version: "3.5.7".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.7".parse().unwrap(), source_tar_gz: "Python-3.5.7.tgz".into() },
+            AvailableToolchain { version: "3.5.7-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.7".parse().unwrap(), source_tar_gz: "Python-3.5.7rc1.tgz".into() },
+            AvailableToolchain { version: "3.5.6".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.6".parse().unwrap(), source_tar_gz: "Python-3.5.6.tgz".into() },
+            AvailableToolchain { version: "3.5.6-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.6".parse().unwrap(), source_tar_gz: "Python-3.5.6rc1.tgz".into() },
+            AvailableToolchain { version: "3.5.5".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.5".parse().unwrap(), source_tar_gz: "Python-3.5.5.tgz".into() },
+            AvailableToolchain { version: "3.5.5-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.5".parse().unwrap(), source_tar_gz: "Python-3.5.5rc1.tgz".into() },
+            AvailableToolchain { version: "3.5.4".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.4".parse().unwrap(), source_tar_gz: "Python-3.5.4.tgz".into() },
+            AvailableToolchain { version: "3.5.4-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.4".parse().unwrap(), source_tar_gz: "Python-3.5.4rc1.tgz".into() },
+            AvailableToolchain { version: "3.5.3".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.3".parse().unwrap(), source_tar_gz: "Python-3.5.3.tgz".into() },
+            AvailableToolchain { version: "3.5.3-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.3".parse().unwrap(), source_tar_gz: "Python-3.5.3rc1.tgz".into() },
+            AvailableToolchain { version: "3.5.2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.2".parse().unwrap(), source_tar_gz: "Python-3.5.2.tgz".into() },
+            AvailableToolchain { version: "3.5.2-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.2".parse().unwrap(), source_tar_gz: "Python-3.5.2rc1.tgz".into() },
+            AvailableToolchain { version: "3.5.1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.1".parse().unwrap(), source_tar_gz: "Python-3.5.1.tgz".into() },
+            AvailableToolchain { version: "3.5.1-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.1".parse().unwrap(), source_tar_gz: "Python-3.5.1rc1.tgz".into() },
+            AvailableToolchain { version: "3.5.0".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.0".parse().unwrap(), source_tar_gz: "Python-3.5.0.tgz".into() },
+            AvailableToolchain { version: "3.5.0-rc4".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.0".parse().unwrap(), source_tar_gz: "Python-3.5.0rc4.tgz".into() },
+            AvailableToolchain { version: "3.5.0-rc3".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.0".parse().unwrap(), source_tar_gz: "Python-3.5.0rc3.tgz".into() },
+            AvailableToolchain { version: "3.5.0-rc2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.0".parse().unwrap(), source_tar_gz: "Python-3.5.0rc2.tgz".into() },
+            AvailableToolchain { version: "3.5.0-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.0".parse().unwrap(), source_tar_gz: "Python-3.5.0rc1.tgz".into() },
+            AvailableToolchain { version: "3.5.0-b4".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.0".parse().unwrap(), source_tar_gz: "Python-3.5.0b4.tgz".into() },
+            AvailableToolchain { version: "3.5.0-b3".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.0".parse().unwrap(), source_tar_gz: "Python-3.5.0b3.tgz".into() },
+            AvailableToolchain { version: "3.5.0-b2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.0".parse().unwrap(), source_tar_gz: "Python-3.5.0b2.tgz".into() },
+            AvailableToolchain { version: "3.5.0-b1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.0".parse().unwrap(), source_tar_gz: "Python-3.5.0b1.tgz".into() },
+            AvailableToolchain { version: "3.5.0-a4".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.0".parse().unwrap(), source_tar_gz: "Python-3.5.0a4.tgz".into() },
+            AvailableToolchain { version: "3.5.0-a3".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.0".parse().unwrap(), source_tar_gz: "Python-3.5.0a3.tgz".into() },
+            AvailableToolchain { version: "3.5.0-a2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.0".parse().unwrap(), source_tar_gz: "Python-3.5.0a2.tgz".into() },
+            AvailableToolchain { version: "3.5.0-a1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.5.0".parse().unwrap(), source_tar_gz: "Python-3.5.0a1.tgz".into() },
+            AvailableToolchain { version: "3.4.10".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.4.10".parse().unwrap(), source_tar_gz: "Python-3.4.10.tgz".into() },
+            AvailableToolchain { version: "3.4.10-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.4.10".parse().unwrap(), source_tar_gz: "Python-3.4.10rc1.tgz".into() },
+            AvailableToolchain { version: "3.4.9".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.4.9".parse().unwrap(), source_tar_gz: "Python-3.4.9.tgz".into() },
+            AvailableToolchain { version: "3.4.9-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.4.9".parse().unwrap(), source_tar_gz: "Python-3.4.9rc1.tgz".into() },
+            AvailableToolchain { version: "3.4.8".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.4.8".parse().unwrap(), source_tar_gz: "Python-3.4.8.tgz".into() },
+            AvailableToolchain { version: "3.4.8-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.4.8".parse().unwrap(), source_tar_gz: "Python-3.4.8rc1.tgz".into() },
+            AvailableToolchain { version: "3.4.7".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.4.7".parse().unwrap(), source_tar_gz: "Python-3.4.7.tgz".into() },
+            AvailableToolchain { version: "3.4.7-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.4.7".parse().unwrap(), source_tar_gz: "Python-3.4.7rc1.tgz".into() },
+            AvailableToolchain { version: "3.4.6".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.4.6".parse().unwrap(), source_tar_gz: "Python-3.4.6.tgz".into() },
+            AvailableToolchain { version: "3.4.6-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.4.6".parse().unwrap(), source_tar_gz: "Python-3.4.6rc1.tgz".into() },
+            AvailableToolchain { version: "3.4.5".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.4.5".parse().unwrap(), source_tar_gz: "Python-3.4.5.tgz".into() },
+            AvailableToolchain { version: "3.4.5-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.4.5".parse().unwrap(), source_tar_gz: "Python-3.4.5rc1.tgz".into() },
+            AvailableToolchain { version: "3.4.4".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.4.4".parse().unwrap(), source_tar_gz: "Python-3.4.4.tgz".into() },
+            AvailableToolchain { version: "3.4.4-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.4.4".parse().unwrap(), source_tar_gz: "Python-3.4.4rc1.tgz".into() },
+            AvailableToolchain { version: "3.4.3".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.4.3".parse().unwrap(), source_tar_gz: "Python-3.4.3.tgz".into() },
+            AvailableToolchain { version: "3.4.3-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.4.3".parse().unwrap(), source_tar_gz: "Python-3.4.3rc1.tgz".into() },
+            AvailableToolchain { version: "3.4.2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.4.2".parse().unwrap(), source_tar_gz: "Python-3.4.2.tgz".into() },
+            AvailableToolchain { version: "3.4.2-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.4.2".parse().unwrap(), source_tar_gz: "Python-3.4.2rc1.tgz".into() },
+            AvailableToolchain { version: "3.4.1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.4.1".parse().unwrap(), source_tar_gz: "Python-3.4.1.tgz".into() },
+            AvailableToolchain { version: "3.4.1-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.4.1".parse().unwrap(), source_tar_gz: "Python-3.4.1rc1.tgz".into() },
+            AvailableToolchain { version: "3.4.0".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.4.0".parse().unwrap(), source_tar_gz: "Python-3.4.0.tgz".into() },
+            AvailableToolchain { version: "3.4.0-rc3".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.4.0".parse().unwrap(), source_tar_gz: "Python-3.4.0rc3.tgz".into() },
+            AvailableToolchain { version: "3.3.7".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.3.7".parse().unwrap(), source_tar_gz: "Python-3.3.7.tgz".into() },
+            AvailableToolchain { version: "3.3.7-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.3.7".parse().unwrap(), source_tar_gz: "Python-3.3.7rc1.tgz".into() },
+            AvailableToolchain { version: "3.3.6".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.3.6".parse().unwrap(), source_tar_gz: "Python-3.3.6.tgz".into() },
+            AvailableToolchain { version: "3.3.6-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.3.6".parse().unwrap(), source_tar_gz: "Python-3.3.6rc1.tgz".into() },
+            AvailableToolchain { version: "3.3.5".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.3.5".parse().unwrap(), source_tar_gz: "Python-3.3.5.tgz".into() },
+            AvailableToolchain { version: "3.3.5-rc2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.3.5".parse().unwrap(), source_tar_gz: "Python-3.3.5rc2.tgz".into() },
+            AvailableToolchain { version: "3.3.5-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.3.5".parse().unwrap(), source_tar_gz: "Python-3.3.5rc1.tgz".into() },
+            AvailableToolchain { version: "3.3.5-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.3.5".parse().unwrap(), source_tar_gz: "Python-3.3.5rc1.tgz".into() },
+            AvailableToolchain { version: "3.3.4".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.3.4".parse().unwrap(), source_tar_gz: "Python-3.3.4.tgz".into() },
+            AvailableToolchain { version: "3.3.3".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.3.3".parse().unwrap(), source_tar_gz: "Python-3.3.3.tgz".into() },
+            AvailableToolchain { version: "3.3.2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.3.2".parse().unwrap(), source_tar_gz: "Python-3.3.2.tgz".into() },
+            AvailableToolchain { version: "3.3.1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.3.1".parse().unwrap(), source_tar_gz: "Python-3.3.1.tgz".into() },
+            AvailableToolchain { version: "3.3.0".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.3.0".parse().unwrap(), source_tar_gz: "Python-3.3.0.tgz".into() },
+            AvailableToolchain { version: "3.2.6".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.2.6".parse().unwrap(), source_tar_gz: "Python-3.2.6.tgz".into() },
+            AvailableToolchain { version: "3.2.6-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.2.6".parse().unwrap(), source_tar_gz: "Python-3.2.6rc1.tgz".into() },
+            AvailableToolchain { version: "3.2.5".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.2.5".parse().unwrap(), source_tar_gz: "Python-3.2.5.tgz".into() },
+            AvailableToolchain { version: "3.2.4".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.2.4".parse().unwrap(), source_tar_gz: "Python-3.2.4.tgz".into() },
+            AvailableToolchain { version: "3.2.3".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.2.3".parse().unwrap(), source_tar_gz: "Python-3.2.3.tgz".into() },
+            AvailableToolchain { version: "3.2.2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.2.2".parse().unwrap(), source_tar_gz: "Python-3.2.2.tgz".into() },
+            AvailableToolchain { version: "3.2.1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.2.1".parse().unwrap(), source_tar_gz: "Python-3.2.1.tgz".into() },
+            AvailableToolchain { version: "3.2.0".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.2".parse().unwrap(), source_tar_gz: "Python-3.2.tgz".into() },
+            AvailableToolchain { version: "3.1.5".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.1.5".parse().unwrap(), source_tar_gz: "Python-3.1.5.tgz".into() },
+            AvailableToolchain { version: "3.1.4".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.1.4".parse().unwrap(), source_tar_gz: "Python-3.1.4.tgz".into() },
+            AvailableToolchain { version: "3.1.3".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.1.3".parse().unwrap(), source_tar_gz: "Python-3.1.3.tgz".into() },
+            AvailableToolchain { version: "3.1.2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.1.2".parse().unwrap(), source_tar_gz: "Python-3.1.2.tgz".into() },
+            AvailableToolchain { version: "3.1.1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.1.1".parse().unwrap(), source_tar_gz: "Python-3.1.1.tgz".into() },
+            AvailableToolchain { version: "3.1.0".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.1".parse().unwrap(), source_tar_gz: "Python-3.1.tgz".into() },
+            AvailableToolchain { version: "3.0.1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.0.1".parse().unwrap(), source_tar_gz: "Python-3.0.1.tgz".into() },
+            AvailableToolchain { version: "3.0.0".parse().unwrap(), base_url: "https://www.python.org/ftp/python/3.0".parse().unwrap(), source_tar_gz: "Python-3.0.tgz".into() },
+            AvailableToolchain { version: "2.7.17".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.17".parse().unwrap(), source_tar_gz: "Python-2.7.17.tgz".into() },
+            AvailableToolchain { version: "2.7.17-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.17".parse().unwrap(), source_tar_gz: "Python-2.7.17rc1.tgz".into() },
+            AvailableToolchain { version: "2.7.16".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.16".parse().unwrap(), source_tar_gz: "Python-2.7.16.tgz".into() },
+            AvailableToolchain { version: "2.7.16-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.16".parse().unwrap(), source_tar_gz: "Python-2.7.16rc1.tgz".into() },
+            AvailableToolchain { version: "2.7.15".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.15".parse().unwrap(), source_tar_gz: "Python-2.7.15.tgz".into() },
+            AvailableToolchain { version: "2.7.15-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.15".parse().unwrap(), source_tar_gz: "Python-2.7.15rc1.tgz".into() },
+            AvailableToolchain { version: "2.7.14".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.14".parse().unwrap(), source_tar_gz: "Python-2.7.14.tgz".into() },
+            AvailableToolchain { version: "2.7.14-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.14".parse().unwrap(), source_tar_gz: "Python-2.7.14rc1.tgz".into() },
+            AvailableToolchain { version: "2.7.13".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.13".parse().unwrap(), source_tar_gz: "Python-2.7.13.tgz".into() },
+            AvailableToolchain { version: "2.7.13-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.13".parse().unwrap(), source_tar_gz: "Python-2.7.13rc1.tgz".into() },
+            AvailableToolchain { version: "2.7.12".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.12".parse().unwrap(), source_tar_gz: "Python-2.7.12.tgz".into() },
+            AvailableToolchain { version: "2.7.12-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.12".parse().unwrap(), source_tar_gz: "Python-2.7.12rc1.tgz".into() },
+            AvailableToolchain { version: "2.7.11".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.11".parse().unwrap(), source_tar_gz: "Python-2.7.11.tgz".into() },
+            AvailableToolchain { version: "2.7.11-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.11".parse().unwrap(), source_tar_gz: "Python-2.7.11rc1.tgz".into() },
+            AvailableToolchain { version: "2.7.10".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.10".parse().unwrap(), source_tar_gz: "Python-2.7.10.tgz".into() },
+            AvailableToolchain { version: "2.7.10-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.10".parse().unwrap(), source_tar_gz: "Python-2.7.10rc1.tgz".into() },
+            AvailableToolchain { version: "2.7.9".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.9".parse().unwrap(), source_tar_gz: "Python-2.7.9.tgz".into() },
+            AvailableToolchain { version: "2.7.9-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.9".parse().unwrap(), source_tar_gz: "Python-2.7.9rc1.tgz".into() },
+            AvailableToolchain { version: "2.7.8".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.8".parse().unwrap(), source_tar_gz: "Python-2.7.8.tgz".into() },
+            AvailableToolchain { version: "2.7.7".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.7".parse().unwrap(), source_tar_gz: "Python-2.7.7.tgz".into() },
+            AvailableToolchain { version: "2.7.7-rc1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.7".parse().unwrap(), source_tar_gz: "Python-2.7.7rc1.tgz".into() },
+            AvailableToolchain { version: "2.7.6".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.6".parse().unwrap(), source_tar_gz: "Python-2.7.6.tgz".into() },
+            AvailableToolchain { version: "2.7.5".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.5".parse().unwrap(), source_tar_gz: "Python-2.7.5.tgz".into() },
+            AvailableToolchain { version: "2.7.4".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.4".parse().unwrap(), source_tar_gz: "Python-2.7.4.tgz".into() },
+            AvailableToolchain { version: "2.7.3".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.3".parse().unwrap(), source_tar_gz: "Python-2.7.3.tgz".into() },
+            AvailableToolchain { version: "2.7.2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.2".parse().unwrap(), source_tar_gz: "Python-2.7.2.tgz".into() },
+            AvailableToolchain { version: "2.7.1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7.1".parse().unwrap(), source_tar_gz: "Python-2.7.1.tgz".into() },
+            AvailableToolchain { version: "2.7.0".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.7".parse().unwrap(), source_tar_gz: "Python-2.7.tgz".into() },
+            AvailableToolchain { version: "2.6.9".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.6.9".parse().unwrap(), source_tar_gz: "Python-2.6.9.tgz".into() },
+            AvailableToolchain { version: "2.6.8".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.6.8".parse().unwrap(), source_tar_gz: "Python-2.6.8.tgz".into() },
+            AvailableToolchain { version: "2.6.7".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.6.7".parse().unwrap(), source_tar_gz: "Python-2.6.7.tgz".into() },
+            AvailableToolchain { version: "2.6.6".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.6.6".parse().unwrap(), source_tar_gz: "Python-2.6.6.tgz".into() },
+            AvailableToolchain { version: "2.6.5".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.6.5".parse().unwrap(), source_tar_gz: "Python-2.6.5.tgz".into() },
+            AvailableToolchain { version: "2.6.4".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.6.4".parse().unwrap(), source_tar_gz: "Python-2.6.4.tgz".into() },
+            AvailableToolchain { version: "2.6.3".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.6.3".parse().unwrap(), source_tar_gz: "Python-2.6.3.tgz".into() },
+            AvailableToolchain { version: "2.6.2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.6.2".parse().unwrap(), source_tar_gz: "Python-2.6.2.tgz".into() },
+            AvailableToolchain { version: "2.6.1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.6.1".parse().unwrap(), source_tar_gz: "Python-2.6.1.tgz".into() },
+            AvailableToolchain { version: "2.6.0".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.6".parse().unwrap(), source_tar_gz: "Python-2.6.tgz".into() },
+            AvailableToolchain { version: "2.5.6".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.5.6".parse().unwrap(), source_tar_gz: "Python-2.5.6.tgz".into() },
+            AvailableToolchain { version: "2.5.5".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.5.5".parse().unwrap(), source_tar_gz: "Python-2.5.5.tgz".into() },
+            AvailableToolchain { version: "2.5.4".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.5.4".parse().unwrap(), source_tar_gz: "Python-2.5.4.tgz".into() },
+            AvailableToolchain { version: "2.5.3".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.5.3".parse().unwrap(), source_tar_gz: "Python-2.5.3.tgz".into() },
+            AvailableToolchain { version: "2.5.2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.5.2".parse().unwrap(), source_tar_gz: "Python-2.5.2.tgz".into() },
+            AvailableToolchain { version: "2.5.1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.5.1".parse().unwrap(), source_tar_gz: "Python-2.5.1.tgz".into() },
+            AvailableToolchain { version: "2.5.0".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.5".parse().unwrap(), source_tar_gz: "Python-2.5.tgz".into() },
+            AvailableToolchain { version: "2.4.6".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.4.6".parse().unwrap(), source_tar_gz: "Python-2.4.6.tgz".into() },
+            AvailableToolchain { version: "2.4.5".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.4.5".parse().unwrap(), source_tar_gz: "Python-2.4.5.tgz".into() },
+            AvailableToolchain { version: "2.4.4".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.4.4".parse().unwrap(), source_tar_gz: "Python-2.4.4.tgz".into() },
+            AvailableToolchain { version: "2.4.3".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.4.3".parse().unwrap(), source_tar_gz: "Python-2.4.3.tgz".into() },
+            AvailableToolchain { version: "2.4.2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.4.2".parse().unwrap(), source_tar_gz: "Python-2.4.2.tgz".into() },
+            AvailableToolchain { version: "2.4.1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.4.1".parse().unwrap(), source_tar_gz: "Python-2.4.1.tgz".into() },
+            AvailableToolchain { version: "2.4.0".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.4".parse().unwrap(), source_tar_gz: "Python-2.4.tgz".into() },
+            AvailableToolchain { version: "2.3.7".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.3.7".parse().unwrap(), source_tar_gz: "Python-2.3.7.tgz".into() },
+            AvailableToolchain { version: "2.3.6".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.3.6".parse().unwrap(), source_tar_gz: "Python-2.3.6.tgz".into() },
+            AvailableToolchain { version: "2.3.5".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.3.5".parse().unwrap(), source_tar_gz: "Python-2.3.5.tgz".into() },
+            AvailableToolchain { version: "2.3.4".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.3.4".parse().unwrap(), source_tar_gz: "Python-2.3.4.tgz".into() },
+            AvailableToolchain { version: "2.3.3".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.3.3".parse().unwrap(), source_tar_gz: "Python-2.3.3.tgz".into() },
+            AvailableToolchain { version: "2.3.2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.3.2".parse().unwrap(), source_tar_gz: "Python-2.3.2.tgz".into() },
+            AvailableToolchain { version: "2.3.1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.3.1".parse().unwrap(), source_tar_gz: "Python-2.3.1.tgz".into() },
+            AvailableToolchain { version: "2.3.0".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.3".parse().unwrap(), source_tar_gz: "Python-2.3.tgz".into() },
+            AvailableToolchain { version: "2.2.3".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.2.3".parse().unwrap(), source_tar_gz: "Python-2.2.3.tgz".into() },
+            AvailableToolchain { version: "2.2.2".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.2.2".parse().unwrap(), source_tar_gz: "Python-2.2.2.tgz".into() },
+            AvailableToolchain { version: "2.2.1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.2.1".parse().unwrap(), source_tar_gz: "Python-2.2.1.tgz".into() },
+            AvailableToolchain { version: "2.2.0".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.2".parse().unwrap(), source_tar_gz: "Python-2.2.tgz".into() },
+            AvailableToolchain { version: "2.1.3".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.1.3".parse().unwrap(), source_tar_gz: "Python-2.1.3.tgz".into() },
+            AvailableToolchain { version: "2.0.1".parse().unwrap(), base_url: "https://www.python.org/ftp/python/2.0.1".parse().unwrap(), source_tar_gz: "Python-2.0.1.tgz".into() },
         ];
         assert_eq!(parsed, expected);
     }

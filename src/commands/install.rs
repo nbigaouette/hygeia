@@ -12,7 +12,7 @@ use crate::{
     cache::{AvailableToolchainsCache, ToolchainsCacheFetchOnline},
     commands,
     constants::{EXECUTABLE_NAME, TOOLCHAIN_FILE},
-    download::download_source,
+    download::{download_to_path, HyperDownloader},
     toolchain::{find_installed_toolchains, installed::InstalledToolchain, ToolchainFile},
     utils::directory::PycorsPathsProviderFromEnv,
 };
@@ -108,8 +108,15 @@ pub fn run(
                 };
 
             // Configure make make install
+            let with_progress_bar = true;
             let mut rt = tokio::runtime::Runtime::new()?;
-            rt.block_on(download_source(&requested_version.version))?;
+            let mut downloader = HyperDownloader::new(requested_version.source_url())?;
+            let download_dir = PycorsPathsProviderFromEnv::new().downloaded();
+            rt.block_on(download_to_path(
+                &mut downloader,
+                download_dir,
+                with_progress_bar,
+            ))?;
             // FIXME: Validate downloaded package with checksum
             // FIXME: Validate downloaded package with signature
             install_package(&requested_version.version, install_extra_packages)?;

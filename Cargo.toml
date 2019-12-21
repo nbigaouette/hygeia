@@ -40,6 +40,9 @@ which = { version = "3", default-features = false }
 hyper = "0.13"
 hyper-tls = "0.4"
 tokio = "0.2"
+async-trait = "0.1"
+bytes = "0.5"
+futures = "0.3"
 
 # On Windows
 zip = {version = "0.5", default-features = false, features = ["deflate"]}
