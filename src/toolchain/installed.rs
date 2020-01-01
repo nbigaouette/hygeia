@@ -29,7 +29,7 @@ impl fmt::Display for InstalledToolchain {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct NotInstalledToolchain {
     pub version: Option<VersionReq>,
     pub location: Option<PathBuf>,

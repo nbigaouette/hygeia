@@ -113,7 +113,7 @@ impl ToolchainFile {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum SelectedToolchain {
     InstalledToolchain(InstalledToolchain),
     NotInstalledToolchain(NotInstalledToolchain),
@@ -851,4 +851,40 @@ mod tests {
         let extracted_version = extract_version_from_command(&python_path, Ok(output)).unwrap();
         assert_eq!(extracted_version, expected_version);
     }
+
+    #[test]
+    fn selected_toolchain_from_toolchain_file_version_req_installed() {
+        let version_req = VersionReq::parse("=3.7.4").unwrap();
+        let toolchain_file: ToolchainFile = ToolchainFile::VersionReq(version_req);
+        let installed_toolchains: &[InstalledToolchain] = &[InstalledToolchain {
+            location: PathBuf::from("/usr/bin"),
+            version: Version::parse("3.7.4").unwrap(),
+        }];
+        let selected_toolchain =
+            SelectedToolchain::from_toolchain_file(&toolchain_file, installed_toolchains);
+        assert_eq!(
+            selected_toolchain,
+            SelectedToolchain::InstalledToolchain(InstalledToolchain {
+                location: installed_toolchains[0].location.clone(),
+                version: installed_toolchains[0].version.clone(),
+            })
+        );
+    }
+
+    #[test]
+    fn selected_toolchain_from_toolchain_file_version_req_not_installed() {
+        let version_req = VersionReq::parse("=3.7.4").unwrap();
+        let toolchain_file: ToolchainFile = ToolchainFile::VersionReq(version_req.clone());
+        let installed_toolchains: &[InstalledToolchain] = &[];
+        let selected_toolchain =
+            SelectedToolchain::from_toolchain_file(&toolchain_file, installed_toolchains);
+        assert_eq!(
+            selected_toolchain,
+            SelectedToolchain::NotInstalledToolchain(NotInstalledToolchain {
+                version: Some(version_req),
+                location: None,
+            }),
+        );
+    }
+
 }
