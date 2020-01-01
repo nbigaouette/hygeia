@@ -103,19 +103,9 @@ impl ToolchainFile {
                     None => return Err(ToolchainError::EmptyToolchainFile(toolchain_file).into()),
                 };
 
-                // Some(line.parse()?)
-                match line.parse::<ToolchainFile>() {
-                    Ok(parsed) => Some(parsed),
-                    Err(e) => {
-                        println!("e: {:?}", e);
-                        unimplemented!()
-                        // None
-                        // Err(e)
-                        // match e {
-                        //     io
-                        // }
-                    }
-                }
+                Some(line.parse::<ToolchainFile>().expect(
+                    "ToolchainFile::parse() should not fail (will interpret content as PathBuf)",
+                ))
             }
         };
 
@@ -647,10 +637,15 @@ mod tests {
     use super::*;
 
     #[cfg(not(windows))]
+    use std::os::unix::fs::PermissionsExt;
+    #[cfg(not(windows))]
     use std::os::unix::process::ExitStatusExt;
     #[cfg(windows)]
     use std::os::windows::process::ExitStatusExt;
-    use std::process::{ExitStatus, Output};
+    use std::{
+        io::Write,
+        process::{ExitStatus, Output},
+    };
 
     fn temp_dir() -> PathBuf {
         env::temp_dir()
@@ -720,6 +715,115 @@ mod tests {
         let v = dir.to_string_lossy();
         let vop: ToolchainFile = v.parse().unwrap();
         assert_eq!(vop, ToolchainFile::Path(dir));
+    }
+
+    #[test]
+    fn toolchain_file_load_success_none() {
+        let dir = temp_dir().join("toolchain_file_load_success_none");
+        if dir.exists() {
+            fs::remove_dir_all(&dir).unwrap();
+        }
+        fs::create_dir_all(&dir).unwrap();
+        let initial_current_dir = env::current_dir().unwrap();
+        env::set_current_dir(&dir).unwrap();
+
+        let vop: Result<Option<ToolchainFile>> = ToolchainFile::load();
+
+        env::set_current_dir(&initial_current_dir).unwrap();
+
+        assert_eq!(vop.unwrap(), None);
+    }
+
+    #[test]
+    fn toolchain_file_load_error_not_permitted() {
+        #[cfg(windows)]
+        {
+            println!("Test skipped on Windows since it doesn't support 'std::os::unix::fs::PermissionsExt'");
+        }
+
+        #[cfg(not(windows))]
+        {
+            let v = "3.7.4";
+            let dir = temp_dir().join("toolchain_file_load_error_not_permitted");
+            if dir.exists() {
+                fs::remove_dir_all(&dir).unwrap();
+            }
+            fs::create_dir_all(&dir).unwrap();
+            let initial_current_dir = env::current_dir().unwrap();
+            env::set_current_dir(&dir).unwrap();
+
+            let mut toolchain_file = File::create(dir.join(TOOLCHAIN_FILE)).unwrap();
+            toolchain_file.write_all(v.as_bytes()).unwrap();
+            let permissions = fs::Permissions::from_mode(0o200); // -w-------
+            toolchain_file.set_permissions(permissions).unwrap();
+            std::mem::drop(toolchain_file);
+
+            let vop: Result<Option<ToolchainFile>> = ToolchainFile::load();
+
+            env::set_current_dir(&initial_current_dir).unwrap();
+
+            let err = vop.unwrap_err();
+            assert_eq!(
+                err.downcast_ref::<std::io::Error>().unwrap().kind(),
+                std::io::ErrorKind::PermissionDenied
+            );
+        }
+    }
+
+    #[test]
+    fn toolchain_file_load_error_garbage() {
+        let v = "non-Version parsable content";
+        let dir = temp_dir().join("toolchain_file_load_error_garbage");
+        if dir.exists() {
+            fs::remove_dir_all(&dir).unwrap();
+        }
+        fs::create_dir_all(&dir).unwrap();
+        let initial_current_dir = env::current_dir().unwrap();
+        env::set_current_dir(&dir).unwrap();
+
+        let mut toolchain_file = File::create(dir.join(TOOLCHAIN_FILE)).unwrap();
+        toolchain_file.write_all(v.as_bytes()).unwrap();
+        std::mem::drop(toolchain_file);
+
+        let vop: Result<Option<ToolchainFile>> = ToolchainFile::load();
+
+        env::set_current_dir(&initial_current_dir).unwrap();
+
+        // In case ToolchainFile cannot parse a Version, it will be interpreted as a Path.
+        assert_eq!(
+            vop.unwrap().unwrap(),
+            ToolchainFile::Path(PathBuf::from_str(v).unwrap())
+        );
+    }
+
+    #[test]
+    fn toolchain_file_load_success_some() {
+        let v = "3.7.4";
+        let dir = temp_dir().join("toolchain_file_load");
+        if dir.exists() {
+            fs::remove_dir_all(&dir).unwrap();
+        }
+        fs::create_dir_all(&dir).unwrap();
+        let initial_current_dir = env::current_dir().unwrap();
+
+        let mut toolchain_file = File::create(dir.join(TOOLCHAIN_FILE)).unwrap();
+        toolchain_file.write_all(v.as_bytes()).unwrap();
+        std::mem::drop(toolchain_file);
+
+        let new_current_dir = dir.join("first").join("second").join("third");
+        fs::create_dir_all(&new_current_dir).unwrap();
+        env::set_current_dir(&new_current_dir).unwrap();
+
+        let vop: Result<Option<ToolchainFile>> = ToolchainFile::load();
+
+        env::set_current_dir(&initial_current_dir).unwrap();
+
+        let vop = vop.unwrap().unwrap();
+
+        assert_eq!(
+            vop,
+            ToolchainFile::VersionReq(VersionReq::parse(v).unwrap())
+        );
     }
 
     #[test]
