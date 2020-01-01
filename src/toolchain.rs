@@ -652,6 +652,12 @@ mod tests {
     use std::os::windows::process::ExitStatusExt;
     use std::process::{ExitStatus, Output};
 
+    fn temp_dir() -> PathBuf {
+        env::temp_dir()
+            .join(crate::constants::EXECUTABLE_NAME)
+            .join("toolchain")
+    }
+
     #[test]
     fn version_or_path_from_str_success_major_minor_patch() {
         let v = "3.7.4";
@@ -689,6 +695,31 @@ mod tests {
             vop,
             ToolchainFile::VersionReq(VersionReq::parse(v).unwrap())
         );
+    }
+
+    #[test]
+    fn version_or_path_from_str_err_path_success() {
+        let dir = temp_dir()
+            .join("version_or_path_from_str_err_path_success")
+            .canonicalize()
+            .unwrap();
+        if !dir.exists() {
+            fs::create_dir_all(&dir).unwrap();
+        }
+        let v = dir.to_string_lossy();
+        let vop: ToolchainFile = v.parse().unwrap();
+        assert_eq!(vop, ToolchainFile::Path(dir));
+    }
+
+    #[test]
+    fn version_or_path_from_str_err_path_failed_dir_not_found() {
+        let dir = temp_dir().join("version_or_path_from_str_err_path_failed_dir_not_found");
+        if dir.exists() {
+            fs::remove_dir_all(&dir).unwrap();
+        }
+        let v = dir.to_string_lossy();
+        let vop: ToolchainFile = v.parse().unwrap();
+        assert_eq!(vop, ToolchainFile::Path(dir));
     }
 
     #[test]
