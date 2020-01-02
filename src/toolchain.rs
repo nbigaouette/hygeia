@@ -888,4 +888,28 @@ mod tests {
         );
     }
 
+    #[test]
+    fn selected_toolchain_from_toolchain_file_path_not_installed() {
+        let dir = temp_dir().join("selected_toolchain_from_toolchain_file_path_installed");
+        if dir.exists() {
+            fs::remove_dir_all(&dir).unwrap();
+        }
+        fs::create_dir_all(&dir).unwrap();
+        let dir = dir.canonicalize().unwrap();
+
+        let toolchain_file: ToolchainFile = ToolchainFile::Path(dir.clone());
+        let installed_toolchains: &[InstalledToolchain] = &[InstalledToolchain {
+            location: dir,
+            version: Version::parse("3.7.4").unwrap(),
+        }];
+        let selected_toolchain =
+            SelectedToolchain::from_toolchain_file(&toolchain_file, installed_toolchains);
+        assert_eq!(
+            selected_toolchain,
+            SelectedToolchain::NotInstalledToolchain(NotInstalledToolchain {
+                location: Some(installed_toolchains[0].location.clone()),
+                version: None,
+            })
+        );
+    }
 }
