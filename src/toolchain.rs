@@ -218,8 +218,7 @@ impl SelectedToolchain {
     }
 }
 
-// FIXME: This does not need to be pub. When 'installed.rs' is finally deleted, make this private.
-pub fn get_python_versions_from_path<P>(path: P) -> HashMap<Version, PathBuf>
+fn get_python_versions_from_path<P>(path: P) -> HashMap<Version, PathBuf>
 where
     P: AsRef<Path> + std::convert::AsRef<std::ffi::OsStr>,
 {
