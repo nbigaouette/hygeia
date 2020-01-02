@@ -384,8 +384,6 @@ fn selected_toolchain_not_installed_toolchain_same_version_none_false() {
     assert_eq!(selected_toolchain.same_version(&version_req), false);
 }
 
-// ***************************************************
-
 #[test]
 fn selected_toolchain_installed_toolchain_same_location_true() {
     let location = PathBuf::from("/usr/bin");
