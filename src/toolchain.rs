@@ -985,4 +985,94 @@ mod tests {
         });
         assert_eq!(selected_toolchain.same_version(&version_req), false);
     }
+
+    #[test]
+    fn selected_toolchain_not_installed_toolchain_same_version_version_true() {
+        let version_req = VersionReq::parse("=3.7.4").unwrap();
+
+        let selected_toolchain = SelectedToolchain::NotInstalledToolchain(NotInstalledToolchain {
+            location: None,
+            version: Some(VersionReq::parse("=3.7.4").unwrap()),
+        });
+        assert_eq!(selected_toolchain.same_version(&version_req), true);
+    }
+
+    #[test]
+    fn selected_toolchain_not_installed_toolchain_same_version_version_false() {
+        let version_req = VersionReq::parse("=3.7.4").unwrap();
+
+        let selected_toolchain = SelectedToolchain::NotInstalledToolchain(NotInstalledToolchain {
+            location: None,
+            version: Some(VersionReq::parse("3.7.4").unwrap()),
+        });
+        assert_eq!(selected_toolchain.same_version(&version_req), false);
+    }
+
+    #[test]
+    fn selected_toolchain_not_installed_toolchain_same_version_none_false() {
+        let version_req = VersionReq::parse("=3.7.4").unwrap();
+
+        let selected_toolchain = SelectedToolchain::NotInstalledToolchain(NotInstalledToolchain {
+            location: None,
+            version: None,
+        });
+        assert_eq!(selected_toolchain.same_version(&version_req), false);
+    }
+
+    // ***************************************************
+
+    #[test]
+    fn selected_toolchain_installed_toolchain_same_location_true() {
+        let location = PathBuf::from("/usr/bin");
+
+        let selected_toolchain = SelectedToolchain::InstalledToolchain(InstalledToolchain {
+            location: location.clone(),
+            version: Version::parse("3.7.4").unwrap(),
+        });
+        assert_eq!(selected_toolchain.same_location(&location), true);
+    }
+
+    #[test]
+    fn selected_toolchain_installed_toolchain_same_location_false() {
+        let location = PathBuf::from("/usr/bin");
+
+        let selected_toolchain = SelectedToolchain::InstalledToolchain(InstalledToolchain {
+            location: PathBuf::from("/usr/local/bin"),
+            version: Version::parse("3.7.4").unwrap(),
+        });
+        assert_eq!(selected_toolchain.same_location(&location), false);
+    }
+
+    #[test]
+    fn selected_toolchain_not_installed_toolchain_same_location_some_true() {
+        let location = PathBuf::from("/usr/bin");
+
+        let selected_toolchain = SelectedToolchain::NotInstalledToolchain(NotInstalledToolchain {
+            location: Some(location.clone()),
+            version: None,
+        });
+        assert_eq!(selected_toolchain.same_location(&location), true);
+    }
+
+    #[test]
+    fn selected_toolchain_not_installed_toolchain_same_location_some_false() {
+        let location = PathBuf::from("/usr/bin");
+
+        let selected_toolchain = SelectedToolchain::NotInstalledToolchain(NotInstalledToolchain {
+            location: Some(location.clone().join("different")),
+            version: None,
+        });
+        assert_eq!(selected_toolchain.same_location(&location), false);
+    }
+
+    #[test]
+    fn selected_toolchain_not_installed_toolchain_same_location_none_false() {
+        let location = PathBuf::from("/usr/bin");
+
+        let selected_toolchain = SelectedToolchain::NotInstalledToolchain(NotInstalledToolchain {
+            location: None,
+            version: None,
+        });
+        assert_eq!(selected_toolchain.same_location(&location), false);
+    }
 }
