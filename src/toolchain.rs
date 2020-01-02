@@ -717,6 +717,22 @@ mod tests {
         assert_eq!(vop, ToolchainFile::Path(dir));
     }
 
+    use std::sync::{Arc, Mutex};
+    fn with_directory<P, T>(dir: P, c: impl Fn() -> Result<T>) -> Result<T>
+    where
+        P: AsRef<Path>,
+    {
+        lazy_static::lazy_static! {
+            static ref CHANGE_DIR_MUTEX: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
+        }
+        let _change_dir_mutex = CHANGE_DIR_MUTEX.lock().unwrap();
+        let initial_current_dir = env::current_dir().unwrap();
+        env::set_current_dir(dir).unwrap();
+        let r = c();
+        env::set_current_dir(&initial_current_dir).unwrap();
+        r
+    }
+
     #[test]
     fn toolchain_file_load_success_none() {
         let dir = temp_dir().join("toolchain_file_load_success_none");
@@ -724,12 +740,8 @@ mod tests {
             fs::remove_dir_all(&dir).unwrap();
         }
         fs::create_dir_all(&dir).unwrap();
-        let initial_current_dir = env::current_dir().unwrap();
-        env::set_current_dir(&dir).unwrap();
 
-        let vop: Result<Option<ToolchainFile>> = ToolchainFile::load();
-
-        env::set_current_dir(&initial_current_dir).unwrap();
+        let vop: Result<Option<ToolchainFile>> = with_directory(dir, ToolchainFile::load);
 
         assert_eq!(vop.unwrap(), None);
     }
@@ -749,8 +761,6 @@ mod tests {
                 fs::remove_dir_all(&dir).unwrap();
             }
             fs::create_dir_all(&dir).unwrap();
-            let initial_current_dir = env::current_dir().unwrap();
-            env::set_current_dir(&dir).unwrap();
 
             let mut toolchain_file = File::create(dir.join(TOOLCHAIN_FILE)).unwrap();
             toolchain_file.write_all(v.as_bytes()).unwrap();
@@ -758,9 +768,7 @@ mod tests {
             toolchain_file.set_permissions(permissions).unwrap();
             std::mem::drop(toolchain_file);
 
-            let vop: Result<Option<ToolchainFile>> = ToolchainFile::load();
-
-            env::set_current_dir(&initial_current_dir).unwrap();
+            let vop: Result<Option<ToolchainFile>> = with_directory(dir, ToolchainFile::load);
 
             let err = vop.unwrap_err();
             assert_eq!(
@@ -778,16 +786,12 @@ mod tests {
             fs::remove_dir_all(&dir).unwrap();
         }
         fs::create_dir_all(&dir).unwrap();
-        let initial_current_dir = env::current_dir().unwrap();
-        env::set_current_dir(&dir).unwrap();
 
         let mut toolchain_file = File::create(dir.join(TOOLCHAIN_FILE)).unwrap();
         toolchain_file.write_all(v.as_bytes()).unwrap();
         std::mem::drop(toolchain_file);
 
-        let vop: Result<Option<ToolchainFile>> = ToolchainFile::load();
-
-        env::set_current_dir(&initial_current_dir).unwrap();
+        let vop: Result<Option<ToolchainFile>> = with_directory(dir, ToolchainFile::load);
 
         // In case ToolchainFile cannot parse a Version, it will be interpreted as a Path.
         assert_eq!(
@@ -804,7 +808,6 @@ mod tests {
             fs::remove_dir_all(&dir).unwrap();
         }
         fs::create_dir_all(&dir).unwrap();
-        let initial_current_dir = env::current_dir().unwrap();
 
         let mut toolchain_file = File::create(dir.join(TOOLCHAIN_FILE)).unwrap();
         toolchain_file.write_all(v.as_bytes()).unwrap();
@@ -812,11 +815,9 @@ mod tests {
 
         let new_current_dir = dir.join("first").join("second").join("third");
         fs::create_dir_all(&new_current_dir).unwrap();
-        env::set_current_dir(&new_current_dir).unwrap();
 
-        let vop: Result<Option<ToolchainFile>> = ToolchainFile::load();
-
-        env::set_current_dir(&initial_current_dir).unwrap();
+        let vop: Result<Option<ToolchainFile>> =
+            with_directory(new_current_dir, ToolchainFile::load);
 
         let vop = vop.unwrap().unwrap();
 
