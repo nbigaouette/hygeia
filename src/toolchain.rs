@@ -912,4 +912,77 @@ mod tests {
             })
         );
     }
+
+    #[test]
+    fn selected_toolchain_installed_toolchain_version_req() {
+        let selected_toolchain = SelectedToolchain::InstalledToolchain(InstalledToolchain {
+            location: PathBuf::from("/usr/bin"),
+            version: Version::parse("3.7.4").unwrap(),
+        });
+        assert_eq!(
+            selected_toolchain.version_req().unwrap(),
+            VersionReq::parse("=3.7.4").unwrap()
+        );
+    }
+
+    #[test]
+    fn selected_toolchain_not_installed_toolchain_version_req_some() {
+        let selected_toolchain = SelectedToolchain::NotInstalledToolchain(NotInstalledToolchain {
+            location: None,
+            version: Some(VersionReq::parse("=3.7.4").unwrap()),
+        });
+        assert_eq!(
+            selected_toolchain.version_req().unwrap(),
+            VersionReq::parse("=3.7.4").unwrap()
+        );
+    }
+
+    #[test]
+    fn selected_toolchain_not_installed_toolchain_version_req_none() {
+        let selected_toolchain = SelectedToolchain::NotInstalledToolchain(NotInstalledToolchain {
+            location: Some(PathBuf::from("/usr/bin")),
+            version: None,
+        });
+        assert_eq!(selected_toolchain.version_req(), None);
+    }
+
+    #[test]
+    fn selected_toolchain_installed_toolchain_is_installed_true() {
+        let selected_toolchain = SelectedToolchain::InstalledToolchain(InstalledToolchain {
+            location: PathBuf::from("/usr/bin"),
+            version: Version::parse("3.7.4").unwrap(),
+        });
+        assert_eq!(selected_toolchain.is_installed(), true);
+    }
+
+    #[test]
+    fn selected_toolchain_installed_toolchain_is_installed_false() {
+        let selected_toolchain = SelectedToolchain::NotInstalledToolchain(NotInstalledToolchain {
+            location: None,
+            version: None,
+        });
+        assert_eq!(selected_toolchain.is_installed(), false);
+    }
+
+    #[test]
+    fn selected_toolchain_installed_toolchain_same_version_true() {
+        let version_req = VersionReq::parse("=3.7.4").unwrap();
+
+        let selected_toolchain = SelectedToolchain::InstalledToolchain(InstalledToolchain {
+            location: PathBuf::from("/usr/bin"),
+            version: Version::parse("3.7.4").unwrap(),
+        });
+        assert_eq!(selected_toolchain.same_version(&version_req), true);
+    }
+
+    #[test]
+    fn selected_toolchain_installed_toolchain_same_version_false() {
+        let version_req = VersionReq::parse("=2.7.4").unwrap();
+
+        let selected_toolchain = SelectedToolchain::InstalledToolchain(InstalledToolchain {
+            location: PathBuf::from("/usr/bin"),
+            version: Version::parse("3.7.4").unwrap(),
+        });
+        assert_eq!(selected_toolchain.same_version(&version_req), false);
+    }
 }
