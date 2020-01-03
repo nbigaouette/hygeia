@@ -822,7 +822,7 @@ fn find_installed_toolchains_dummy_custom_installs() {
     fs::create_dir_all(&installed_dir).unwrap();
 
     mock_executable(
-        installed_dir.join("3.7.5"),
+        installed_dir.join("3.7.5").join("bin"),
         "python3",
         MockedOutput {
             out: Some("Python 3.7.5"),
@@ -832,7 +832,7 @@ fn find_installed_toolchains_dummy_custom_installs() {
     .unwrap();
 
     mock_executable(
-        installed_dir.join("3.7.4"),
+        installed_dir.join("3.7.4").join("bin"),
         "python3",
         MockedOutput {
             out: Some("Python 3.7.4"),
@@ -999,17 +999,21 @@ fn find_compatible_toolchain_macos_default() {
 #[test]
 fn find_compatible_toolchain_multiple() {
     crate::tests::init_logger();
+
+    let test_dir = temp_dir("find_compatible_toolchain_multiple");
+    let pycors_home = test_dir.join(".pycors");
+
     let installed_toolchains: &[InstalledToolchain] = &[
         InstalledToolchain {
             location: PathBuf::from("/usr/local/bin"),
             version: Version::parse("3.7.5").unwrap(),
         },
         InstalledToolchain {
-            location: PathBuf::from("/home/me/.pycors/installed/3.7.4"),
+            location: pycors_home.join("installed").join("3.7.4").join("bin"),
             version: Version::parse("3.7.4").unwrap(),
         },
         InstalledToolchain {
-            location: PathBuf::from("/home/me/.pycors/installed/3.8.0"),
+            location: pycors_home.join("installed").join("3.8.0").join("bin"),
             version: Version::parse("3.8.0").unwrap(),
         },
         InstalledToolchain {
