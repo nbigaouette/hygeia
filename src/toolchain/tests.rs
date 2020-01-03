@@ -1078,3 +1078,63 @@ fn find_compatible_toolchain_multiple() {
         Some(&installed_toolchains[3])
     );
 }
+
+#[test]
+fn find_compatible_toolchain_same_system_custom() {
+    crate::tests::init_logger();
+
+    let test_dir = temp_dir("find_compatible_toolchain_same_system_custom");
+    let pycors_home = test_dir.join(".pycors");
+
+    let installed_toolchains: &[InstalledToolchain] = &[
+        InstalledToolchain {
+            location: PathBuf::from("/usr/local/bin"),
+            version: Version::parse("3.7.5").unwrap(),
+        },
+        InstalledToolchain {
+            location: pycors_home.join("installed").join("3.7.5").join("bin"),
+            version: Version::parse("3.7.5").unwrap(),
+        },
+        InstalledToolchain {
+            location: pycors_home.join("installed").join("4.0.0").join("bin"),
+            version: Version::parse("4.0.0").unwrap(),
+        },
+        InstalledToolchain {
+            location: PathBuf::from("/usr/bin"),
+            version: Version::parse("2.7.17").unwrap(),
+        },
+    ];
+
+    // Tag as "custom installs" for proper priority
+    for location in &[
+        &installed_toolchains[1].location,
+        &installed_toolchains[2].location,
+    ] {
+        fs::create_dir_all(&location).unwrap();
+        let info_filename = location.parent().unwrap().join(crate::INFO_FILE);
+        // Create file in directory
+        let mut f = File::create(info_filename).unwrap();
+        f.write_all(b"").unwrap();
+    }
+
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("3").unwrap(), installed_toolchains),
+        Some(&installed_toolchains[1])
+    );
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("^3").unwrap(), installed_toolchains),
+        Some(&installed_toolchains[1])
+    );
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("~3").unwrap(), installed_toolchains),
+        Some(&installed_toolchains[1])
+    );
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("~3.7").unwrap(), installed_toolchains),
+        Some(&installed_toolchains[1])
+    );
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("=3.7.5").unwrap(), installed_toolchains),
+        Some(&installed_toolchains[1])
+    );
+}
