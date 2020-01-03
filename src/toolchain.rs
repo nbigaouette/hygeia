@@ -449,7 +449,7 @@ where
             }
         }
         Err(e) => {
-            log::warn!("Error parsing version string {:?}: {:?}", install_dir, e);
+            log::warn!("Install dir {:?} does not exists: {:?}", install_dir, e);
         }
     };
 
