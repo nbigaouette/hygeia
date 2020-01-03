@@ -434,7 +434,7 @@ where
 
                         // Append `bin` to the path (if it exists) since this location
                         // will be used.
-                        let location_bin = PycorsPathsProviderFromEnv::new().bin_dir(&version);
+                        let location_bin = paths_provider.bin_dir(&version);
                         let location = if location_bin.exists() {
                             location_bin
                         } else {
