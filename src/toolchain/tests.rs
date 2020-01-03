@@ -947,3 +947,130 @@ fn find_installed_toolchains_dummy_system_installs() {
         }
     );
 }
+
+#[test]
+fn find_compatible_toolchain_macos_default() {
+    crate::tests::init_logger();
+    let installed_toolchains: &[InstalledToolchain] = &[InstalledToolchain {
+        location: PathBuf::from("/usr/bin"),
+        version: Version::parse("2.7.17").unwrap(),
+    }];
+
+    // No Python 3 available by default on macOS (Mojave)
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("3").unwrap(), installed_toolchains),
+        None
+    );
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("^3").unwrap(), installed_toolchains),
+        None
+    );
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("=3.7.5").unwrap(), installed_toolchains),
+        None
+    );
+
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("2").unwrap(), installed_toolchains),
+        Some(&installed_toolchains[0])
+    );
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("^2").unwrap(), installed_toolchains),
+        Some(&installed_toolchains[0])
+    );
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("~2").unwrap(), installed_toolchains),
+        Some(&installed_toolchains[0])
+    );
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("^2.7").unwrap(), installed_toolchains),
+        Some(&installed_toolchains[0])
+    );
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("~2.7").unwrap(), installed_toolchains),
+        Some(&installed_toolchains[0])
+    );
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("=2.7.17").unwrap(), installed_toolchains),
+        Some(&installed_toolchains[0])
+    );
+}
+
+#[test]
+fn find_compatible_toolchain_multiple() {
+    crate::tests::init_logger();
+    let installed_toolchains: &[InstalledToolchain] = &[
+        InstalledToolchain {
+            location: PathBuf::from("/usr/local/bin"),
+            version: Version::parse("3.7.5").unwrap(),
+        },
+        InstalledToolchain {
+            location: PathBuf::from("/home/me/.pycors/installed/3.7.4"),
+            version: Version::parse("3.7.4").unwrap(),
+        },
+        InstalledToolchain {
+            location: PathBuf::from("/home/me/.pycors/installed/3.8.0"),
+            version: Version::parse("3.8.0").unwrap(),
+        },
+        InstalledToolchain {
+            location: PathBuf::from("/usr/bin"),
+            version: Version::parse("2.7.17").unwrap(),
+        },
+    ];
+
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("~3.7").unwrap(), installed_toolchains),
+        Some(&installed_toolchains[0])
+    );
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("=3.7.5").unwrap(), installed_toolchains),
+        Some(&installed_toolchains[0])
+    );
+
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("=3.7.4").unwrap(), installed_toolchains),
+        Some(&installed_toolchains[1])
+    );
+
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("3").unwrap(), installed_toolchains),
+        Some(&installed_toolchains[2])
+    );
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("^3").unwrap(), installed_toolchains),
+        Some(&installed_toolchains[2])
+    );
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("~3").unwrap(), installed_toolchains),
+        Some(&installed_toolchains[2])
+    );
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("~3.8").unwrap(), installed_toolchains),
+        Some(&installed_toolchains[2])
+    );
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("=3.8.0").unwrap(), installed_toolchains),
+        Some(&installed_toolchains[2])
+    );
+
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("2").unwrap(), installed_toolchains),
+        Some(&installed_toolchains[3])
+    );
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("^2").unwrap(), installed_toolchains),
+        Some(&installed_toolchains[3])
+    );
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("~2").unwrap(), installed_toolchains),
+        Some(&installed_toolchains[3])
+    );
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("~2.7").unwrap(), installed_toolchains),
+        Some(&installed_toolchains[3])
+    );
+    assert_eq!(
+        find_compatible_toolchain(&VersionReq::parse("=2.7.17").unwrap(), installed_toolchains),
+        Some(&installed_toolchains[3])
+    );
+}
