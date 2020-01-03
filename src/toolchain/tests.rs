@@ -133,19 +133,23 @@ fn toolchain_file_load_error_not_permitted() {
         let v = "3.7.4";
         let dir = temp_dir("toolchain_file_load_error_not_permitted");
 
-        let mut toolchain_file = File::create(dir.join(TOOLCHAIN_FILE)).unwrap();
-        toolchain_file.write_all(v.as_bytes()).unwrap();
-        let permissions = fs::Permissions::from_mode(0o200); // -w-------
-        toolchain_file.set_permissions(permissions).unwrap();
-        std::mem::drop(toolchain_file);
+        if users::get_current_uid() == 0 {
+            eprintln!("WARNING: Running test as root is disabled; root can read any file!");
+        } else {
+            let mut toolchain_file = File::create(dir.join(TOOLCHAIN_FILE)).unwrap();
+            toolchain_file.write_all(v.as_bytes()).unwrap();
+            let permissions = fs::Permissions::from_mode(0o200); // -w-------
+            toolchain_file.set_permissions(permissions).unwrap();
+            std::mem::drop(toolchain_file);
 
-        let vop: Result<Option<ToolchainFile>> = with_directory(dir, ToolchainFile::load);
+            let vop: Result<Option<ToolchainFile>> = with_directory(dir, ToolchainFile::load);
 
-        let err = vop.unwrap_err();
-        assert_eq!(
-            err.downcast_ref::<std::io::Error>().unwrap().kind(),
-            std::io::ErrorKind::PermissionDenied
-        );
+            let err = vop.unwrap_err();
+            assert_eq!(
+                err.downcast_ref::<std::io::Error>().unwrap().kind(),
+                std::io::ErrorKind::PermissionDenied
+            );
+        }
     }
 }
 
