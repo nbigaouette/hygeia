@@ -848,7 +848,7 @@ fn find_installed_toolchains_dummy_custom_installs() {
     assert_eq!(
         found_installed_toolchains[0],
         InstalledToolchain {
-            location: installed_dir.join("3.7.5"),
+            location: installed_dir.join("3.7.5").join("bin"),
             version: Version::parse("3.7.5").unwrap()
         }
     );
@@ -856,7 +856,7 @@ fn find_installed_toolchains_dummy_custom_installs() {
     assert_eq!(
         found_installed_toolchains[1],
         InstalledToolchain {
-            location: installed_dir.join("3.7.4"),
+            location: installed_dir.join("3.7.4").join("bin"),
             version: Version::parse("3.7.4").unwrap()
         }
     );
