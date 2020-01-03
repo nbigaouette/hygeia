@@ -39,6 +39,86 @@ fn temp_dir(subdir: &str) -> PathBuf {
     dir
 }
 
+struct MockedOutput<'a> {
+    out: Option<&'a str>,
+    err: Option<&'a str>,
+}
+
+fn mock_executable<P, S>(
+    executable_location: P,
+    executable_name: S,
+    output: MockedOutput,
+) -> Result<()>
+where
+    P: AsRef<Path>,
+    S: AsRef<str>,
+{
+    _mock_executable(
+        executable_location.as_ref(),
+        executable_name.as_ref(),
+        output,
+    )
+}
+
+fn _mock_executable(
+    executable_location: &Path,
+    executable_name: &str,
+    output: MockedOutput,
+) -> Result<()> {
+    let _cargo_output = std::process::Command::new("cargo")
+        .args(&["build", "--package", "print_file_to_stdout"])
+        .output()
+        .with_context(|| "Failed to execute 'cargo build --package print_file_to_stdout")?;
+
+    if !executable_location.exists() {
+        fs::create_dir_all(&executable_location)?
+    }
+
+    let stdout_filepath = executable_location.join(format!(
+        "{}{}_pycors_tests_to_print_stdout.txt",
+        executable_name, EXEC_EXTENSION
+    ));
+    let stderr_filepath = executable_location.join(format!(
+        "{}{}_pycors_tests_to_print_stderr.txt",
+        executable_name, EXEC_EXTENSION
+    ));
+
+    if stdout_filepath.exists() {
+        fs::remove_file(&stdout_filepath)?;
+    }
+    if stderr_filepath.exists() {
+        fs::remove_file(&stderr_filepath)?;
+    }
+
+    if let Some(stdout) = output.out {
+        let mut f = File::create(stdout_filepath)?;
+        f.write_all(stdout.as_bytes())?;
+    }
+    if let Some(stderr) = output.err {
+        let mut f = File::create(stderr_filepath)?;
+        f.write_all(stderr.as_bytes())?;
+    }
+
+    let print_file_to_stdout = {
+        #[cfg_attr(not(windows), allow(unused_mut))]
+        let mut tmp = Path::new("target")
+            .join("debug")
+            .join("print_file_to_stdout");
+
+        #[cfg(windows)]
+        tmp.set_extension("exe");
+
+        tmp
+    };
+
+    fs::copy(
+        &print_file_to_stdout,
+        executable_location.join(format!("{}{}", executable_name, EXEC_EXTENSION)),
+    )?;
+
+    Ok(())
+}
+
 #[test]
 fn version_or_path_from_str_success_major_minor_patch() {
     let v = "3.7.4";
@@ -502,68 +582,34 @@ fn get_python_versions_from_path_2717_and_374_and_375() {
     let shims_dir = paths_provider.shims();
     fs::create_dir_all(&shims_dir).unwrap();
 
-    let filename_to_print = pycors_home.join(format!(
-        "python3{}_pycors_tests_to_print_stdout.txt",
-        EXEC_EXTENSION
-    ));
-    let mut f = File::create(filename_to_print).unwrap();
-    f.write_all(b"Python 3.7.5").unwrap();
-    std::mem::drop(f);
+    mock_executable(
+        &pycors_home,
+        "python3",
+        MockedOutput {
+            out: Some("Python 3.7.5"),
+            err: None,
+        },
+    )
+    .unwrap();
 
-    let filename_to_print = pycors_home.join(format!(
-        "python{}_pycors_tests_to_print_stdout.txt",
-        EXEC_EXTENSION
-    ));
-    let mut f = File::create(filename_to_print).unwrap();
-    f.write_all(b"Python 3.7.4").unwrap();
-    std::mem::drop(f);
+    mock_executable(
+        &pycors_home,
+        "python",
+        MockedOutput {
+            out: Some("Python 3.7.4"),
+            err: None,
+        },
+    )
+    .unwrap();
 
     // NOTE: Python 2 prints its version to stderr, not stdout.
-    let filename_to_print = pycors_home.join(format!(
-        "python2{}_pycors_tests_to_print_stderr.txt",
-        EXEC_EXTENSION
-    ));
-    let mut f = File::create(filename_to_print).unwrap();
-    f.write_all(b"Python 2.7.17").unwrap();
-    std::mem::drop(f);
-
-    std::process::Command::new("cargo")
-        .args(&["build", "--package", "print_file_to_stdout"])
-        .output()
-        .with_context(|| "Failed to execute 'cargo build --package print_file_to_stdout")
-        .unwrap();
-    let print_file_to_stdout = {
-        #[cfg_attr(not(windows), allow(unused_mut))]
-        let mut tmp = Path::new("target")
-            .join("debug")
-            .join("print_file_to_stdout");
-
-        #[cfg(windows)]
-        tmp.set_extension("exe");
-
-        tmp
-    };
-
-    fs::copy(
-        &print_file_to_stdout,
-        pycors_home.join(format!("python{}", EXEC_EXTENSION)),
-    )
-    .with_context(|| {
-        format!(
-            "Failed to copy {:?} to {:?}",
-            &print_file_to_stdout,
-            pycors_home.join(format!("python{}", EXEC_EXTENSION))
-        )
-    })
-    .unwrap();
-    fs::copy(
-        &print_file_to_stdout,
-        pycors_home.join(format!("python2{}", EXEC_EXTENSION)),
-    )
-    .unwrap();
-    fs::copy(
-        &print_file_to_stdout,
-        pycors_home.join(format!("python3{}", EXEC_EXTENSION)),
+    mock_executable(
+        &pycors_home,
+        "python2",
+        MockedOutput {
+            out: None,
+            err: Some("Python 2.7.17"),
+        },
     )
     .unwrap();
 
@@ -572,7 +618,7 @@ fn get_python_versions_from_path_2717_and_374_and_375() {
     let expected_versions: HashMap<Version, PathBuf> = [
         (Version::parse("3.7.4").unwrap(), pycors_home.clone()),
         (Version::parse("3.7.5").unwrap(), pycors_home.clone()),
-        (Version::parse("2.7.17").unwrap(), pycors_home.clone()),
+        (Version::parse("2.7.17").unwrap(), pycors_home),
     ]
     .iter()
     .cloned()
@@ -595,30 +641,13 @@ fn get_python_versions_from_path_single_word_wont_parse() {
     let shims_dir = paths_provider.shims();
     fs::create_dir_all(&shims_dir).unwrap();
 
-    let filename_to_print = pycors_home.join("python_pycors_tests_to_print_stdout.txt");
-    let mut f = File::create(filename_to_print).unwrap();
-    f.write_all(b"single_word_wont_parse").unwrap();
-    std::mem::drop(f);
-
-    std::process::Command::new("cargo")
-        .args(&["build", "--package", "print_file_to_stdout"])
-        .output()
-        .with_context(|| "Failed to execute 'cargo build --package print_file_to_stdout")
-        .unwrap();
-    let print_file_to_stdout = {
-        #[cfg_attr(not(windows), allow(unused_mut))]
-        let mut tmp = Path::new("target")
-            .join("debug")
-            .join("print_file_to_stdout");
-
-        #[cfg(windows)]
-        tmp.set_extension("exe");
-
-        tmp
-    };
-    fs::copy(
-        &print_file_to_stdout,
-        pycors_home.join(format!("python{}", EXEC_EXTENSION)),
+    mock_executable(
+        &pycors_home,
+        "python",
+        MockedOutput {
+            out: Some("single_word_wont_parse"),
+            err: None,
+        },
     )
     .unwrap();
 
@@ -641,33 +670,13 @@ fn get_python_versions_from_path_non_version_wont_parse() {
     let shims_dir = paths_provider.shims();
     fs::create_dir_all(&shims_dir).unwrap();
 
-    let filename_to_print = pycors_home.join(format!(
-        "python{}_pycors_tests_to_print_stdout.txt",
-        EXEC_EXTENSION
-    ));
-    let mut f = File::create(filename_to_print).unwrap();
-    f.write_all(b"Python not_a_version").unwrap();
-    std::mem::drop(f);
-
-    let print_file_to_stdout = {
-        #[cfg_attr(not(windows), allow(unused_mut))]
-        let mut tmp = Path::new("target")
-            .join("debug")
-            .join("print_file_to_stdout");
-
-        #[cfg(windows)]
-        tmp.set_extension("exe");
-
-        tmp
-    };
-    std::process::Command::new("cargo")
-        .args(&["build", "--package", "print_file_to_stdout"])
-        .output()
-        .with_context(|| "Failed to execute 'cargo build --package print_file_to_stdout")
-        .unwrap();
-    fs::copy(
-        print_file_to_stdout,
-        pycors_home.join(format!("python{}", EXEC_EXTENSION)),
+    mock_executable(
+        &pycors_home,
+        "python",
+        MockedOutput {
+            out: Some("Python not_a_version"),
+            err: None,
+        },
     )
     .unwrap();
 
