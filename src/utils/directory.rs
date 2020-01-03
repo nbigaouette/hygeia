@@ -13,13 +13,14 @@ fn dot_dir(name: &str) -> Option<PathBuf> {
 #[cfg_attr(test, mockall::automock)]
 pub trait PycorsHomeProviderTrait {
     fn home_env_variable(&self) -> Option<OsString>;
+    fn paths(&self) -> Option<OsString>;
 }
 
 pub struct PycorsPathsProvider<P>
 where
     P: PycorsHomeProviderTrait,
 {
-    home_provider: P,
+    path_provider: P,
 }
 
 impl<P> PycorsHomeProviderTrait for PycorsPathsProvider<P>
@@ -27,7 +28,10 @@ where
     P: PycorsHomeProviderTrait,
 {
     fn home_env_variable(&self) -> Option<OsString> {
-        self.home_provider.home_env_variable()
+        self.path_provider.home_env_variable()
+    }
+    fn paths(&self) -> Option<OsString> {
+        self.path_provider.paths()
     }
 }
 
@@ -36,7 +40,7 @@ pub struct PycorsPathsProviderFromEnv;
 impl PycorsPathsProviderFromEnv {
     pub fn new() -> PycorsPathsProvider<PycorsPathsProviderFromEnv> {
         PycorsPathsProvider {
-            home_provider: PycorsPathsProviderFromEnv {},
+            path_provider: PycorsPathsProviderFromEnv {},
         }
     }
 }
@@ -45,6 +49,9 @@ impl PycorsHomeProviderTrait for PycorsPathsProviderFromEnv {
     fn home_env_variable(&self) -> Option<OsString> {
         env::var_os(constants::home_env_variable())
     }
+    fn paths(&self) -> Option<OsString> {
+        env::var_os("PATH")
+    }
 }
 
 impl<P> PycorsPathsProvider<P>
@@ -52,12 +59,12 @@ where
     P: PycorsHomeProviderTrait,
 {
     #[cfg(test)]
-    pub fn from(home_provider: P) -> Self {
-        PycorsPathsProvider { home_provider }
+    pub fn from(path_provider: P) -> Self {
+        PycorsPathsProvider { path_provider }
     }
 
     pub fn config_home(&self) -> PathBuf {
-        let config_home_from_env = self.home_provider.home_env_variable().map(PathBuf::from);
+        let config_home_from_env = self.path_provider.home_env_variable().map(PathBuf::from);
 
         let default_dot_dir = dot_dir(&DEFAULT_DOT_DIR);
 
@@ -185,7 +192,7 @@ pub mod tests {
         use super::*;
 
         #[test]
-        fn home_provider_env() {
+        fn path_provider_env() {
             // FIXME: Detect if PYCORS_HOME is set, use it for 'expected' if set.
             let expected = dot_dir(DEFAULT_DOT_DIR).unwrap();
             let paths_provider = PycorsPathsProviderFromEnv::new();
