@@ -544,6 +544,13 @@ fn get_python_versions_from_path_2717_and_374_and_375() {
         &print_file_to_stdout,
         pycors_home.join(format!("python{}", exec_extension)),
     )
+    .with_context(|| {
+        format!(
+            "Failed to copy {:?} to {:?}",
+            &print_file_to_stdout,
+            pycors_home.join(format!("python{}", exec_extension))
+        )
+    })
     .unwrap();
     fs::copy(
         &print_file_to_stdout,
