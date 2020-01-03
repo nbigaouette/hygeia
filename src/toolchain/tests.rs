@@ -596,15 +596,27 @@ fn get_python_versions_from_path_single_word_wont_parse() {
     f.write_all(b"single_word_wont_parse").unwrap();
     std::mem::drop(f);
 
-    let print_file_to_stdout = Path::new("target/debug/print_file_to_stdout");
-    if !print_file_to_stdout.exists() {
-        std::process::Command::new("cargo")
-            .args(&["build", "--package", "print_file_to_stdout"])
-            .output()
-            .with_context(|| "Failed to execute 'cargo build --package print_file_to_stdout")
-            .unwrap();
-    }
-    fs::copy(&print_file_to_stdout, pycors_home.join("python")).unwrap();
+    std::process::Command::new("cargo")
+        .args(&["build", "--package", "print_file_to_stdout"])
+        .output()
+        .with_context(|| "Failed to execute 'cargo build --package print_file_to_stdout")
+        .unwrap();
+    let print_file_to_stdout = {
+        #[cfg_attr(not(windows), allow(unused_mut))]
+        let mut tmp = Path::new("target")
+            .join("debug")
+            .join("print_file_to_stdout");
+
+        #[cfg(windows)]
+        tmp.set_extension("exe");
+
+        tmp
+    };
+    fs::copy(
+        &print_file_to_stdout,
+        pycors_home.join(format!("python{}", EXEC_EXTENSION)),
+    )
+    .unwrap();
 
     let python_versions = get_python_versions_from_path(&pycors_home, &paths_provider);
 
@@ -625,20 +637,35 @@ fn get_python_versions_from_path_non_version_wont_parse() {
     let shims_dir = paths_provider.shims();
     fs::create_dir_all(&shims_dir).unwrap();
 
-    let filename_to_print = pycors_home.join("python_pycors_tests_to_print_stdout.txt");
+    let filename_to_print = pycors_home.join(format!(
+        "python{}_pycors_tests_to_print_stdout.txt",
+        EXEC_EXTENSION
+    ));
     let mut f = File::create(filename_to_print).unwrap();
     f.write_all(b"Python not_a_version").unwrap();
     std::mem::drop(f);
 
-    let print_file_to_stdout = Path::new("target/debug/print_file_to_stdout");
-    if !print_file_to_stdout.exists() {
-        std::process::Command::new("cargo")
-            .args(&["build", "--package", "print_file_to_stdout"])
-            .output()
-            .with_context(|| "Failed to execute 'cargo build --package print_file_to_stdout")
-            .unwrap();
-    }
-    fs::copy(print_file_to_stdout, pycors_home.join("python")).unwrap();
+    let print_file_to_stdout = {
+        #[cfg_attr(not(windows), allow(unused_mut))]
+        let mut tmp = Path::new("target")
+            .join("debug")
+            .join("print_file_to_stdout");
+
+        #[cfg(windows)]
+        tmp.set_extension("exe");
+
+        tmp
+    };
+    std::process::Command::new("cargo")
+        .args(&["build", "--package", "print_file_to_stdout"])
+        .output()
+        .with_context(|| "Failed to execute 'cargo build --package print_file_to_stdout")
+        .unwrap();
+    fs::copy(
+        print_file_to_stdout,
+        pycors_home.join(format!("python{}", EXEC_EXTENSION)),
+    )
+    .unwrap();
 
     let python_versions = get_python_versions_from_path(&pycors_home, &paths_provider);
 
