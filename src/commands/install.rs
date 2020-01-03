@@ -69,7 +69,7 @@ pub fn run(
     let requested_version = cache.query(&requested_version_req)?;
 
     // Already installed? Force installation?
-    let installed_toolchains = find_installed_toolchains()?;
+    let installed_toolchains = find_installed_toolchains(&paths_provider)?;
     let matching_installed_version: Option<&InstalledToolchain> =
         installed_toolchains.iter().find(|installed_python| {
             VersionReq::exact(&requested_version.version).matches(&installed_python.version)

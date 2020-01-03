@@ -386,8 +386,13 @@ fn _is_a_custom_install(path: &Path) -> bool {
     }
 }
 
-pub fn find_installed_toolchains() -> Result<Vec<InstalledToolchain>> {
-    let install_dir = PycorsPathsProviderFromEnv::new().installed();
+pub fn find_installed_toolchains<P>(
+    paths_provider: &PycorsPathsProvider<P>,
+) -> Result<Vec<InstalledToolchain>>
+where
+    P: PycorsHomeProviderTrait,
+{
+    let install_dir = paths_provider.installed();
 
     let mut installed_python = Vec::new();
 
@@ -548,7 +553,9 @@ impl CompatibleToolchainBuilder {
         self
     }
     pub fn compatible_version(self) -> Result<Option<InstalledToolchain>> {
-        let installed_toolchains: Vec<InstalledToolchain> = find_installed_toolchains()?;
+        let paths_provider = PycorsPathsProviderFromEnv::new();
+        let installed_toolchains: Vec<InstalledToolchain> =
+            find_installed_toolchains(&paths_provider)?;
 
         let compatible = match self.overwrite {
             Some(version_req) => {

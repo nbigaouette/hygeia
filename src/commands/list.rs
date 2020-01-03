@@ -8,11 +8,13 @@ use crate::{
         find_installed_toolchains, installed::InstalledToolchain, is_a_custom_install,
         SelectedToolchain, ToolchainFile,
     },
+    utils::directory::PycorsPathsProviderFromEnv,
     Result,
 };
 
 pub fn run() -> Result<()> {
-    let installed_toolchains: Vec<InstalledToolchain> = find_installed_toolchains()?;
+    let paths_provider = PycorsPathsProviderFromEnv::new();
+    let installed_toolchains: Vec<InstalledToolchain> = find_installed_toolchains(&paths_provider)?;
 
     let mut toolchains_table = ToolChainTable::new(&installed_toolchains);
 
