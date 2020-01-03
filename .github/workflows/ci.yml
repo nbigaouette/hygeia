@@ -74,6 +74,21 @@ jobs:
           profile: minimal
           toolchain: ${{ matrix.rust }}
           override: true
+      - name: Cache (cargo registry)
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/registry
+          key: cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache (cargo index)
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/git
+          key: cargo-index-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache (cargo build)
+        uses: actions/cache@v1
+        with:
+          path: target
+          key: cargo-build-target-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
       - name: Build (cargo build)
         uses: actions-rs/cargo@v1
         with:
@@ -125,6 +140,21 @@ jobs:
       options: --security-opt seccomp=unconfined
     steps:
       - uses: actions/checkout@v1
+      - name: Cache (cargo registry)
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/registry
+          key: cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache (cargo index)
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/git
+          key: cargo-index-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache (cargo build)
+        uses: actions/cache@v1
+        with:
+          path: target
+          key: cargo-build-target-tarpaulin-${{ hashFiles('**/Cargo.lock') }}
       - name: Run tarpaulin
         run: cargo tarpaulin --out Xml --verbose
       - name: Upload coverage to codecov.io
