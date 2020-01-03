@@ -11,10 +11,23 @@ use std::{
     process::{ExitStatus, Output},
 };
 
-fn temp_dir() -> PathBuf {
-    env::temp_dir()
+fn temp_dir(subdir: &str) -> PathBuf {
+    let dir = env::temp_dir()
         .join(crate::constants::EXECUTABLE_NAME)
-        .join("toolchain")
+        .join("toolchain");
+
+    if !dir.exists() {
+        fs::create_dir_all(&dir).unwrap();
+    }
+    let dir = dir.canonicalize().unwrap().join(subdir);
+
+    if dir.exists() {
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    fs::create_dir_all(&dir).unwrap();
+
+    dir
 }
 
 #[test]
@@ -58,13 +71,7 @@ fn version_or_path_from_str_success_tilde_major() {
 
 #[test]
 fn version_or_path_from_str_err_path_success() {
-    let dir = temp_dir()
-        .join("version_or_path_from_str_err_path_success")
-        .canonicalize()
-        .unwrap();
-    if !dir.exists() {
-        fs::create_dir_all(&dir).unwrap();
-    }
+    let dir = temp_dir("version_or_path_from_str_err_path_success");
     let v = dir.to_string_lossy();
     let vop: ToolchainFile = v.parse().unwrap();
     assert_eq!(vop, ToolchainFile::Path(dir));
@@ -72,10 +79,7 @@ fn version_or_path_from_str_err_path_success() {
 
 #[test]
 fn version_or_path_from_str_err_path_failed_dir_not_found() {
-    let dir = temp_dir().join("version_or_path_from_str_err_path_failed_dir_not_found");
-    if dir.exists() {
-        fs::remove_dir_all(&dir).unwrap();
-    }
+    let dir = temp_dir("version_or_path_from_str_err_path_failed_dir_not_found");
     let v = dir.to_string_lossy();
     let vop: ToolchainFile = v.parse().unwrap();
     assert_eq!(vop, ToolchainFile::Path(dir));
@@ -99,11 +103,7 @@ where
 
 #[test]
 fn toolchain_file_load_success_none() {
-    let dir = temp_dir().join("toolchain_file_load_success_none");
-    if dir.exists() {
-        fs::remove_dir_all(&dir).unwrap();
-    }
-    fs::create_dir_all(&dir).unwrap();
+    let dir = temp_dir("toolchain_file_load_success_none");
 
     let vop: Result<Option<ToolchainFile>> = with_directory(dir, ToolchainFile::load);
 
@@ -122,11 +122,7 @@ fn toolchain_file_load_error_not_permitted() {
     #[cfg(not(windows))]
     {
         let v = "3.7.4";
-        let dir = temp_dir().join("toolchain_file_load_error_not_permitted");
-        if dir.exists() {
-            fs::remove_dir_all(&dir).unwrap();
-        }
-        fs::create_dir_all(&dir).unwrap();
+        let dir = temp_dir("toolchain_file_load_error_not_permitted");
 
         let mut toolchain_file = File::create(dir.join(TOOLCHAIN_FILE)).unwrap();
         toolchain_file.write_all(v.as_bytes()).unwrap();
@@ -147,11 +143,7 @@ fn toolchain_file_load_error_not_permitted() {
 #[test]
 fn toolchain_file_load_error_garbage() {
     let v = "non-Version parsable content";
-    let dir = temp_dir().join("toolchain_file_load_error_garbage");
-    if dir.exists() {
-        fs::remove_dir_all(&dir).unwrap();
-    }
-    fs::create_dir_all(&dir).unwrap();
+    let dir = temp_dir("toolchain_file_load_error_garbage");
 
     let mut toolchain_file = File::create(dir.join(TOOLCHAIN_FILE)).unwrap();
     toolchain_file.write_all(v.as_bytes()).unwrap();
@@ -169,11 +161,7 @@ fn toolchain_file_load_error_garbage() {
 #[test]
 fn toolchain_file_load_success_some() {
     let v = "3.7.4";
-    let dir = temp_dir().join("toolchain_file_load");
-    if dir.exists() {
-        fs::remove_dir_all(&dir).unwrap();
-    }
-    fs::create_dir_all(&dir).unwrap();
+    let dir = temp_dir("toolchain_file_load");
 
     let mut toolchain_file = File::create(dir.join(TOOLCHAIN_FILE)).unwrap();
     toolchain_file.write_all(v.as_bytes()).unwrap();
@@ -255,11 +243,7 @@ fn selected_toolchain_from_toolchain_file_version_req_not_installed() {
 
 #[test]
 fn selected_toolchain_from_toolchain_file_path_not_installed() {
-    let dir = temp_dir().join("selected_toolchain_from_toolchain_file_path_installed");
-    if dir.exists() {
-        fs::remove_dir_all(&dir).unwrap();
-    }
-    fs::create_dir_all(&dir).unwrap();
+    let dir = temp_dir("selected_toolchain_from_toolchain_file_path_installed");
     let dir = dir.canonicalize().unwrap();
 
     let toolchain_file: ToolchainFile = ToolchainFile::Path(dir.clone());
