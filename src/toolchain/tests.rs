@@ -7,9 +7,13 @@ use std::os::unix::process::ExitStatusExt;
 #[cfg(windows)]
 use std::os::windows::process::ExitStatusExt;
 use std::{
+    collections::HashMap,
+    fs::File,
     io::Write,
     process::{ExitStatus, Output},
 };
+
+use crate::utils::directory::MockPycorsHomeProviderTrait;
 
 fn temp_dir(subdir: &str) -> PathBuf {
     let dir = env::temp_dir()
@@ -421,4 +425,226 @@ fn selected_toolchain_not_installed_toolchain_same_location_none_false() {
         version: None,
     });
     assert_eq!(selected_toolchain.same_location(&location), false);
+}
+
+#[test]
+fn get_python_versions_from_path_pycors_home_dir_absent() {
+    let pycors_home = temp_dir("get_python_versions_from_path_pycors_home_dir_absent");
+    fs::remove_dir_all(&pycors_home).unwrap();
+    let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+
+    let mut mock = MockPycorsHomeProviderTrait::new();
+    mock.expect_home_env_variable()
+        .times(0)
+        .return_const(mocked_pycors_home);
+    let paths_provider = PycorsPathsProvider::from(mock);
+
+    let python_versions = get_python_versions_from_path(&pycors_home, &paths_provider);
+
+    assert!(python_versions.is_empty());
+}
+
+#[test]
+fn get_python_versions_from_path_shim_dir_absent() {
+    let pycors_home = temp_dir("get_python_versions_from_path_shim_dir_absent");
+    let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+
+    let mut mock = MockPycorsHomeProviderTrait::new();
+    mock.expect_home_env_variable()
+        .times(1)
+        .return_const(mocked_pycors_home);
+    let paths_provider = PycorsPathsProvider::from(mock);
+
+    let python_versions = get_python_versions_from_path(&pycors_home, &paths_provider);
+
+    assert!(python_versions.is_empty());
+}
+
+#[test]
+fn get_python_versions_from_path_shim_skipped() {
+    let pycors_home = temp_dir("get_python_versions_from_path_shim_skipped");
+    let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+
+    let mut mock = MockPycorsHomeProviderTrait::new();
+    mock.expect_home_env_variable()
+        .times(1 + 1) // We need the shim dir to call function, hence +1
+        .return_const(mocked_pycors_home);
+    let paths_provider = PycorsPathsProvider::from(mock);
+
+    let shims_dir = paths_provider.shims();
+    fs::create_dir_all(&shims_dir).unwrap();
+
+    let python_versions = get_python_versions_from_path(&shims_dir, &paths_provider);
+
+    assert!(python_versions.is_empty());
+}
+
+#[test]
+fn get_python_versions_from_path_2717_and_374_and_375() {
+    let pycors_home = temp_dir("get_python_versions_from_path_2717_and_374_and_375");
+    let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+
+    let mut mock = MockPycorsHomeProviderTrait::new();
+    mock.expect_home_env_variable()
+        .times(1 + 1)
+        .return_const(mocked_pycors_home);
+    let paths_provider = PycorsPathsProvider::from(mock);
+
+    let shims_dir = paths_provider.shims();
+    fs::create_dir_all(&shims_dir).unwrap();
+
+    let filename_to_print = pycors_home.join("python3_pycors_tests_to_print_stdout.txt");
+    let mut f = File::create(filename_to_print).unwrap();
+    f.write_all(b"Python 3.7.5").unwrap();
+    std::mem::drop(f);
+
+    let filename_to_print = pycors_home.join("python_pycors_tests_to_print_stdout.txt");
+    let mut f = File::create(filename_to_print).unwrap();
+    f.write_all(b"Python 3.7.4").unwrap();
+    std::mem::drop(f);
+
+    // NOTE: Python 2 prints its version to stderr, not stdout.
+    let filename_to_print = pycors_home.join("python2_pycors_tests_to_print_stderr.txt");
+    let mut f = File::create(filename_to_print).unwrap();
+    f.write_all(b"Python 2.7.17").unwrap();
+    std::mem::drop(f);
+
+    std::process::Command::new("cargo")
+        .args(&["build", "--package", "print_file_to_stdout"])
+        .output()
+        .unwrap();
+    fs::copy(
+        "target/debug/print_file_to_stdout",
+        pycors_home.join("python"),
+    )
+    .unwrap();
+    fs::copy(
+        "target/debug/print_file_to_stdout",
+        pycors_home.join("python2"),
+    )
+    .unwrap();
+    fs::copy(
+        "target/debug/print_file_to_stdout",
+        pycors_home.join("python3"),
+    )
+    .unwrap();
+
+    let python_versions = get_python_versions_from_path(&pycors_home, &paths_provider);
+
+    let expected_versions: HashMap<Version, PathBuf> = [
+        (Version::parse("3.7.4").unwrap(), pycors_home.clone()),
+        (Version::parse("3.7.5").unwrap(), pycors_home.clone()),
+        (Version::parse("2.7.17").unwrap(), pycors_home.clone()),
+    ]
+    .iter()
+    .cloned()
+    .collect();
+
+    assert_eq!(python_versions, expected_versions);
+}
+
+#[test]
+fn get_python_versions_from_path_single_word_wont_parse() {
+    let pycors_home = temp_dir("get_python_versions_from_path_single_word_wont_parse");
+    let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+
+    let mut mock = MockPycorsHomeProviderTrait::new();
+    mock.expect_home_env_variable()
+        .times(1 + 1)
+        .return_const(mocked_pycors_home);
+    let paths_provider = PycorsPathsProvider::from(mock);
+
+    let shims_dir = paths_provider.shims();
+    fs::create_dir_all(&shims_dir).unwrap();
+
+    let filename_to_print = pycors_home.join("python_pycors_tests_to_print_stdout.txt");
+    let mut f = File::create(filename_to_print).unwrap();
+    f.write_all(b"single_word_wont_parse").unwrap();
+    std::mem::drop(f);
+
+    std::process::Command::new("cargo")
+        .args(&["build", "--package", "print_file_to_stdout"])
+        .output()
+        .unwrap();
+    fs::copy(
+        "target/debug/print_file_to_stdout",
+        pycors_home.join("python"),
+    )
+    .unwrap();
+
+    let python_versions = get_python_versions_from_path(&pycors_home, &paths_provider);
+
+    assert!(python_versions.is_empty());
+}
+
+#[test]
+fn get_python_versions_from_path_non_version_wont_parse() {
+    let pycors_home = temp_dir("get_python_versions_from_path_non_version_wont_parse");
+    let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+
+    let mut mock = MockPycorsHomeProviderTrait::new();
+    mock.expect_home_env_variable()
+        .times(1 + 1)
+        .return_const(mocked_pycors_home);
+    let paths_provider = PycorsPathsProvider::from(mock);
+
+    let shims_dir = paths_provider.shims();
+    fs::create_dir_all(&shims_dir).unwrap();
+
+    let filename_to_print = pycors_home.join("python_pycors_tests_to_print_stdout.txt");
+    let mut f = File::create(filename_to_print).unwrap();
+    f.write_all(b"Python not_a_version").unwrap();
+    std::mem::drop(f);
+
+    std::process::Command::new("cargo")
+        .args(&["build", "--package", "print_file_to_stdout"])
+        .output()
+        .unwrap();
+    fs::copy(
+        "target/debug/print_file_to_stdout",
+        pycors_home.join("python"),
+    )
+    .unwrap();
+
+    let python_versions = get_python_versions_from_path(&pycors_home, &paths_provider);
+
+    assert!(python_versions.is_empty());
+}
+
+#[test]
+fn get_python_versions_from_path_failure_to_run() {
+    #[cfg(windows)]
+    {
+        println!(
+            "Test skipped on Windows since it doesn't support 'std::os::unix::fs::PermissionsExt'"
+        );
+    }
+
+    #[cfg(not(windows))]
+    {
+        crate::tests::init_logger();
+        let pycors_home = temp_dir("get_python_versions_from_path_failure_to_run");
+        let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+
+        let mut mock = MockPycorsHomeProviderTrait::new();
+        mock.expect_home_env_variable()
+            .times(1 + 1)
+            .return_const(mocked_pycors_home);
+        let paths_provider = PycorsPathsProvider::from(mock);
+
+        let shims_dir = paths_provider.shims();
+        fs::create_dir_all(&shims_dir).unwrap();
+
+        let filename_to_print = pycors_home.join("python");
+        let mut f = File::create(filename_to_print).unwrap();
+        f.write_all(b"This is not an executable.").unwrap();
+        // Make file executable
+        let permissions = fs::Permissions::from_mode(0o755);
+        f.set_permissions(permissions).unwrap();
+        std::mem::drop(f);
+
+        let python_versions = get_python_versions_from_path(&pycors_home, &paths_provider);
+
+        assert!(python_versions.is_empty());
+    }
 }
