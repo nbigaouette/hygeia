@@ -512,6 +512,7 @@ fn get_python_versions_from_path_2717_and_374_and_375() {
     std::process::Command::new("cargo")
         .args(&["build", "--package", "print_file_to_stdout"])
         .output()
+        .with_context(|| format!("Failed to execute 'cargo build --package print_file_to_stdout"))
         .unwrap();
     fs::copy(
         "target/debug/print_file_to_stdout",
@@ -565,6 +566,7 @@ fn get_python_versions_from_path_single_word_wont_parse() {
     std::process::Command::new("cargo")
         .args(&["build", "--package", "print_file_to_stdout"])
         .output()
+        .with_context(|| format!("Failed to execute 'cargo build --package print_file_to_stdout"))
         .unwrap();
     fs::copy(
         "target/debug/print_file_to_stdout",
@@ -599,6 +601,7 @@ fn get_python_versions_from_path_non_version_wont_parse() {
     std::process::Command::new("cargo")
         .args(&["build", "--package", "print_file_to_stdout"])
         .output()
+        .with_context(|| format!("Failed to execute 'cargo build --package print_file_to_stdout"))
         .unwrap();
     fs::copy(
         "target/debug/print_file_to_stdout",
