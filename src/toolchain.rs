@@ -330,7 +330,7 @@ fn extract_version_from_command(
         Ok(output) => {
             if !output.status.success() {
                 Err(anyhow::anyhow!(
-                    "Failed to execute`{} -V` (exit code: {:?})",
+                    "Failed to execute `{} -V` (exit code: {:?})",
                     full_executable_path.display(),
                     output.status.code()
                 ))
