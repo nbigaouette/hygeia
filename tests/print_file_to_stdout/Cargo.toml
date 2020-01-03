@@ -1,5 +1,5 @@
 [package]
-name = "print_env_to_stdout"
+name = "print_file_to_stdout"
 version = "0.1.0"
 authors = ["Nicolas Bigaouette <nbigaouette@gmail.com>"]
 edition = "2018"

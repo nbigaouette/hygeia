@@ -9,7 +9,7 @@ edition = "2018"
 [workspace]
 members = [
     "xtask",
-    "tests/print_env_to_stdout",
+    "tests/print_file_to_stdout",
 ]
 
 [dependencies]
