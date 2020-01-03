@@ -9,7 +9,10 @@ use anyhow::Result;
 use semver::{Version, VersionReq};
 use thiserror::Error;
 
-use crate::{constants::TOOLCHAIN_FILE, toolchain::get_python_versions_from_path};
+use crate::{
+    constants::TOOLCHAIN_FILE, toolchain::get_python_versions_from_path,
+    utils::directory::PycorsPathsProviderFromEnv,
+};
 
 #[derive(Debug, Clone, Error)]
 #[error("Python version {version} not found!")]
@@ -40,7 +43,9 @@ impl InstalledToolchain {
     where
         P: AsRef<Path>,
     {
-        let versions_found = get_python_versions_from_path(path.as_ref());
+        let paths_provider = PycorsPathsProviderFromEnv::new();
+
+        let versions_found = get_python_versions_from_path(path.as_ref(), &paths_provider);
         log::debug!("versions_found: {:?}", versions_found);
 
         let highest_version = versions_found.into_iter().max_by(|x, y| (x.0.cmp(&y.0)))?;

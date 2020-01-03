@@ -15,7 +15,10 @@ use which::which_in;
 
 use crate::{
     constants::TOOLCHAIN_FILE,
-    utils::{self, directory::PycorsPathsProviderFromEnv},
+    utils::{
+        self,
+        directory::{PycorsHomeProviderTrait, PycorsPathsProvider, PycorsPathsProviderFromEnv},
+    },
     Result, EXECUTABLE_NAME,
 };
 
@@ -126,7 +129,8 @@ impl SelectedToolchain {
     where
         P: AsRef<Path>,
     {
-        let versions_found = get_python_versions_from_path(path.as_ref());
+        let paths_provider = PycorsPathsProviderFromEnv::new();
+        let versions_found = get_python_versions_from_path(path.as_ref(), &paths_provider);
         log::debug!("Versions_found: {:?}", versions_found);
 
         match versions_found.into_iter().max_by(|x, y| (x.0.cmp(&y.0))) {
@@ -218,9 +222,13 @@ impl SelectedToolchain {
     }
 }
 
-fn get_python_versions_from_path<P>(path: P) -> HashMap<Version, PathBuf>
+fn get_python_versions_from_path<P, S>(
+    path: P,
+    paths_provider: &PycorsPathsProvider<S>,
+) -> HashMap<Version, PathBuf>
 where
     P: AsRef<Path> + std::convert::AsRef<std::ffi::OsStr>,
+    S: PycorsHomeProviderTrait,
 {
     let path: &Path = path.as_ref();
 
@@ -240,7 +248,7 @@ where
         }
     };
 
-    let shims_dir = PycorsPathsProviderFromEnv::new().shims();
+    let shims_dir = paths_provider.shims();
     let shims_dir = match shims_dir.canonicalize() {
         Ok(shims_dir) => shims_dir,
         Err(e) => {
@@ -434,7 +442,8 @@ pub fn find_installed_toolchains() -> Result<Vec<InstalledToolchain>> {
 
     // Find other Python installed (f.e. in system directories)
     let original_path = env::var("PATH")?;
-    let other_pythons = get_python_versions_from_paths(&original_path);
+    let paths_provider = PycorsPathsProviderFromEnv::new();
+    let other_pythons = get_python_versions_from_paths(&original_path, &paths_provider);
     installed_python.extend(other_pythons);
 
     installed_python.sort_unstable_by(|p1, p2| p2.version.cmp(&p1.version));
@@ -442,12 +451,18 @@ pub fn find_installed_toolchains() -> Result<Vec<InstalledToolchain>> {
     Ok(installed_python)
 }
 
-fn get_python_versions_from_paths(original_path: &str) -> Vec<InstalledToolchain> {
+fn get_python_versions_from_paths<S>(
+    original_path: &str,
+    paths_provider: &PycorsPathsProvider<S>,
+) -> Vec<InstalledToolchain>
+where
+    S: PycorsHomeProviderTrait,
+{
     let mut other_pythons: HashMap<Version, PathBuf> = HashMap::new();
 
     if !original_path.is_empty() {
         for path in env::split_paths(&original_path) {
-            other_pythons.extend(get_python_versions_from_path(&path));
+            other_pythons.extend(get_python_versions_from_path(&path, &paths_provider));
         }
     }
 
