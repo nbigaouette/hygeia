@@ -454,9 +454,7 @@ where
     };
 
     // Find other Python installed (f.e. in system directories)
-    let original_path = env::var("PATH")?;
-    let paths_provider = PycorsPathsProviderFromEnv::new();
-    let other_pythons = get_python_versions_from_paths(&original_path, &paths_provider);
+    let other_pythons = get_python_versions_from_paths(&paths_provider);
     installed_python.extend(other_pythons);
 
     installed_python.sort_unstable_by(|p1, p2| p2.version.cmp(&p1.version));
@@ -465,7 +463,6 @@ where
 }
 
 fn get_python_versions_from_paths<S>(
-    original_path: &str,
     paths_provider: &PycorsPathsProvider<S>,
 ) -> Vec<InstalledToolchain>
 where
@@ -473,9 +470,11 @@ where
 {
     let mut other_pythons: HashMap<Version, PathBuf> = HashMap::new();
 
-    if !original_path.is_empty() {
-        for path in env::split_paths(&original_path) {
-            other_pythons.extend(get_python_versions_from_path(&path, &paths_provider));
+    if let Some(original_path) = paths_provider.paths() {
+        if !original_path.is_empty() {
+            for path in env::split_paths(&original_path) {
+                other_pythons.extend(get_python_versions_from_path(&path, &paths_provider));
+            }
         }
     }
 
