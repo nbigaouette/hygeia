@@ -713,3 +713,19 @@ fn get_python_versions_from_path_failure_to_run() {
         assert!(python_versions.is_empty());
     }
 }
+
+#[test]
+fn is_a_custom_install_true() {
+    let dir = temp_dir("is_a_custom_install_true");
+    let info_filename = dir.join(crate::INFO_FILE);
+    // Create file in directory
+    let mut f = File::create(info_filename).unwrap();
+    f.write_all(b"").unwrap();
+    assert!(is_a_custom_install(&dir.join("bin")));
+}
+
+#[test]
+fn is_a_custom_install_false() {
+    let dir = temp_dir("is_a_custom_install_false");
+    assert!(!is_a_custom_install(&dir.join("bin")));
+}

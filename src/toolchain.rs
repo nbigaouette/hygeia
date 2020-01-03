@@ -369,12 +369,20 @@ where
     P: AsRef<Path>,
 {
     let path = path.as_ref();
-    match path.parent() {
-        None => {
-            log::error!("Cannot get parent directory of {:?}", path);
-            false
+    _is_a_custom_install(path)
+}
+
+fn _is_a_custom_install(path: &Path) -> bool {
+    if path.join(crate::INFO_FILE).exists() {
+        true
+    } else {
+        match path.parent() {
+            None => {
+                // Cannot get parent directory, probably at root.
+                false
+            }
+            Some(parent) => is_a_custom_install(parent),
         }
-        Some(parent) => parent.join(crate::INFO_FILE).exists(),
     }
 }
 
