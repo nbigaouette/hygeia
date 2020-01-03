@@ -738,3 +738,212 @@ fn is_a_custom_install_false() {
     let dir = temp_dir("is_a_custom_install_false");
     assert!(!is_a_custom_install(&dir.join("bin")));
 }
+
+#[test]
+fn find_installed_toolchains_absent_dir() {
+    crate::tests::init_logger();
+
+    let test_dir = temp_dir("find_installed_toolchains_absent_dir");
+    let pycors_home = test_dir.join(".pycors");
+    let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+    let mocked_usr_bin = test_dir.join("usr_bin");
+    let mocked_usr_local_bin = test_dir.join("usr_local_bin");
+    let mocked_paths =
+        Some(env::join_paths([&mocked_usr_bin, &mocked_usr_local_bin].iter()).unwrap());
+
+    // Make sure directory does not exists
+    fs::remove_dir(&test_dir).unwrap();
+
+    let mut mock = MockPycorsHomeProviderTrait::new();
+    mock.expect_home_env_variable()
+        .times(1)
+        .return_const(mocked_pycors_home);
+    mock.expect_paths().times(1).return_const(mocked_paths);
+    let paths_provider = PycorsPathsProvider::from(mock);
+
+    let found_installed_toolchains = find_installed_toolchains(&paths_provider).unwrap();
+
+    assert!(found_installed_toolchains.is_empty());
+}
+
+#[test]
+fn find_installed_toolchains_empty_installed_dir() {
+    crate::tests::init_logger();
+
+    let test_dir = temp_dir("find_installed_toolchains_empty_installed_dir");
+    let pycors_home = test_dir.join(".pycors");
+    let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+    let mocked_usr_bin = test_dir.join("usr_bin");
+    let mocked_usr_local_bin = test_dir.join("usr_local_bin");
+    let mocked_paths =
+        Some(env::join_paths([&mocked_usr_bin, &mocked_usr_local_bin].iter()).unwrap());
+
+    // Make sure directory does not exists
+    fs::remove_dir(&test_dir).unwrap();
+
+    let mut mock = MockPycorsHomeProviderTrait::new();
+    mock.expect_home_env_variable()
+        .times(2)
+        .return_const(mocked_pycors_home);
+    mock.expect_paths().times(1).return_const(mocked_paths);
+    let paths_provider = PycorsPathsProvider::from(mock);
+
+    let installed_dir = paths_provider.installed();
+    fs::create_dir_all(&installed_dir).unwrap();
+
+    let found_installed_toolchains = find_installed_toolchains(&paths_provider).unwrap();
+
+    assert!(found_installed_toolchains.is_empty());
+}
+
+#[test]
+fn find_installed_toolchains_dummy_custom_installs() {
+    crate::tests::init_logger();
+
+    let test_dir = temp_dir("find_installed_toolchains_dummy_custom_installs");
+    let pycors_home = test_dir.join(".pycors");
+    let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+    let mocked_usr_bin = test_dir.join("usr_bin");
+    let mocked_usr_local_bin = test_dir.join("usr_local_bin");
+    let mocked_paths =
+        Some(env::join_paths([&mocked_usr_bin, &mocked_usr_local_bin].iter()).unwrap());
+
+    // Make sure directory does not exists
+    fs::remove_dir(&test_dir).unwrap();
+
+    let mut mock = MockPycorsHomeProviderTrait::new();
+    mock.expect_home_env_variable()
+        .times(4)
+        .return_const(mocked_pycors_home);
+    mock.expect_paths().times(1).return_const(mocked_paths);
+    let paths_provider = PycorsPathsProvider::from(mock);
+
+    let installed_dir = paths_provider.installed();
+    fs::create_dir_all(&installed_dir).unwrap();
+
+    mock_executable(
+        installed_dir.join("3.7.5"),
+        "python3",
+        MockedOutput {
+            out: Some("Python 3.7.5"),
+            err: None,
+        },
+    )
+    .unwrap();
+
+    mock_executable(
+        installed_dir.join("3.7.4"),
+        "python3",
+        MockedOutput {
+            out: Some("Python 3.7.4"),
+            err: None,
+        },
+    )
+    .unwrap();
+
+    let found_installed_toolchains = find_installed_toolchains(&paths_provider).unwrap();
+
+    assert_eq!(found_installed_toolchains.len(), 2);
+
+    assert_eq!(
+        found_installed_toolchains[0],
+        InstalledToolchain {
+            location: installed_dir.join("3.7.5"),
+            version: Version::parse("3.7.5").unwrap()
+        }
+    );
+
+    assert_eq!(
+        found_installed_toolchains[1],
+        InstalledToolchain {
+            location: installed_dir.join("3.7.4"),
+            version: Version::parse("3.7.4").unwrap()
+        }
+    );
+}
+
+#[test]
+fn find_installed_toolchains_dummy_system_installs() {
+    crate::tests::init_logger();
+
+    let test_dir = temp_dir("find_installed_toolchains_dummy_system_installs");
+    let pycors_home = test_dir.join(".pycors");
+    let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+    let mocked_usr_bin = test_dir.join("usr_bin");
+    let mocked_usr_local_bin = test_dir.join("usr_local_bin");
+    let mocked_paths =
+        Some(env::join_paths([&mocked_usr_bin, &mocked_usr_local_bin].iter()).unwrap());
+
+    // Make sure directory does not exists
+    fs::remove_dir(&test_dir).unwrap();
+
+    let mut mock = MockPycorsHomeProviderTrait::new();
+    mock.expect_home_env_variable()
+        .times(4)
+        .return_const(mocked_pycors_home);
+    mock.expect_paths().times(1).return_const(mocked_paths);
+    let paths_provider = PycorsPathsProvider::from(mock);
+
+    let installed_dir = paths_provider.installed();
+    fs::create_dir_all(&installed_dir).unwrap();
+
+    mock_executable(
+        mocked_usr_local_bin.clone(),
+        "python3",
+        MockedOutput {
+            out: Some("Python 3.7.5"),
+            err: None,
+        },
+    )
+    .unwrap();
+
+    mock_executable(
+        mocked_usr_local_bin.clone(),
+        "python",
+        MockedOutput {
+            out: Some("Python 3.7.5"),
+            err: None,
+        },
+    )
+    .unwrap();
+
+    mock_executable(
+        mocked_usr_bin.clone(),
+        "python",
+        MockedOutput {
+            out: Some("Python 2.7.17"),
+            err: None,
+        },
+    )
+    .unwrap();
+
+    mock_executable(
+        mocked_usr_bin.clone(),
+        "python2.7",
+        MockedOutput {
+            out: Some("Python 2.7.17"),
+            err: None,
+        },
+    )
+    .unwrap();
+
+    let found_installed_toolchains = find_installed_toolchains(&paths_provider).unwrap();
+
+    assert_eq!(found_installed_toolchains.len(), 2);
+
+    assert_eq!(
+        found_installed_toolchains[0],
+        InstalledToolchain {
+            location: mocked_usr_local_bin,
+            version: Version::parse("3.7.5").unwrap()
+        }
+    );
+
+    assert_eq!(
+        found_installed_toolchains[1],
+        InstalledToolchain {
+            location: mocked_usr_bin,
+            version: Version::parse("2.7.17").unwrap()
+        }
+    );
+}
