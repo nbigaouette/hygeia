@@ -253,7 +253,8 @@ where
         Ok(shims_dir) => shims_dir,
         Err(e) => {
             log::error!("Failed to canonicalize shims directory: {:?}", e);
-            return other_pythons;
+            // Return non-canonicalize path and continue
+            shims_dir
         }
     };
     if path == shims_dir {
