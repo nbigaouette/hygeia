@@ -845,10 +845,20 @@ fn find_installed_toolchains_dummy_custom_installs() {
 
     assert_eq!(found_installed_toolchains.len(), 2);
 
+    // Windows pre-built binaries don't have a 'bin' subdirectory, so the paths
+    // returned by `paths_provider.bin_dir()` (used by `find_installed_toolchains()`) will
+    // not have a `bin` suffix on Windows.
+    let expected_installed_dir = |version| {
+        let dir = installed_dir.join(version);
+        #[cfg(not(windows))]
+        let dir = dir.join("bin");
+        dir
+    };
+
     assert_eq!(
         found_installed_toolchains[0],
         InstalledToolchain {
-            location: installed_dir.join("3.7.5").join("bin"),
+            location: expected_installed_dir("3.7.5"),
             version: Version::parse("3.7.5").unwrap()
         }
     );
@@ -856,7 +866,7 @@ fn find_installed_toolchains_dummy_custom_installs() {
     assert_eq!(
         found_installed_toolchains[1],
         InstalledToolchain {
-            location: installed_dir.join("3.7.4").join("bin"),
+            location: expected_installed_dir("3.7.4"),
             version: Version::parse("3.7.4").unwrap()
         }
     );
