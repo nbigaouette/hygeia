@@ -1,7 +1,9 @@
 use anyhow::{anyhow, Result};
 use thiserror::Error;
 
-use crate::{shim, toolchain::CompatibleToolchainBuilder};
+use crate::{
+    shim, toolchain::CompatibleToolchainBuilder, utils::directory::PycorsPathsProviderFromEnv,
+};
 
 #[derive(Debug, Error)]
 pub enum RunError {
@@ -23,7 +25,7 @@ pub fn run(version: Option<String>, command_and_args: &str) -> Result<()> {
     };
     let compatible_toolchain = compatible_toolchain_builder
         .pick_latest_if_none_found()
-        .compatible_version()?;
+        .compatible_version(PycorsPathsProviderFromEnv::new())?;
 
     match compatible_toolchain {
         Some(compatible_toolchain) => shim::run_with(&compatible_toolchain, cmd, arguments),

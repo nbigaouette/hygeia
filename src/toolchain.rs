@@ -545,8 +545,13 @@ impl CompatibleToolchainBuilder {
         self.overwrite = with;
         self
     }
-    pub fn compatible_version(self) -> Result<Option<InstalledToolchain>> {
-        let paths_provider = PycorsPathsProviderFromEnv::new();
+    pub fn compatible_version<P>(
+        self,
+        paths_provider: PycorsPathsProvider<P>,
+    ) -> Result<Option<InstalledToolchain>>
+    where
+        P: PycorsHomeProviderTrait,
+    {
         let installed_toolchains: Vec<InstalledToolchain> =
             find_installed_toolchains(&paths_provider)?;
 
