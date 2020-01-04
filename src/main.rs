@@ -1,3 +1,4 @@
+// FIXME: Get rid of utils::path_exists(), use std::Path::exists() instead.
 // FIXME: Running '/usr/bin/python2 -V' returns Python 2.7.15+, which fails parsing: ERROR pycors::settings] Failed to parse version string "2.7.15+": ParseError("Error parsing prerelease")
 // FIXME: Replace 'format_err!()' with structs/enums
 // FIXME: Gracefully handle errors that bubble to main
@@ -127,7 +128,7 @@ pub fn python_shim(command: &str) -> Result<()> {
 
 #[cfg(test)]
 pub mod tests {
-    use std::env;
+    use std::{env, fs, path::PathBuf};
 
     pub fn init_logger() {
         env::var("RUST_LOG")
@@ -140,6 +141,25 @@ pub mod tests {
             })
             .unwrap();
         let _ = env_logger::try_init();
+    }
+
+    pub fn temp_dir(module: &str, subdir: &str) -> PathBuf {
+        let dir = env::temp_dir()
+            .join(crate::constants::EXECUTABLE_NAME)
+            .join(module);
+
+        if !dir.exists() {
+            fs::create_dir_all(&dir).unwrap();
+        }
+        let dir = dir.canonicalize().unwrap().join(subdir);
+
+        if dir.exists() {
+            fs::remove_dir_all(&dir).unwrap();
+        }
+
+        fs::create_dir_all(&dir).unwrap();
+
+        dir
     }
 
     // Version is reported as "unknown" in GitHub Actions.
