@@ -114,6 +114,12 @@ jobs:
         with:
           command: test
           args: --no-run
+      - name: Upload pycors.exe as artifact (Windows)
+        uses: actions/upload-artifact@v1
+        if: "contains(matrix.os, 'windows')"
+        with:
+          name: pycors.exe
+          path: target/debug/pycors.exe
       - name: Test (cargo test)
         uses: actions-rs/cargo@v1
         with:
