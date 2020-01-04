@@ -14,12 +14,12 @@ use thiserror::Error;
 use which::which_in;
 
 use crate::{
-    constants::TOOLCHAIN_FILE,
+    constants::{EXECUTABLE_NAME, TOOLCHAIN_FILE},
     utils::{
         self,
         directory::{PycorsHomeProviderTrait, PycorsPathsProvider, PycorsPathsProviderFromEnv},
     },
-    Result, EXECUTABLE_NAME,
+    Result,
 };
 
 pub mod installed;
@@ -374,7 +374,7 @@ where
 }
 
 fn _is_a_custom_install(path: &Path) -> bool {
-    if path.join(crate::INFO_FILE).exists() {
+    if path.join(crate::constants::INFO_FILE).exists() {
         true
     } else {
         match path.parent() {

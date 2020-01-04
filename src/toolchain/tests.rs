@@ -13,7 +13,7 @@ use std::{
     process::{ExitStatus, Output},
 };
 
-use crate::{tests::temp_dir, utils::directory::MockPycorsHomeProviderTrait};
+use crate::{constants::INFO_FILE, tests::temp_dir, utils::directory::MockPycorsHomeProviderTrait};
 
 #[cfg(windows)]
 const EXEC_EXTENSION: &str = ".exe";
@@ -725,7 +725,7 @@ fn get_python_versions_from_path_failure_to_run() {
 #[test]
 fn is_a_custom_install_true() {
     let dir = temp_dir("toolchain", "is_a_custom_install_true");
-    let info_filename = dir.join(crate::INFO_FILE);
+    let info_filename = dir.join(INFO_FILE);
     // Create file in directory
     let mut f = File::create(info_filename).unwrap();
     f.write_all(b"").unwrap();
@@ -1126,7 +1126,7 @@ fn find_compatible_toolchain_same_system_custom() {
         &installed_toolchains[2].location,
     ] {
         fs::create_dir_all(&location).unwrap();
-        let info_filename = location.parent().unwrap().join(crate::INFO_FILE);
+        let info_filename = location.parent().unwrap().join(INFO_FILE);
         // Create file in directory
         let mut f = File::create(info_filename).unwrap();
         f.write_all(b"").unwrap();

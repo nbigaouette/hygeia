@@ -4,6 +4,7 @@ use prettytable::{cell, row, Cell, Row, Table};
 use semver::VersionReq;
 
 use crate::{
+    constants::EXECUTABLE_NAME,
     toolchain::{
         find_installed_toolchains, installed::InstalledToolchain, is_a_custom_install,
         SelectedToolchain, ToolchainFile,
@@ -108,7 +109,7 @@ impl ToolChainTable {
         table.add_row(row![
             "Active",
             "Version",
-            &format!("Installed by {}", crate::EXECUTABLE_NAME),
+            &format!("Installed by {}", EXECUTABLE_NAME),
             "Location"
         ]);
 

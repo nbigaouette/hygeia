@@ -10,7 +10,8 @@ use semver::{Version, VersionReq};
 use thiserror::Error;
 
 use crate::{
-    constants::TOOLCHAIN_FILE, toolchain::get_python_versions_from_path,
+    constants::{INFO_FILE, TOOLCHAIN_FILE},
+    toolchain::get_python_versions_from_path,
     utils::directory::PycorsPathsProviderFromEnv,
 };
 
@@ -63,7 +64,7 @@ impl InstalledToolchain {
                 log::error!("Cannot get parent directory of {:?}", self.location);
                 false
             }
-            Some(parent) => parent.join(crate::INFO_FILE).exists(),
+            Some(parent) => parent.join(INFO_FILE).exists(),
         }
     }
 

@@ -8,8 +8,9 @@ use structopt::clap::Shell;
 
 use crate::{
     commands,
+    constants::{EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME_CONTENT},
     utils::{self, directory::PycorsPathsProviderFromEnv},
-    Result, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME_CONTENT,
+    Result,
 };
 
 pub mod bash;

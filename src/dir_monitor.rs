@@ -50,7 +50,7 @@ impl DirectoryMonitor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::EXECUTABLE_NAME;
+    use crate::constants::EXECUTABLE_NAME;
     use std::{
         env,
         fs::{create_dir_all, remove_dir_all, File},

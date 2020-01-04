@@ -6,12 +6,12 @@ use semver::VersionReq;
 use thiserror::Error;
 
 use crate::{
+    constants::EXECUTABLE_NAME,
     dir_monitor::DirectoryMonitor,
     os,
     toolchain::{installed::InstalledToolchain, CompatibleToolchainBuilder},
     utils,
     utils::directory::PycorsPathsProviderFromEnv,
-    EXECUTABLE_NAME,
 };
 
 #[derive(Debug, Error)]

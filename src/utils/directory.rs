@@ -3,8 +3,9 @@ use std::{env, ffi::OsString, path::PathBuf};
 use dirs::home_dir;
 use semver::Version;
 
-use crate::{
-    constants, AVAILABLE_TOOLCHAIN_CACHE, DEFAULT_DOT_DIR, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME,
+use crate::constants::{
+    self, AVAILABLE_TOOLCHAIN_CACHE, DEFAULT_DOT_DIR, EXECUTABLE_NAME,
+    EXTRA_PACKAGES_FILENAME,
 };
 
 fn dot_dir(name: &str) -> Option<PathBuf> {
@@ -149,7 +150,7 @@ pub mod tests {
 
     fn temp_dir() -> PathBuf {
         env::temp_dir()
-            .join(crate::constants::EXECUTABLE_NAME)
+            .join(EXECUTABLE_NAME)
             .join("directory")
             .join("tests")
     }
