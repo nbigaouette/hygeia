@@ -1148,3 +1148,32 @@ fn find_compatible_toolchain_same_system_custom() {
         Some(&installed_toolchains[1])
     );
 }
+
+#[test]
+fn compatible_toolchain_builder_load_from_string() {
+    crate::tests::init_logger();
+
+    let test_dir = temp_dir("compatible_toolchain_builder_load_from_string");
+    let pycors_home = test_dir.join(".pycors");
+    let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+    let mocked_usr_bin = test_dir.join("usr_bin");
+    let mocked_usr_local_bin = test_dir.join("usr_local_bin");
+    let mocked_paths =
+        Some(env::join_paths([&mocked_usr_bin, &mocked_usr_local_bin].iter()).unwrap());
+
+    let mut mock = MockPycorsHomeProviderTrait::new();
+    mock.expect_home_env_variable()
+        .times(1)
+        .return_const(mocked_pycors_home);
+    mock.expect_paths().times(1).return_const(mocked_paths);
+    let paths_provider = PycorsPathsProvider::from(mock);
+    let compatible_toolchain = CompatibleToolchainBuilder::new()
+        // .load_from_file()
+        .load_from_string("=3.7.5")
+        // .pick_latest_if_none_found()
+        // .overwrite(VersionReq::parse("3.7.5").unwrap())
+        .compatible_version(paths_provider)
+        .unwrap();
+
+    assert!(compatible_toolchain.is_none());
+}
