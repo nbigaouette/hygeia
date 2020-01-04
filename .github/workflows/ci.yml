@@ -132,11 +132,16 @@ jobs:
         with:
           name: pycors.exe
           path: target/debug/pycors.exe
-      - name: Test (cargo test)
+      - name: Unit Tests (cargo test)
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --no-fail-fast -- --nocapture
+          args: --no-fail-fast --bin pycors -- --nocapture
+      - name: Integration Tests (cargo test integration)
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --no-fail-fast integration -- --nocapture
 
   clippy:
     name: Clippy
