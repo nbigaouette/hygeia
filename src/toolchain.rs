@@ -15,12 +15,17 @@ use which::which_in;
 
 use crate::{
     constants::TOOLCHAIN_FILE,
-    utils::{self, directory::PycorsPathsProviderFromEnv},
+    utils::{
+        self,
+        directory::{PycorsHomeProviderTrait, PycorsPathsProvider, PycorsPathsProviderFromEnv},
+    },
     Result, EXECUTABLE_NAME,
 };
 
 pub mod installed;
 pub mod selected;
+#[cfg(test)]
+pub mod tests;
 
 use installed::{InstalledToolchain, NotInstalledToolchain};
 
@@ -103,19 +108,9 @@ impl ToolchainFile {
                     None => return Err(ToolchainError::EmptyToolchainFile(toolchain_file).into()),
                 };
 
-                // Some(line.parse()?)
-                match line.parse::<ToolchainFile>() {
-                    Ok(parsed) => Some(parsed),
-                    Err(e) => {
-                        println!("e: {:?}", e);
-                        unimplemented!()
-                        // None
-                        // Err(e)
-                        // match e {
-                        //     io
-                        // }
-                    }
-                }
+                Some(line.parse::<ToolchainFile>().expect(
+                    "ToolchainFile::parse() should not fail (will interpret content as PathBuf)",
+                ))
             }
         };
 
@@ -123,7 +118,7 @@ impl ToolchainFile {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum SelectedToolchain {
     InstalledToolchain(InstalledToolchain),
     NotInstalledToolchain(NotInstalledToolchain),
@@ -134,7 +129,8 @@ impl SelectedToolchain {
     where
         P: AsRef<Path>,
     {
-        let versions_found = get_python_versions_from_path(path.as_ref());
+        let paths_provider = PycorsPathsProviderFromEnv::new();
+        let versions_found = get_python_versions_from_path(path.as_ref(), &paths_provider);
         log::debug!("Versions_found: {:?}", versions_found);
 
         match versions_found.into_iter().max_by(|x, y| (x.0.cmp(&y.0))) {
@@ -226,10 +222,13 @@ impl SelectedToolchain {
     }
 }
 
-// FIXME: This does not need to be pub. When 'installed.rs' is finally deleted, make this private.
-pub fn get_python_versions_from_path<P>(path: P) -> HashMap<Version, PathBuf>
+fn get_python_versions_from_path<P, S>(
+    path: P,
+    paths_provider: &PycorsPathsProvider<S>,
+) -> HashMap<Version, PathBuf>
 where
     P: AsRef<Path> + std::convert::AsRef<std::ffi::OsStr>,
+    S: PycorsHomeProviderTrait,
 {
     let path: &Path = path.as_ref();
 
@@ -249,12 +248,13 @@ where
         }
     };
 
-    let shims_dir = PycorsPathsProviderFromEnv::new().shims();
+    let shims_dir = paths_provider.shims();
     let shims_dir = match shims_dir.canonicalize() {
         Ok(shims_dir) => shims_dir,
         Err(e) => {
             log::error!("Failed to canonicalize shims directory: {:?}", e);
-            return other_pythons;
+            // Return non-canonicalize path and continue
+            shims_dir
         }
     };
     if path == shims_dir {
@@ -331,7 +331,7 @@ fn extract_version_from_command(
         Ok(output) => {
             if !output.status.success() {
                 Err(anyhow::anyhow!(
-                    "Failed to execute`{} -V` (exit code: {:?})",
+                    "Failed to execute `{} -V` (exit code: {:?})",
                     full_executable_path.display(),
                     output.status.code()
                 ))
@@ -370,17 +370,30 @@ where
     P: AsRef<Path>,
 {
     let path = path.as_ref();
-    match path.parent() {
-        None => {
-            log::error!("Cannot get parent directory of {:?}", path);
-            false
+    _is_a_custom_install(path)
+}
+
+fn _is_a_custom_install(path: &Path) -> bool {
+    if path.join(crate::INFO_FILE).exists() {
+        true
+    } else {
+        match path.parent() {
+            None => {
+                // Cannot get parent directory, probably at root.
+                false
+            }
+            Some(parent) => is_a_custom_install(parent),
         }
-        Some(parent) => parent.join(crate::INFO_FILE).exists(),
     }
 }
 
-pub fn find_installed_toolchains() -> Result<Vec<InstalledToolchain>> {
-    let install_dir = PycorsPathsProviderFromEnv::new().installed();
+pub fn find_installed_toolchains<P>(
+    paths_provider: &PycorsPathsProvider<P>,
+) -> Result<Vec<InstalledToolchain>>
+where
+    P: PycorsHomeProviderTrait,
+{
+    let install_dir = paths_provider.installed();
 
     let mut installed_python = Vec::new();
 
@@ -419,14 +432,7 @@ pub fn find_installed_toolchains() -> Result<Vec<InstalledToolchain>> {
                             Ok(version) => version,
                         };
 
-                        // Append `bin` to the path (if it exists) since this location
-                        // will be used.
-                        let location_bin = PycorsPathsProviderFromEnv::new().bin_dir(&version);
-                        let location = if location_bin.exists() {
-                            location_bin
-                        } else {
-                            location
-                        };
+                        let location = paths_provider.bin_dir(&version);
 
                         installed_python.push(InstalledToolchain { location, version });
                     }
@@ -437,13 +443,12 @@ pub fn find_installed_toolchains() -> Result<Vec<InstalledToolchain>> {
             }
         }
         Err(e) => {
-            log::warn!("Error parsing version string {:?}: {:?}", install_dir, e);
+            log::warn!("Install dir {:?} does not exists: {:?}", install_dir, e);
         }
     };
 
     // Find other Python installed (f.e. in system directories)
-    let original_path = env::var("PATH")?;
-    let other_pythons = get_python_versions_from_paths(&original_path);
+    let other_pythons = get_python_versions_from_paths(&paths_provider);
     installed_python.extend(other_pythons);
 
     installed_python.sort_unstable_by(|p1, p2| p2.version.cmp(&p1.version));
@@ -451,12 +456,19 @@ pub fn find_installed_toolchains() -> Result<Vec<InstalledToolchain>> {
     Ok(installed_python)
 }
 
-fn get_python_versions_from_paths(original_path: &str) -> Vec<InstalledToolchain> {
+fn get_python_versions_from_paths<S>(
+    paths_provider: &PycorsPathsProvider<S>,
+) -> Vec<InstalledToolchain>
+where
+    S: PycorsHomeProviderTrait,
+{
     let mut other_pythons: HashMap<Version, PathBuf> = HashMap::new();
 
-    if !original_path.is_empty() {
-        for path in env::split_paths(&original_path) {
-            other_pythons.extend(get_python_versions_from_path(&path));
+    if let Some(original_path) = paths_provider.paths() {
+        if !original_path.is_empty() {
+            for path in env::split_paths(&original_path) {
+                other_pythons.extend(get_python_versions_from_path(&path, &paths_provider));
+            }
         }
     }
 
@@ -533,8 +545,15 @@ impl CompatibleToolchainBuilder {
         self.overwrite = with;
         self
     }
-    pub fn compatible_version(self) -> Result<Option<InstalledToolchain>> {
-        let installed_toolchains: Vec<InstalledToolchain> = find_installed_toolchains()?;
+    pub fn compatible_version<P>(
+        self,
+        paths_provider: PycorsPathsProvider<P>,
+    ) -> Result<Option<InstalledToolchain>>
+    where
+        P: PycorsHomeProviderTrait,
+    {
+        let installed_toolchains: Vec<InstalledToolchain> =
+            find_installed_toolchains(&paths_provider)?;
 
         let compatible = match self.overwrite {
             Some(version_req) => {
@@ -640,80 +659,4 @@ fn latest_installed(installed_toolchains: &[InstalledToolchain]) -> Option<&Inst
         }
     );
     latest_toolchain
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[cfg(not(windows))]
-    use std::os::unix::process::ExitStatusExt;
-    #[cfg(windows)]
-    use std::os::windows::process::ExitStatusExt;
-    use std::process::{ExitStatus, Output};
-
-    #[test]
-    fn version_or_path_from_str_success_major_minor_patch() {
-        let v = "3.7.4";
-        let vop: ToolchainFile = v.parse().unwrap();
-        assert_eq!(
-            vop,
-            ToolchainFile::VersionReq(VersionReq::parse(v).unwrap())
-        );
-    }
-    #[test]
-    fn version_or_path_from_str_success_eq_major_minor_patch() {
-        let v = "=3.7.4";
-        let vop: ToolchainFile = v.parse().unwrap();
-        assert_eq!(
-            vop,
-            ToolchainFile::VersionReq(VersionReq::parse(v).unwrap())
-        );
-    }
-
-    #[test]
-    fn version_or_path_from_str_success_tilde_major_minor() {
-        let v = "~3.7";
-        let vop: ToolchainFile = v.parse().unwrap();
-        assert_eq!(
-            vop,
-            ToolchainFile::VersionReq(VersionReq::parse(v).unwrap())
-        );
-    }
-
-    #[test]
-    fn version_or_path_from_str_success_tilde_major() {
-        let v = "~3";
-        let vop: ToolchainFile = v.parse().unwrap();
-        assert_eq!(
-            vop,
-            ToolchainFile::VersionReq(VersionReq::parse(v).unwrap())
-        );
-    }
-
-    #[test]
-    fn extract_version_from_command_success_py3() {
-        let expected_version = String::from("Python 3.7.5");
-        let output = Output {
-            status: ExitStatus::from_raw(0),
-            stdout: expected_version.as_bytes().to_vec(),
-            stderr: b"".to_vec(),
-        };
-        let python_path = Path::new("/usr/local/python");
-        let extracted_version = extract_version_from_command(&python_path, Ok(output)).unwrap();
-        assert_eq!(extracted_version, expected_version);
-    }
-
-    #[test]
-    fn extract_version_from_command_success_py2() {
-        let expected_version = String::from("Python 2.7.10");
-        let output = Output {
-            status: ExitStatus::from_raw(0),
-            stdout: b"".to_vec(),
-            stderr: expected_version.as_bytes().to_vec(),
-        };
-        let python_path = Path::new("/usr/local/python2");
-        let extracted_version = extract_version_from_command(&python_path, Ok(output)).unwrap();
-        assert_eq!(extracted_version, expected_version);
-    }
 }

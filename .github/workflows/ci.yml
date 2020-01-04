@@ -50,6 +50,21 @@ jobs:
           profile: minimal
           toolchain: ${{ matrix.rust }}
           override: true
+      - name: Cache (cargo registry)
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/registry
+          key: cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache (cargo index)
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/git
+          key: cargo-index-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache (cargo build)
+        uses: actions/cache@v1
+        with:
+          path: target
+          key: cargo-build-target-Linux-${{ hashFiles('**/Cargo.lock') }}
       - uses: actions-rs/cargo@v1
         with:
           command: check
@@ -74,15 +89,49 @@ jobs:
           profile: minimal
           toolchain: ${{ matrix.rust }}
           override: true
+      - name: Cache (cargo registry)
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/registry
+          key: cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache (cargo index)
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/git
+          key: cargo-index-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache (cargo build)
+        uses: actions/cache@v1
+        with:
+          path: target
+          key: cargo-build-target-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
       - name: Build (cargo build)
         uses: actions-rs/cargo@v1
         with:
           command: build
+          args: --all
       - name: Build tests (cargo test)
         uses: actions-rs/cargo@v1
         with:
           command: test
           args: --no-run
+      - name: Upload pycors as artifact (Linux)
+        uses: actions/upload-artifact@v1
+        if: contains(matrix.os, 'ubuntu')
+        with:
+          name: pycors-linux
+          path: target/debug/pycors
+      - name: Upload pycors as artifact (macOS)
+        uses: actions/upload-artifact@v1
+        if: contains(matrix.os, 'macOS')
+        with:
+          name: pycors-macos
+          path: target/debug/pycors
+      - name: Upload pycors.exe as artifact (Windows)
+        uses: actions/upload-artifact@v1
+        if: "contains(matrix.os, 'windows')"
+        with:
+          name: pycors.exe
+          path: target/debug/pycors.exe
       - name: Test (cargo test)
         uses: actions-rs/cargo@v1
         with:
@@ -106,6 +155,21 @@ jobs:
           toolchain: ${{ matrix.rust }}
           override: true
       - run: rustup component add clippy
+      - name: Cache (cargo registry)
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/registry
+          key: cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache (cargo index)
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/git
+          key: cargo-index-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache (cargo build)
+        uses: actions/cache@v1
+        with:
+          path: target
+          key: cargo-build-target-Linux-${{ hashFiles('**/Cargo.lock') }}
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
@@ -124,6 +188,21 @@ jobs:
       options: --security-opt seccomp=unconfined
     steps:
       - uses: actions/checkout@v1
+      - name: Cache (cargo registry)
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/registry
+          key: cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache (cargo index)
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/git
+          key: cargo-index-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache (cargo build)
+        uses: actions/cache@v1
+        with:
+          path: target
+          key: cargo-build-target-tarpaulin-${{ hashFiles('**/Cargo.lock') }}
       - name: Run tarpaulin
         run: cargo tarpaulin --out Xml --verbose
       - name: Upload coverage to codecov.io

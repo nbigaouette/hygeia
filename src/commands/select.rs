@@ -5,13 +5,14 @@ use crate::{
     toolchain::{
         find_installed_toolchains, installed::InstalledToolchain, selected::VersionOrPath,
     },
-    utils,
+    utils::{self, directory::PycorsPathsProviderFromEnv},
 };
 
 pub fn run(requested_version_or_path: commands::VersionOrPath) -> Result<()> {
     log::debug!("Requested version: {:?}", requested_version_or_path);
 
-    let installed_toolchains = find_installed_toolchains()?;
+    let paths_provider = PycorsPathsProviderFromEnv::new();
+    let installed_toolchains = find_installed_toolchains(&paths_provider)?;
 
     let version_or_path: VersionOrPath = requested_version_or_path.version_or_path.parse()?;
 

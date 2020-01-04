@@ -32,7 +32,7 @@ where
         .load_from_file()
         .overwrite(command_version)
         .pick_latest_if_none_found()
-        .compatible_version()?;
+        .compatible_version(PycorsPathsProviderFromEnv::new())?;
 
     match compatible_toolchain {
         Some(compatible_toolchain) => run_with(&compatible_toolchain, command, arguments),
