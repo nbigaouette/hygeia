@@ -114,6 +114,18 @@ jobs:
         with:
           command: test
           args: --no-run
+      - name: Upload pycors as artifact (Linux)
+        uses: actions/upload-artifact@v1
+        if: contains(matrix.os, 'ubuntu')
+        with:
+          name: pycors-linux
+          path: target/debug/pycors
+      - name: Upload pycors as artifact (macOS)
+        uses: actions/upload-artifact@v1
+        if: contains(matrix.os, 'macOS')
+        with:
+          name: pycors-macos
+          path: target/debug/pycors
       - name: Upload pycors.exe as artifact (Windows)
         uses: actions/upload-artifact@v1
         if: "contains(matrix.os, 'windows')"
