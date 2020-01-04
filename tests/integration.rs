@@ -85,4 +85,27 @@ mod integration {
         let output = cmd.arg("-h").unwrap();
         test_help(output);
     }
+
+    #[test]
+    fn list_with_empty_dir() {
+        let pycors_home = temp_dir("list");
+        let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
+        let output = cmd
+            .arg("list")
+            .env(home_env_variable(), &pycors_home)
+            .env("PATH", pycors_home.join("usr_bin"))
+            .unwrap();
+        let assert_output = output.assert();
+        #[rustfmt::skip]
+        assert_output
+            .success()
+            .stdout(
+"+--------+---------+---------------------+----------+
+| Active | Version | Installed by pycors | Location |
++--------+---------+---------------------+----------+
+",
+            )
+        // .stderr("")
+        ;
+    }
 }
