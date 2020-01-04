@@ -50,12 +50,11 @@ zip = {version = "0.5", default-features = false, features = ["deflate"]}
 
 [dev-dependencies]
 mockall = "0.6"
+# pretty_assertions = "0.6"
 
 [target.'cfg(not(target_os = "windows"))'.dev-dependencies.users]
 version = "0.9"
 default_features = false
-
-# pretty_assertions = "*"
 
 # On Linux (musl), use the openssl 'vendored' feature to build a static version of OpenSSL.
 # See:
