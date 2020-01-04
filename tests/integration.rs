@@ -3,8 +3,12 @@ use std::{env, fs, path::PathBuf};
 use assert_cmd::{assert::OutputAssertExt, Command};
 use predicates::{boolean::PredicateBooleanExt, prelude::predicate};
 
+use pycors::constants::{home_env_variable, EXECUTABLE_NAME};
+
 pub fn temp_dir(subdir: &str) -> PathBuf {
-    let dir = env::temp_dir().join("pycors").join("integration_tests");
+    let dir = env::temp_dir()
+        .join(EXECUTABLE_NAME)
+        .join("integration_tests");
 
     if !dir.exists() {
         fs::create_dir_all(&dir).unwrap();
