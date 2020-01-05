@@ -202,7 +202,6 @@ mod integration {
     fn list_selected_but_not_installed() {
         let pycors_home = temp_dir("list_selected_but_not_installed");
         let cwd = pycors_home.join("current_dir");
-        fs::create_dir_all(&cwd).unwrap();
         select("=3.7.5", &cwd);
 
         let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
