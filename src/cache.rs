@@ -248,6 +248,8 @@ mod tests {
     #[test]
     fn cache_new_empty() {
         let pycors_home = temp_dir().join("cache_from_env");
+        let home = pycors_home.clone();
+
         let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
         // The test expects an empty directory
@@ -258,7 +260,10 @@ mod tests {
         let mut mock = MockPycorsHomeProviderTrait::new();
         mock.expect_home_env_variable()
             .times(3)
-            .return_const(mocked_pycors_home.clone());
+            .return_const(mocked_pycors_home);
+        mock.expect_home()
+            .times(3)
+            .returning(move || Ok(home.clone()));
 
         let paths_provider = PycorsPathsProvider::from(mock);
 
@@ -272,6 +277,8 @@ mod tests {
     #[test]
     fn cache_up_to_date() {
         let pycors_home = temp_dir().join("cache_up_to_date");
+        let home = pycors_home.clone();
+
         let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
         // The test expects an empty directory
@@ -281,8 +288,12 @@ mod tests {
 
         let mut mock = MockPycorsHomeProviderTrait::new();
         mock.expect_home_env_variable()
-            .times(2 + 1) // +1 since we later get the cache file
+            .times(1)
             .return_const(mocked_pycors_home.clone());
+        mock.expect_home()
+            .times(1)
+            .returning(move || Ok(home.clone()));
+
         let paths_provider = PycorsPathsProvider::from(mock);
         let cache_file = paths_provider.available_toolchains_cache_file();
 
@@ -297,6 +308,16 @@ mod tests {
         let mut f = File::create(cache_file).unwrap();
         f.write_all(cache_json.as_bytes()).unwrap();
 
+        let home = pycors_home;
+        let mut mock = MockPycorsHomeProviderTrait::new();
+        mock.expect_home_env_variable()
+            .times(2)
+            .return_const(mocked_pycors_home);
+        mock.expect_home()
+            .times(2)
+            .returning(move || Ok(home.clone()));
+        let paths_provider = PycorsPathsProvider::from(mock);
+
         // Let's create the cache for real
         let mut mock = MockToolchainsCacheFetch::new();
         mock.expect_get()
@@ -310,6 +331,8 @@ mod tests {
         crate::tests::init_logger();
 
         let pycors_home = temp_dir().join("cache_corrupted");
+        let home = pycors_home.clone();
+
         let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
         // The test expects an empty directory
@@ -319,8 +342,12 @@ mod tests {
 
         let mut mock = MockPycorsHomeProviderTrait::new();
         mock.expect_home_env_variable()
-            .times(3 + 1) // +1 since we later get the cache file
+            .times(1)
             .return_const(mocked_pycors_home.clone());
+        mock.expect_home()
+            .times(1)
+            .returning(move || Ok(home.clone()));
+
         let paths_provider = PycorsPathsProvider::from(mock);
         let cache_file = paths_provider.available_toolchains_cache_file();
 
@@ -339,6 +366,17 @@ mod tests {
             .unwrap();
 
         // Let's create the cache for real
+
+        let home = pycors_home;
+        let mut mock = MockPycorsHomeProviderTrait::new();
+        mock.expect_home_env_variable()
+            .times(3)
+            .return_const(mocked_pycors_home);
+        mock.expect_home()
+            .times(3)
+            .returning(move || Ok(home.clone()));
+        let paths_provider = PycorsPathsProvider::from(mock);
+
         let mut mock = MockToolchainsCacheFetch::new();
         mock.expect_get()
             .times(1) // Cache file is corrupted, new download required.
@@ -351,6 +389,8 @@ mod tests {
         crate::tests::init_logger();
 
         let pycors_home = temp_dir().join("cache_outdated");
+        let home = pycors_home.clone();
+
         let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
         // The test expects an empty directory
@@ -360,8 +400,12 @@ mod tests {
 
         let mut mock = MockPycorsHomeProviderTrait::new();
         mock.expect_home_env_variable()
-            .times(3 + 1) // +1 since we later get the cache file
+            .times(1)
             .return_const(mocked_pycors_home.clone());
+        mock.expect_home()
+            .times(1)
+            .returning(move || Ok(home.clone()));
+
         let paths_provider = PycorsPathsProvider::from(mock);
         let cache_file = paths_provider.available_toolchains_cache_file();
 
@@ -377,6 +421,16 @@ mod tests {
         let cache_bytes = cache_json.as_bytes();
         // Save the cache
         f.write_all(&cache_bytes).unwrap();
+
+        let home = pycors_home;
+        let mut mock = MockPycorsHomeProviderTrait::new();
+        mock.expect_home_env_variable()
+            .times(3)
+            .return_const(mocked_pycors_home);
+        mock.expect_home()
+            .times(3)
+            .returning(move || Ok(home.clone()));
+        let paths_provider = PycorsPathsProvider::from(mock);
 
         let mut mock = MockToolchainsCacheFetch::new();
         mock.expect_get()
