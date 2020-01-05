@@ -65,19 +65,25 @@ fn _mock_executable(
     ));
 
     if stdout_filepath.exists() {
-        fs::remove_file(&stdout_filepath)?;
+        fs::remove_file(&stdout_filepath)
+            .with_context(|| format!("Failed to remove file {:?}", stdout_filepath))?;
     }
     if stderr_filepath.exists() {
-        fs::remove_file(&stderr_filepath)?;
+        fs::remove_file(&stderr_filepath)
+            .with_context(|| format!("Failed to remove file {:?}", stderr_filepath))?;
     }
 
     if let Some(stdout) = output.out {
-        let mut f = File::create(stdout_filepath)?;
-        f.write_all(stdout.as_bytes())?;
+        let mut f = File::create(&stdout_filepath)
+            .with_context(|| format!("Failed to create file {:?}", stdout_filepath))?;
+        f.write_all(stdout.as_bytes())
+            .with_context(|| format!("Failed to write to file {:?}", stdout_filepath))?;
     }
     if let Some(stderr) = output.err {
-        let mut f = File::create(stderr_filepath)?;
-        f.write_all(stderr.as_bytes())?;
+        let mut f = File::create(&stderr_filepath)
+            .with_context(|| format!("Failed to create file {:?}", stderr_filepath))?;
+        f.write_all(stderr.as_bytes())
+            .with_context(|| format!("Failed to write to file {:?}", stderr_filepath))?;
     }
 
     let print_file_to_stdout = {
@@ -95,7 +101,14 @@ fn _mock_executable(
     fs::copy(
         &print_file_to_stdout,
         executable_location.join(format!("{}{}", executable_name, EXEC_EXTENSION)),
-    )?;
+    )
+    .with_context(|| {
+        format!(
+            "Failed to copy {:?} to {:?}",
+            print_file_to_stdout,
+            executable_location.join(format!("{}{}", executable_name, EXEC_EXTENSION))
+        )
+    })?;
 
     Ok(())
 }
