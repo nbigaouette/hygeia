@@ -94,11 +94,13 @@ mod integration {
     #[test]
     fn list_with_empty_dir() {
         let pycors_home = temp_dir("list_with_empty_dir");
+        let cwd = pycors_home.join("current_dir");
         let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
         let output = cmd
             .arg("list")
             .env(home_env_variable(), &pycors_home)
             .env("PATH", pycors_home.join("usr_bin"))
+            .current_dir(&cwd) // Change to a clean directory without a '.python-version'
             .unwrap();
         let assert_output = output.assert();
         assert_output
