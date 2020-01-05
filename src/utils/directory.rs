@@ -4,8 +4,7 @@ use dirs::home_dir;
 use semver::Version;
 
 use crate::constants::{
-    self, AVAILABLE_TOOLCHAIN_CACHE, DEFAULT_DOT_DIR, EXECUTABLE_NAME,
-    EXTRA_PACKAGES_FILENAME,
+    self, AVAILABLE_TOOLCHAIN_CACHE, DEFAULT_DOT_DIR, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME,
 };
 
 fn dot_dir(name: &str) -> Option<PathBuf> {
