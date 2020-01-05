@@ -1,6 +1,5 @@
 use std::{env, ffi::OsString, path::PathBuf};
 
-use dirs::home_dir;
 use semver::Version;
 
 use crate::{
@@ -10,9 +9,6 @@ use crate::{
     Result,
 };
 
-fn dot_dir(name: &str) -> Option<PathBuf> {
-    home_dir().map(|p| p.join(name))
-}
 #[cfg_attr(test, mockall::automock)]
 pub trait PycorsHomeProviderTrait {
     fn home(&self) -> Result<PathBuf>;
@@ -76,7 +72,7 @@ where
     pub fn config_home(&self) -> PathBuf {
         let config_home_from_env = self.path_provider.home_env_variable().map(PathBuf::from);
 
-        let default_dot_dir = dot_dir(&DEFAULT_DOT_DIR);
+        let default_dot_dir = self.home().ok().map(|p| p.join(DEFAULT_DOT_DIR));
 
         // If we can't find our home directory, there is nothing we can do; simply panic.
         config_home_from_env
@@ -201,11 +197,15 @@ pub mod tests {
         use super::*;
         use crate::constants::home_env_variable;
 
+        fn default_dot_full_path() -> PathBuf {
+            dirs::home_dir().unwrap().join(DEFAULT_DOT_DIR)
+        }
+
         #[test]
         fn path_provider_env() {
             let expected = match env::var(home_env_variable()) {
                 Ok(dir) => PathBuf::from(dir),
-                Err(_) => dot_dir(DEFAULT_DOT_DIR).unwrap(),
+                Err(_) => default_dot_full_path(),
             };
 
             let paths_provider = PycorsPathsProviderFromEnv::new();
@@ -215,7 +215,7 @@ pub mod tests {
 
         #[test]
         fn config_home_from_default() {
-            let pycors_home = dot_dir(DEFAULT_DOT_DIR).unwrap();
+            let pycors_home = default_dot_full_path();
 
             let mocked_pycors_home = None;
 
@@ -251,7 +251,7 @@ pub mod tests {
 
         #[test]
         fn default_extra_package_file_from_default() {
-            let pycors_home = dot_dir(DEFAULT_DOT_DIR).unwrap();
+            let pycors_home = default_dot_full_path();
 
             let mocked_pycors_home = None;
 
@@ -286,7 +286,7 @@ pub mod tests {
 
         #[test]
         fn cache_from_default() {
-            let pycors_home = dot_dir(DEFAULT_DOT_DIR).unwrap();
+            let pycors_home = default_dot_full_path();
 
             let mocked_pycors_home = None;
 
@@ -321,7 +321,7 @@ pub mod tests {
 
         #[test]
         fn installed_from_default() {
-            let pycors_home = dot_dir(DEFAULT_DOT_DIR).unwrap();
+            let pycors_home = default_dot_full_path();
 
             let mocked_pycors_home = None;
 
@@ -356,7 +356,7 @@ pub mod tests {
 
         #[test]
         fn logs_from_default() {
-            let pycors_home = dot_dir(DEFAULT_DOT_DIR).unwrap();
+            let pycors_home = default_dot_full_path();
 
             let mocked_pycors_home = None;
 
@@ -391,7 +391,7 @@ pub mod tests {
 
         #[test]
         fn shims_from_default() {
-            let pycors_home = dot_dir(DEFAULT_DOT_DIR).unwrap();
+            let pycors_home = default_dot_full_path();
 
             let mocked_pycors_home = None;
 
@@ -426,7 +426,7 @@ pub mod tests {
 
         #[test]
         fn downloaded_from_default() {
-            let pycors_home = dot_dir(DEFAULT_DOT_DIR).unwrap();
+            let pycors_home = default_dot_full_path();
 
             let mocked_pycors_home = None;
 
@@ -461,7 +461,7 @@ pub mod tests {
 
         #[test]
         fn available_toolchain_from_default() {
-            let pycors_home = dot_dir(DEFAULT_DOT_DIR).unwrap();
+            let pycors_home = default_dot_full_path();
 
             let mocked_pycors_home = None;
 
@@ -496,7 +496,7 @@ pub mod tests {
 
         #[test]
         fn extracted_from_default() {
-            let pycors_home = dot_dir(DEFAULT_DOT_DIR).unwrap();
+            let pycors_home = default_dot_full_path();
 
             let mocked_pycors_home = None;
 
@@ -531,7 +531,7 @@ pub mod tests {
 
         #[test]
         fn install_dir_from_default() {
-            let pycors_home = dot_dir(DEFAULT_DOT_DIR).unwrap();
+            let pycors_home = default_dot_full_path();
             let version_str = "3.7.5";
             let version = Version::parse(version_str).unwrap();
 
@@ -570,7 +570,7 @@ pub mod tests {
 
         #[test]
         fn bin_dir_from_default() {
-            let pycors_home = dot_dir(DEFAULT_DOT_DIR).unwrap();
+            let pycors_home = default_dot_full_path();
             let version_str = "3.7.5";
             let version = Version::parse(version_str).unwrap();
 
@@ -612,12 +612,5 @@ pub mod tests {
             let to_validate = paths_provider.bin_dir(&version);
             assert_eq!(to_validate, expected);
         }
-    }
-
-    #[test]
-    fn dot_dir_success() {
-        let dir = dot_dir(".dummy").unwrap();
-        let expected = home_dir().unwrap().join(".dummy");
-        assert_eq!(dir, expected);
     }
 }
