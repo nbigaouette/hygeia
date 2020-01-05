@@ -87,8 +87,13 @@ fn _mock_executable(
     }
 
     let print_file_to_stdout = {
+        let target_dir = match env::var("CARGO_TARGET_DIR") {
+            Ok(dir) => dir,
+            Err(_) => String::from("target"),
+        };
+
         #[cfg_attr(not(windows), allow(unused_mut))]
-        let mut tmp = Path::new("target")
+        let mut tmp = Path::new(&target_dir)
             .join("debug")
             .join("print_file_to_stdout");
 
