@@ -93,7 +93,7 @@ mod integration {
 
     #[test]
     fn list_with_empty_dir() {
-        let pycors_home = temp_dir("list");
+        let pycors_home = temp_dir("list_with_empty_dir");
         let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
         let output = cmd
             .arg("list")
