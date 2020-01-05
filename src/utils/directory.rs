@@ -3,8 +3,11 @@ use std::{env, ffi::OsString, path::PathBuf};
 use dirs::home_dir;
 use semver::Version;
 
-use crate::constants::{
-    self, AVAILABLE_TOOLCHAIN_CACHE, DEFAULT_DOT_DIR, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME,
+use crate::{
+    constants::{
+        self, AVAILABLE_TOOLCHAIN_CACHE, DEFAULT_DOT_DIR, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME,
+    },
+    Result,
 };
 
 fn dot_dir(name: &str) -> Option<PathBuf> {
@@ -12,6 +15,7 @@ fn dot_dir(name: &str) -> Option<PathBuf> {
 }
 #[cfg_attr(test, mockall::automock)]
 pub trait PycorsHomeProviderTrait {
+    fn home(&self) -> Result<PathBuf>;
     fn home_env_variable(&self) -> Option<OsString>;
     fn paths(&self) -> Option<OsString>;
 }
@@ -27,6 +31,9 @@ impl<P> PycorsHomeProviderTrait for PycorsPathsProvider<P>
 where
     P: PycorsHomeProviderTrait,
 {
+    fn home(&self) -> Result<PathBuf> {
+        self.path_provider.home()
+    }
     fn home_env_variable(&self) -> Option<OsString> {
         self.path_provider.home_env_variable()
     }
@@ -46,6 +53,9 @@ impl PycorsPathsProviderFromEnv {
 }
 
 impl PycorsHomeProviderTrait for PycorsPathsProviderFromEnv {
+    fn home(&self) -> Result<PathBuf> {
+        dirs::home_dir().ok_or_else(|| anyhow::anyhow!("Error getting home directory"))
+    }
     fn home_env_variable(&self) -> Option<OsString> {
         env::var_os(constants::home_env_variable())
     }
