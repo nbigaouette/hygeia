@@ -50,7 +50,7 @@ impl DirectoryMonitor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{tests::temp_dir};
+    use crate::tests::temp_dir;
     use std::{
         fs::{create_dir_all, remove_dir_all, File},
         io::Write,
