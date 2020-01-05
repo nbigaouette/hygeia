@@ -9,7 +9,10 @@ use structopt::clap::Shell;
 use crate::{
     commands,
     constants::{EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME_CONTENT},
-    utils::{self, directory::PycorsPathsProviderFromEnv},
+    utils::{
+        self,
+        directory::{PycorsHomeProviderTrait, PycorsPathsProviderFromEnv},
+    },
     Result,
 };
 
@@ -92,7 +95,8 @@ pub fn run(shell: Shell) -> Result<()> {
     }
 
     let extra_packages_file_default_content = EXTRA_PACKAGES_FILENAME_CONTENT;
-    let output_filename = PycorsPathsProviderFromEnv::new().default_extra_package_file();
+    let paths_provider = PycorsPathsProviderFromEnv::new();
+    let output_filename = paths_provider.default_extra_package_file();
     log::debug!(
         "Writing list of default packages to install to {:?}",
         output_filename
@@ -103,8 +107,7 @@ pub fn run(shell: Shell) -> Result<()> {
     // Add ~/.EXECUTABLE_NAME/shims to $PATH in ~/.bashrc and ~/.bash_profile and install autocomplete
     match shell {
         Shell::Bash => {
-            let home =
-                dirs::home_dir().ok_or_else(|| anyhow::anyhow!("Error getting home directory"))?;
+            let home = paths_provider.home()?;
 
             bash::setup_bash(&home)?;
         }
