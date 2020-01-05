@@ -197,8 +197,12 @@ pub mod tests {
         use super::*;
         use crate::constants::home_env_variable;
 
+        fn default_home_full_path() -> PathBuf {
+            dirs::home_dir().unwrap()
+        }
+
         fn default_dot_full_path() -> PathBuf {
-            dirs::home_dir().unwrap().join(DEFAULT_DOT_DIR)
+            default_home_full_path().join(DEFAULT_DOT_DIR)
         }
 
         #[test]
