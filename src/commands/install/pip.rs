@@ -9,9 +9,10 @@ use semver::Version;
 
 use crate::{
     commands,
+    constants::EXECUTABLE_NAME,
     dir_monitor::DirectoryMonitor,
     utils::{self, directory::PycorsPathsProviderFromEnv},
-    Result, EXECUTABLE_NAME,
+    Result,
 };
 
 pub fn install_extra_pip_packages(

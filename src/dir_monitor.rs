@@ -50,9 +50,8 @@ impl DirectoryMonitor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::EXECUTABLE_NAME;
+    use crate::tests::temp_dir;
     use std::{
-        env,
         fs::{create_dir_all, remove_dir_all, File},
         io::Write,
     };
@@ -65,9 +64,7 @@ mod tests {
 
     #[test]
     fn one_file() {
-        let tmp_dir = env::temp_dir()
-            .join(&format!("{}_tests", EXECUTABLE_NAME))
-            .join("one_file");
+        let tmp_dir = temp_dir("dir_monitor", "one_file");
         let _ = remove_dir_all(&tmp_dir);
         create_dir_all(&tmp_dir).unwrap();
 

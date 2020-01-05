@@ -1,3 +1,4 @@
+// FIXME: Get rid of utils::path_exists(), use std::Path::exists() instead.
 // FIXME: Running '/usr/bin/python2 -V' returns Python 2.7.15+, which fails parsing: ERROR pycors::settings] Failed to parse version string "2.7.15+": ParseError("Error parsing prerelease")
 // FIXME: Replace 'format_err!()' with structs/enums
 // FIXME: Gracefully handle errors that bubble to main
@@ -12,45 +13,13 @@ use std::{
     path::PathBuf,
 };
 
-use git_testament::{git_testament, render_testament};
-use lazy_static::lazy_static;
-use structopt::StructOpt;
-
-mod cache;
-mod commands;
-mod constants;
-mod dir_monitor;
-mod download;
-mod os;
-mod shim;
-mod toolchain;
-mod utils;
-
-use crate::{commands::Command, constants::*};
-
-use anyhow::Result;
 use thiserror::Error;
 
-git_testament!(GIT_TESTAMENT);
-
-fn git_version() -> &'static str {
-    lazy_static! {
-        static ref RENDERED: String = render_testament!(GIT_TESTAMENT);
-    }
-    &RENDERED
-}
-
-/// Control which Python toolchain to use on a directory basis.
-#[derive(StructOpt, Debug)]
-#[structopt(version = git_version())]
-struct Opt {
-    /// Verbose mode (-v, -vv, -vvv, etc.)
-    #[structopt(short, long, parse(from_occurrences))]
-    verbose: u8,
-
-    #[structopt(subcommand)]
-    subcommand: Option<commands::Command>,
-}
+use pycors::{
+    commands::{self, Command},
+    constants::EXECUTABLE_NAME,
+    shim, Opt, Result, StructOpt,
+};
 
 #[derive(Debug, Error)]
 pub enum MainError {
@@ -123,42 +92,4 @@ pub fn python_shim(command: &str) -> Result<()> {
     let (_, remaining_args) = arguments.split_at(1);
 
     shim::run(command, remaining_args)
-}
-
-#[cfg(test)]
-pub mod tests {
-    use std::env;
-
-    pub fn init_logger() {
-        env::var("RUST_LOG")
-            .or_else(|_| -> Result<String, ()> {
-                let rust_log = "debug".to_string();
-                println!("Environment variable 'RUST_LOG' not set.");
-                println!("Setting to: {}", rust_log);
-                env::set_var("RUST_LOG", &rust_log);
-                Ok(rust_log)
-            })
-            .unwrap();
-        let _ = env_logger::try_init();
-    }
-
-    // Version is reported as "unknown" in GitHub Actions.
-    // See https://github.com/nbigaouette/pycors/pull/90/checks?check_run_id=311900597
-    #[test]
-    #[ignore]
-    fn version() {
-        let crate_version = structopt::clap::crate_version!();
-
-        // GIT_VERSION is of the shape `v0.1.7-1-g095d7f5-modified`
-
-        // Strip out the `v` prefix
-        let (v, git_version_without_v) = crate::git_version().split_at(1);
-
-        println!("crate_version: {:?}", crate_version);
-        println!("v: {}", v);
-        println!("git_version_without_v: {}", git_version_without_v);
-
-        assert_eq!(v, "v");
-        assert!(git_version_without_v.starts_with(crate_version));
-    }
 }

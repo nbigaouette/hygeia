@@ -13,7 +13,12 @@ use indicatif::{ProgressBar, ProgressStyle};
 use semver::{Version, VersionReq};
 use terminal_size::{terminal_size, Width};
 
-use crate::{os, toolchain::installed::InstalledToolchain, Result};
+use crate::{
+    constants::{EXECUTABLE_NAME, INFO_FILE},
+    os,
+    toolchain::installed::InstalledToolchain,
+    Result,
+};
 
 pub mod directory;
 
@@ -163,7 +168,7 @@ pub fn get_info_file<P>(install_dir: P) -> PathBuf
 where
     P: AsRef<Path>,
 {
-    install_dir.as_ref().join(crate::INFO_FILE)
+    install_dir.as_ref().join(INFO_FILE)
 }
 
 pub fn create_info_file<P>(install_dir: P, version: &Version) -> Result<()>
@@ -176,7 +181,7 @@ where
         file,
         "Python {} installed using {} version {} on {}.\n",
         version,
-        crate::EXECUTABLE_NAME,
+        EXECUTABLE_NAME,
         crate::git_version(),
         chrono::Local::now().to_rfc3339()
     )?;
@@ -436,13 +441,7 @@ pub enum SpinnerMessage {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn temp_dir() -> PathBuf {
-        env::temp_dir()
-            .join(crate::constants::EXECUTABLE_NAME)
-            .join("utils")
-            .join("tests")
-    }
+    use crate::tests::temp_dir;
 
     fn fixture_installed_toolchains() -> Vec<InstalledToolchain> {
         vec![
@@ -481,7 +480,7 @@ mod tests {
 
     #[test]
     fn copy_file_success() {
-        let tmp_dir = temp_dir().join("copy_file_success");
+        let tmp_dir = temp_dir("utils", "copy_file_success");
         if tmp_dir.exists() {
             fs::remove_dir_all(&tmp_dir).unwrap()
         };
@@ -598,19 +597,19 @@ mod tests {
     fn get_info_file_success() {
         let dir = Path::new("unimportant");
         let file = get_info_file(&dir);
-        let expected = dir.join(crate::INFO_FILE);
+        let expected = dir.join(INFO_FILE);
         assert_eq!(file, expected);
     }
 
     #[test]
     fn create_info_file_success() {
-        let tmp_dir = temp_dir().join("create_info_file_success");
+        let tmp_dir = temp_dir("utils", "create_info_file_success");
         if tmp_dir.exists() {
             fs::remove_dir_all(&tmp_dir).unwrap()
         };
         fs::create_dir_all(&tmp_dir).unwrap();
         let version = Version::new(3, 7, 5);
-        let expected_file_path = tmp_dir.join(crate::INFO_FILE);
+        let expected_file_path = tmp_dir.join(INFO_FILE);
         let expected_file_begin = "Python 3.7.5 installed using ";
         assert!(!expected_file_path.exists());
         create_info_file(&tmp_dir, &version).unwrap();

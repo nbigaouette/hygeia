@@ -58,10 +58,10 @@ pub enum Command {
     /// Use `pycors install` for this.
     ///
     /// For example:
-    ///     pycors select 3.6
+    ///   pycors select 3.6
     /// will select ~3.6 (the most up to date version of the 3.6 series).
     ///
-    ///     pycors select =3.7.2
+    ///   pycors select =3.7.2
     /// will select an exact version.
     #[structopt(name = "select")]
     Select(VersionOrPath),

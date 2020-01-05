@@ -132,11 +132,16 @@ jobs:
         with:
           name: pycors.exe
           path: target/debug/pycors.exe
-      - name: Test (cargo test)
+      - name: Unit Tests (cargo test)
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --no-fail-fast -- --nocapture
+          args: --no-fail-fast "tests::" -- --nocapture
+      - name: Integration Tests (cargo test integration)
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --no-fail-fast "integration::" -- --nocapture
 
   clippy:
     name: Clippy
@@ -177,7 +182,6 @@ jobs:
 
   coverage:
     name: Code coverage
-    needs: [fmt, check, test, clippy]
     runs-on: ubuntu-18.04
     container:
       image: xd009642/tarpaulin@sha256:5b9ad2082bd87f791528598fcbb9c94c920029ee464d6e688c9ab1bf78e4ab89
@@ -222,7 +226,7 @@ jobs:
   create_release:
     name: Create GitHub release
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-    needs: coverage
+    needs: [fmt, check, test, clippy, coverage]
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v1
