@@ -304,7 +304,6 @@ mod integration {
         let _location_380_dir = installed(&pycors_home, "3.8.0", false).unwrap();
         let location_375_dir = installed(&pycors_home, "3.7.5", true).unwrap();
         let _location_374_dir = installed(&pycors_home, "3.7.4", true).unwrap();
-        fs::create_dir_all(&cwd).unwrap();
         select("=3.8.0", &cwd);
 
         let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
