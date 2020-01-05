@@ -75,7 +75,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-18.04, windows-2019, macOS-10.14]
+        os: [ubuntu-18.04, windows-2019, macOS-latest]
         rust:
           - 1.39.0
     steps:
@@ -269,7 +269,7 @@ jobs:
             rust: 1.39.0
             target: x86_64-unknown-linux-musl
           - build: macos
-            os: macOS-10.14
+            os: macOS-latest
             rust: 1.39.0
             target: x86_64-apple-darwin
           - build: win-msvc-64
