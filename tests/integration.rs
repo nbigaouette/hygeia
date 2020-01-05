@@ -197,4 +197,33 @@ mod integration {
         // .stderr("")
         ;
     }
+
+    #[test]
+    fn list_selected_but_not_installed() {
+        let pycors_home = temp_dir("list_selected_but_not_installed");
+        let cwd = pycors_home.join("current_dir");
+        fs::create_dir_all(&cwd).unwrap();
+        select("=3.7.5", &cwd);
+
+        let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
+        let output = cmd
+            .arg("list")
+            .env(home_env_variable(), &pycors_home)
+            .env("PATH", pycors_home.join("usr_bin"))
+            .current_dir(&cwd)
+            .unwrap();
+        let assert_output = output.assert();
+        assert_output
+            .success()
+            .stdout(predicate::str::similar(indoc!("
+                +--------+---------+---------------------+----------+
+                | Active | Version | Installed by pycors | Location |
+                +--------+---------+---------------------+----------+
+                |   ✗    |  3.7.5  |                     |          |
+                +--------+---------+---------------------+----------+"
+            )).trim().normalize()
+            )
+        // .stderr("")
+        ;
+    }
 }
