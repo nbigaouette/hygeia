@@ -1,10 +1,17 @@
-use std::{env, fs, path::PathBuf};
+use std::{
+    env, fs,
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 use assert_cmd::{assert::OutputAssertExt, Command};
 use indoc::indoc;
 use predicates::prelude::*;
 
-use pycors::constants::{home_env_variable, EXECUTABLE_NAME};
+use pycors::{
+    constants::{home_env_variable, EXECUTABLE_NAME, INFO_FILE, TOOLCHAIN_FILE},
+    Result,
+};
 
 pub fn temp_dir(subdir: &str) -> PathBuf {
     let dir = env::temp_dir()
@@ -95,6 +102,7 @@ mod integration {
     fn list_with_empty_dir() {
         let pycors_home = temp_dir("list_with_empty_dir");
         let cwd = pycors_home.join("current_dir");
+        let _ = fs::create_dir_all(&cwd);
         let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
         let output = cmd
             .arg("list")
@@ -110,6 +118,81 @@ mod integration {
                 | Active | Version | Installed by pycors | Location |
                 +--------+---------+---------------------+----------+"
             )).trim().normalize()
+            )
+        // .stderr("")
+        ;
+    }
+
+    fn select(version: &str, cwd: &Path) {
+        let _ = fs::create_dir_all(&cwd);
+        let mut f = fs::File::create(cwd.join(TOOLCHAIN_FILE)).unwrap();
+        f.write_all(version.as_bytes()).unwrap();
+    }
+
+    fn installed(pycors_home: &Path, version: &str, installed_by_us: bool) -> Result<String> {
+        let installed_dir = pycors_home.join("installed");
+        let installation_dir = installed_dir.join(version);
+
+        #[cfg(windows)]
+        let location_dir = installation_dir.clone();
+        #[cfg(not(windows))]
+        let location_dir = installation_dir.join("bin");
+
+        fs::create_dir_all(&location_dir)?;
+
+        // Simulate first one being installed by us
+        if installed_by_us {
+            let mut f = fs::File::create(installation_dir.join(INFO_FILE))?;
+            f.write_all(b"")?;
+        }
+
+        Ok(location_dir.to_string_lossy().to_string())
+    }
+
+    #[test]
+    fn list_two_custom_no_system() {
+        let pycors_home = temp_dir("list_two_custom_no_system");
+        let cwd = pycors_home.join("current_dir");
+        select("=3.7.5", &cwd);
+        let location_380_dir = installed(&pycors_home, "3.8.0", false).unwrap();
+        let location_375_dir = installed(&pycors_home, "3.7.5", true).unwrap();
+        let location_374_dir = installed(&pycors_home, "3.7.4", true).unwrap();
+
+        // The 'Location' column expands to the path
+        let dashes = "-".repeat(location_380_dir.len());
+        let spaces = " ".repeat(location_380_dir.len() - 9);
+
+        let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
+        let output = cmd
+            .arg("list")
+            .env(home_env_variable(), &pycors_home)
+            .env("PATH", pycors_home.join("usr_bin"))
+            .current_dir(&cwd)
+            .unwrap();
+        let assert_output = output.assert();
+        assert_output
+            .success()
+            .stdout(predicate::str::similar(format!(
+"+--------+---------+---------------------+-{}-+
+| Active | Version | Installed by pycors | Location {} |
++--------+---------+---------------------+-{}-+
+|        |  3.8.0  |                     | {} |
++--------+---------+---------------------+-{}-+
+|   ✓    |  3.7.5  |          ✓          | {} |
++--------+---------+---------------------+-{}-+
+|        |  3.7.4  |          ✓          | {} |
++--------+---------+---------------------+-{}-+
+",
+                dashes,
+                spaces,
+                dashes,
+                location_380_dir,
+                dashes,
+                location_375_dir,
+                dashes,
+                location_374_dir,
+                dashes,
+            )).normalize()
             )
         // .stderr("")
         ;
