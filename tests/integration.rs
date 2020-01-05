@@ -1,7 +1,7 @@
 use std::{env, fs, path::PathBuf};
 
 use assert_cmd::{assert::OutputAssertExt, Command};
-use predicates::{boolean::PredicateBooleanExt, prelude::predicate};
+use predicates::prelude::*;
 
 use pycors::constants::{home_env_variable, EXECUTABLE_NAME};
 
@@ -32,11 +32,14 @@ mod integration {
 
         assert_output
             .success()
-            .stdout(format!(
-                "{} {}\n",
-                env!("CARGO_PKG_NAME"),
-                env!("CARGO_PKG_VERSION")
-            ))
+            .stdout(
+                predicate::str::similar(format!(
+                    "{} {}\n",
+                    env!("CARGO_PKG_NAME"),
+                    env!("CARGO_PKG_VERSION")
+                ))
+                .normalize(),
+            )
             .stderr("");
     }
 
@@ -65,6 +68,7 @@ mod integration {
                     env!("CARGO_PKG_NAME"),
                     env!("CARGO_PKG_VERSION")
                 ))
+                .normalize()
                 .and(predicate::str::contains("USAGE:"))
                 .and(predicate::str::contains("FLAGS:"))
                 .and(predicate::str::contains("SUBCOMMANDS:")),
@@ -99,11 +103,11 @@ mod integration {
         #[rustfmt::skip]
         assert_output
             .success()
-            .stdout(
+            .stdout(predicate::str::similar(
 "+--------+---------+---------------------+----------+
 | Active | Version | Installed by pycors | Location |
 +--------+---------+---------------------+----------+
-",
+").normalize()
             )
         // .stderr("")
         ;
