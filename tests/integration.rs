@@ -1,6 +1,7 @@
 use std::{env, fs, path::PathBuf};
 
 use assert_cmd::{assert::OutputAssertExt, Command};
+use indoc::indoc;
 use predicates::prelude::*;
 
 use pycors::constants::{home_env_variable, EXECUTABLE_NAME};
@@ -100,14 +101,13 @@ mod integration {
             .env("PATH", pycors_home.join("usr_bin"))
             .unwrap();
         let assert_output = output.assert();
-        #[rustfmt::skip]
         assert_output
             .success()
-            .stdout(predicate::str::similar(
-"+--------+---------+---------------------+----------+
-| Active | Version | Installed by pycors | Location |
-+--------+---------+---------------------+----------+
-").normalize()
+            .stdout(predicate::str::similar(indoc!("
+                +--------+---------+---------------------+----------+
+                | Active | Version | Installed by pycors | Location |
+                +--------+---------+---------------------+----------+"
+            )).trim().normalize()
             )
         // .stderr("")
         ;
