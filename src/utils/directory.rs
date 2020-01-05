@@ -152,12 +152,7 @@ pub mod tests {
 
     use super::*;
 
-    fn temp_dir() -> PathBuf {
-        env::temp_dir()
-            .join(EXECUTABLE_NAME)
-            .join("directory")
-            .join("tests")
-    }
+    use crate::tests::temp_dir;
 
     #[test]
     fn pycors_paths_from_env() {
@@ -241,7 +236,7 @@ pub mod tests {
         #[test]
         fn config_home_from_env_variable() {
             let home = default_home_full_path();
-            let pycors_home = temp_dir().join("config_home_from_env_variable");
+            let pycors_home = temp_dir("directory", "config_home_from_env_variable");
 
             let mocked_home = Ok(home);
             let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
@@ -283,7 +278,7 @@ pub mod tests {
         #[test]
         fn default_extra_package_file_from_env_variable() {
             let home = default_home_full_path();
-            let pycors_home = temp_dir().join("default_extra_package_file_from_env");
+            let pycors_home = temp_dir("directory", "default_extra_package_file_from_env");
             let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
             let mocked_home = Ok(home);
@@ -324,7 +319,7 @@ pub mod tests {
         #[test]
         fn cache_from_env_variable() {
             let home = default_home_full_path();
-            let pycors_home = temp_dir().join("cache_from_env");
+            let pycors_home = temp_dir("directory", "cache_from_env");
 
             let mocked_home = Ok(home);
             let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
@@ -366,7 +361,7 @@ pub mod tests {
         #[test]
         fn installed_from_env_variable() {
             let home = default_home_full_path();
-            let pycors_home = temp_dir().join("installed_from_env");
+            let pycors_home = temp_dir("directory", "installed_from_env");
 
             let mocked_home = Ok(home);
             let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
@@ -408,7 +403,7 @@ pub mod tests {
         #[test]
         fn logs_from_env_variable() {
             let home = default_home_full_path();
-            let pycors_home = temp_dir().join("logs_from_env");
+            let pycors_home = temp_dir("directory", "logs_from_env");
 
             let mocked_home = Ok(home);
             let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
@@ -449,7 +444,7 @@ pub mod tests {
 
         #[test]
         fn shims_from_env_variable() {
-            let pycors_home = temp_dir().join("shims_from_env");
+            let pycors_home = temp_dir("directory", "shims_from_env");
             let mocked_home = Ok(pycors_home.clone());
             let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
@@ -489,7 +484,7 @@ pub mod tests {
 
         #[test]
         fn downloaded_from_env_variable() {
-            let pycors_home = temp_dir().join("downloaded_from_env");
+            let pycors_home = temp_dir("directory", "downloaded_from_env");
             let mocked_home = Ok(pycors_home.clone());
             let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
@@ -529,7 +524,7 @@ pub mod tests {
 
         #[test]
         fn available_toolchain_from_env_variable() {
-            let pycors_home = temp_dir().join("available_toolchain_from_env");
+            let pycors_home = temp_dir("directory", "available_toolchain_from_env");
             let mocked_home = Ok(pycors_home.clone());
             let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
@@ -569,7 +564,7 @@ pub mod tests {
 
         #[test]
         fn extracted_from_env_variable() {
-            let pycors_home = temp_dir().join("extracted_from_env");
+            let pycors_home = temp_dir("directory", "extracted_from_env");
             let mocked_home = Ok(pycors_home.clone());
             let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
@@ -612,7 +607,7 @@ pub mod tests {
 
         #[test]
         fn install_dir_from_env_variable() {
-            let pycors_home = temp_dir().join("install_dir_from_env");
+            let pycors_home = temp_dir("directory", "install_dir_from_env");
             let mocked_home = Ok(pycors_home.clone());
             let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
             let version_str = "3.7.5";
@@ -660,7 +655,7 @@ pub mod tests {
 
         #[test]
         fn bin_dir_from_env_variable() {
-            let pycors_home = temp_dir().join("bin_dir_from_env");
+            let pycors_home = temp_dir("directory", "bin_dir_from_env");
             let mocked_home = Ok(pycors_home.clone());
             let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
             let version_str = "3.7.5";

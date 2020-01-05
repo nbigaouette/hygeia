@@ -227,27 +227,20 @@ fn parse_index_html(index_html: &str) -> Result<Vec<AvailableToolchain>> {
 
 #[cfg(test)]
 mod tests {
-    use std::{env, fs, path::PathBuf};
+    use std::fs;
 
     use chrono::Duration;
 
     use super::*;
-    use crate::utils::directory::MockPycorsHomeProviderTrait;
+    use crate::{tests::temp_dir, utils::directory::MockPycorsHomeProviderTrait};
 
     use mockall::predicate::*;
 
     const INDEX_HTML: &str = include_str!("../tests/fixtures/index.html");
 
-    fn temp_dir() -> PathBuf {
-        env::temp_dir()
-            .join(crate::constants::EXECUTABLE_NAME)
-            .join("cache")
-            .join("tests")
-    }
-
     #[test]
     fn cache_new_empty() {
-        let pycors_home = temp_dir().join("cache_from_env");
+        let pycors_home = temp_dir("cache", "cache_from_env");
         let home = pycors_home.clone();
 
         let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
@@ -276,7 +269,7 @@ mod tests {
 
     #[test]
     fn cache_up_to_date() {
-        let pycors_home = temp_dir().join("cache_up_to_date");
+        let pycors_home = temp_dir("cache", "cache_up_to_date");
         let home = pycors_home.clone();
 
         let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
@@ -328,7 +321,7 @@ mod tests {
 
     #[test]
     fn cache_corrupted() {
-        let pycors_home = temp_dir().join("cache_corrupted");
+        let pycors_home = temp_dir("cache", "cache_corrupted");
         let home = pycors_home.clone();
 
         let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
@@ -384,7 +377,7 @@ mod tests {
 
     #[test]
     fn cache_outdated() {
-        let pycors_home = temp_dir().join("cache_outdated");
+        let pycors_home = temp_dir("cache", "cache_outdated");
         let home = pycors_home.clone();
 
         let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());

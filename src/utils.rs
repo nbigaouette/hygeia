@@ -441,13 +441,7 @@ pub enum SpinnerMessage {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn temp_dir() -> PathBuf {
-        env::temp_dir()
-            .join(crate::constants::EXECUTABLE_NAME)
-            .join("utils")
-            .join("tests")
-    }
+    use crate::tests::temp_dir;
 
     fn fixture_installed_toolchains() -> Vec<InstalledToolchain> {
         vec![
@@ -486,7 +480,7 @@ mod tests {
 
     #[test]
     fn copy_file_success() {
-        let tmp_dir = temp_dir().join("copy_file_success");
+        let tmp_dir = temp_dir("utils", "copy_file_success");
         if tmp_dir.exists() {
             fs::remove_dir_all(&tmp_dir).unwrap()
         };
@@ -609,7 +603,7 @@ mod tests {
 
     #[test]
     fn create_info_file_success() {
-        let tmp_dir = temp_dir().join("create_info_file_success");
+        let tmp_dir = temp_dir("utils", "create_info_file_success");
         if tmp_dir.exists() {
             fs::remove_dir_all(&tmp_dir).unwrap()
         };
