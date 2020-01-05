@@ -190,11 +190,15 @@ pub mod tests {
 
     mod pycors_paths_trait {
         use super::*;
+        use crate::constants::home_env_variable;
 
         #[test]
         fn path_provider_env() {
-            // FIXME: Detect if PYCORS_HOME is set, use it for 'expected' if set.
-            let expected = dot_dir(DEFAULT_DOT_DIR).unwrap();
+            let expected = match env::var(home_env_variable()) {
+                Ok(dir) => PathBuf::from(dir),
+                Err(_) => dot_dir(DEFAULT_DOT_DIR).unwrap(),
+            };
+
             let paths_provider = PycorsPathsProviderFromEnv::new();
             let to_validate = paths_provider.config_home();
             assert_eq!(to_validate, expected);
