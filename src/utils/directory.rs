@@ -81,8 +81,7 @@ where
         // If we can't find our home directory, there is nothing we can do; simply panic.
         config_home_from_env
             .or(default_dot_dir)
-            .ok_or_else(|| anyhow::anyhow!("Cannot find {}' home directory", EXECUTABLE_NAME))
-            .unwrap()
+            .unwrap_or_else(|| panic!("Cannot find {}' home directory", EXECUTABLE_NAME))
     }
 
     pub fn default_extra_package_file(&self) -> PathBuf {
