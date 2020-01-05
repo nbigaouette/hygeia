@@ -136,12 +136,12 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --no-fail-fast --bin pycors -- --nocapture
+          args: --no-fail-fast "tests::" -- --nocapture
       - name: Integration Tests (cargo test integration)
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --no-fail-fast integration -- --nocapture
+          args: --no-fail-fast "integration::" -- --nocapture
 
   clippy:
     name: Clippy
