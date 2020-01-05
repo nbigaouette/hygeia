@@ -382,7 +382,7 @@ fn _is_a_custom_install(path: &Path) -> bool {
                 // Cannot get parent directory, probably at root.
                 false
             }
-            Some(parent) => is_a_custom_install(parent),
+            Some(parent) => _is_a_custom_install(parent),
         }
     }
 }
