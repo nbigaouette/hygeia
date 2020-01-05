@@ -733,8 +733,6 @@ fn get_python_versions_from_path_failure_to_run() {
 
     #[cfg(not(windows))]
     {
-        crate::tests::init_logger();
-
         let pycors_home = temp_dir("toolchain", "get_python_versions_from_path_failure_to_run");
 
         let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
@@ -784,8 +782,6 @@ fn is_a_custom_install_false() {
 
 #[test]
 fn find_installed_toolchains_absent_dir() {
-    crate::tests::init_logger();
-
     let test_dir = temp_dir("toolchain", "find_installed_toolchains_absent_dir");
     let pycors_home = test_dir.join(".pycors");
     let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
@@ -814,8 +810,6 @@ fn find_installed_toolchains_absent_dir() {
 
 #[test]
 fn find_installed_toolchains_empty_installed_dir() {
-    crate::tests::init_logger();
-
     let test_dir = temp_dir("toolchain", "find_installed_toolchains_empty_installed_dir");
     let pycors_home = test_dir.join(".pycors");
     let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
@@ -847,8 +841,6 @@ fn find_installed_toolchains_empty_installed_dir() {
 
 #[test]
 fn find_installed_toolchains_dummy_custom_installs() {
-    crate::tests::init_logger();
-
     let test_dir = temp_dir(
         "toolchain",
         "find_installed_toolchains_dummy_custom_installs",
@@ -929,8 +921,6 @@ fn find_installed_toolchains_dummy_custom_installs() {
 
 #[test]
 fn find_installed_toolchains_dummy_system_installs() {
-    crate::tests::init_logger();
-
     let test_dir = temp_dir(
         "toolchain",
         "find_installed_toolchains_dummy_system_installs",
@@ -1021,7 +1011,6 @@ fn find_installed_toolchains_dummy_system_installs() {
 
 #[test]
 fn find_compatible_toolchain_macos_default() {
-    crate::tests::init_logger();
     let installed_toolchains: &[InstalledToolchain] = &[InstalledToolchain {
         location: PathBuf::from("/usr/bin"),
         version: Version::parse("2.7.17").unwrap(),
@@ -1069,8 +1058,6 @@ fn find_compatible_toolchain_macos_default() {
 
 #[test]
 fn find_compatible_toolchain_multiple() {
-    crate::tests::init_logger();
-
     let test_dir = temp_dir("toolchain", "find_compatible_toolchain_multiple");
     let pycors_home = test_dir.join(".pycors");
 
@@ -1152,8 +1139,6 @@ fn find_compatible_toolchain_multiple() {
 
 #[test]
 fn find_compatible_toolchain_same_system_custom() {
-    crate::tests::init_logger();
-
     let test_dir = temp_dir("toolchain", "find_compatible_toolchain_same_system_custom");
     let pycors_home = test_dir.join(".pycors");
 
@@ -1212,8 +1197,6 @@ fn find_compatible_toolchain_same_system_custom() {
 
 #[test]
 fn compatible_toolchain_builder_load_from_string() {
-    crate::tests::init_logger();
-
     let test_dir = temp_dir("toolchain", "compatible_toolchain_builder_load_from_string");
     let pycors_home = test_dir.join(".pycors");
     let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());

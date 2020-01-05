@@ -328,8 +328,6 @@ mod tests {
 
     #[test]
     fn cache_corrupted() {
-        crate::tests::init_logger();
-
         let pycors_home = temp_dir().join("cache_corrupted");
         let home = pycors_home.clone();
 
@@ -386,8 +384,6 @@ mod tests {
 
     #[test]
     fn cache_outdated() {
-        crate::tests::init_logger();
-
         let pycors_home = temp_dir().join("cache_outdated");
         let home = pycors_home.clone();
 
@@ -441,8 +437,6 @@ mod tests {
 
     #[test]
     fn parse_html() {
-        crate::tests::init_logger();
-
         let parsed: Vec<AvailableToolchain> = parse_index_html(INDEX_HTML).unwrap();
         assert_eq!(parsed.len(), 213);
 
