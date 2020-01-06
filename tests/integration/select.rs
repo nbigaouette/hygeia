@@ -2,7 +2,7 @@ use super::*;
 
 #[test]
 fn from_none_exact() {
-    let pycors_home = temp_dir("select_from_none_exact");
+    let pycors_home = temp_dir("from_none_exact");
     let cwd = pycors_home.join("current_dir");
     let _location_375_dir = installed(&pycors_home, "3.7.5", true).unwrap();
     fs::create_dir_all(&cwd).unwrap();
@@ -25,7 +25,7 @@ fn from_none_exact() {
 
 #[test]
 fn from_none_tilde() {
-    let pycors_home = temp_dir("select_from_none_tilde");
+    let pycors_home = temp_dir("from_none_tilde");
     let cwd = pycors_home.join("current_dir");
     let _location_375_dir = installed(&pycors_home, "3.7.5", true).unwrap();
     fs::create_dir_all(&cwd).unwrap();
@@ -48,7 +48,7 @@ fn from_none_tilde() {
 
 #[test]
 fn from_some_exact() {
-    let pycors_home = temp_dir("select_from_some_exact");
+    let pycors_home = temp_dir("from_some_exact");
     let cwd = pycors_home.join("current_dir");
     let _location_375_dir = installed(&pycors_home, "3.7.5", true).unwrap();
     let _location_380_dir = installed(&pycors_home, "3.8.0", true).unwrap();
@@ -72,7 +72,7 @@ fn from_some_exact() {
 
 #[test]
 fn from_none_not_installed() {
-    let pycors_home = temp_dir("select_from_none_not_installed");
+    let pycors_home = temp_dir("from_none_not_installed");
     let cwd = pycors_home.join("current_dir");
     let _location_380_dir = installed(&pycors_home, "3.8.0", true).unwrap();
     fs::create_dir_all(&cwd).unwrap();
@@ -96,7 +96,7 @@ fn from_none_not_installed() {
 
 #[test]
 fn from_some_not_installed() {
-    let pycors_home = temp_dir("select_from_some_not_installed");
+    let pycors_home = temp_dir("from_some_not_installed");
     let cwd = pycors_home.join("current_dir");
     let _location_380_dir = installed(&pycors_home, "3.8.0", true).unwrap();
     select("= 3.8.0", &cwd);
