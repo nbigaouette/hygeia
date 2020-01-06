@@ -18,9 +18,12 @@ use pycors::{
 };
 
 mod help;
+mod install;
 mod list;
 mod path;
+mod run;
 mod select;
+mod setup;
 mod version;
 
 pub fn temp_dir(subdir: &str) -> PathBuf {
