@@ -421,7 +421,7 @@ fn get_python_versions_from_path_pycors_home_dir_absent() {
     let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
     let mut mock = MockPycorsHomeProviderTrait::new();
-    mock.expect_project_home_env_variable()
+    mock.expect_project_home()
         .times(0)
         .return_const(mocked_pycors_home);
     let paths_provider = PycorsPathsProvider::from(mock);
@@ -441,7 +441,7 @@ fn get_python_versions_from_path_shim_dir_absent() {
     let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
     let mut mock = MockPycorsHomeProviderTrait::new();
-    mock.expect_project_home_env_variable()
+    mock.expect_project_home()
         .times(1)
         .return_const(mocked_pycors_home);
     mock.expect_home()
@@ -463,7 +463,7 @@ fn get_python_versions_from_path_shim_skipped() {
     let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
     let mut mock = MockPycorsHomeProviderTrait::new();
-    mock.expect_project_home_env_variable()
+    mock.expect_project_home()
         .times(2) // We need the shim dir to call function, hence +1
         .return_const(mocked_pycors_home);
     mock.expect_home()
@@ -488,7 +488,7 @@ fn get_python_versions_from_path_2717_and_374_and_375() {
     let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
     let mut mock = MockPycorsHomeProviderTrait::new();
-    mock.expect_project_home_env_variable()
+    mock.expect_project_home()
         .times(2)
         .return_const(mocked_pycors_home);
     mock.expect_home()
@@ -553,7 +553,7 @@ fn get_python_versions_from_path_single_word_wont_parse() {
     let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
     let mut mock = MockPycorsHomeProviderTrait::new();
-    mock.expect_project_home_env_variable()
+    mock.expect_project_home()
         .times(2)
         .return_const(mocked_pycors_home);
     mock.expect_home()
@@ -588,7 +588,7 @@ fn get_python_versions_from_path_non_version_wont_parse() {
     let mocked_home = pycors_home.clone();
 
     let mut mock = MockPycorsHomeProviderTrait::new();
-    mock.expect_project_home_env_variable()
+    mock.expect_project_home()
         .times(2)
         .return_const(mocked_pycors_home);
     mock.expect_home()
@@ -633,7 +633,7 @@ fn get_python_versions_from_path_failure_to_run() {
         let mocked_home = pycors_home.clone();
 
         let mut mock = MockPycorsHomeProviderTrait::new();
-        mock.expect_project_home_env_variable()
+        mock.expect_project_home()
             .times(2)
             .return_const(mocked_pycors_home);
         mock.expect_home()
@@ -689,7 +689,7 @@ fn find_installed_toolchains_absent_dir() {
     fs::remove_dir(&home).unwrap();
 
     let mut mock = MockPycorsHomeProviderTrait::new();
-    mock.expect_project_home_env_variable()
+    mock.expect_project_home()
         .times(1)
         .return_const(mocked_pycors_home);
     mock.expect_home()
@@ -718,7 +718,7 @@ fn find_installed_toolchains_empty_installed_dir() {
     fs::remove_dir(&home).unwrap();
 
     let mut mock = MockPycorsHomeProviderTrait::new();
-    mock.expect_project_home_env_variable()
+    mock.expect_project_home()
         .times(2)
         .return_const(mocked_pycors_home);
     mock.expect_home()
@@ -750,7 +750,7 @@ fn find_installed_toolchains_dummy_custom_installs() {
     fs::remove_dir(&home).unwrap();
 
     let mut mock = MockPycorsHomeProviderTrait::new();
-    mock.expect_project_home_env_variable()
+    mock.expect_project_home()
         .times(4)
         .return_const(mocked_pycors_home);
     mock.expect_home()
@@ -828,7 +828,7 @@ fn find_installed_toolchains_dummy_system_installs() {
     fs::remove_dir(&home).unwrap();
 
     let mut mock = MockPycorsHomeProviderTrait::new();
-    mock.expect_project_home_env_variable()
+    mock.expect_project_home()
         .times(4)
         .return_const(mocked_pycors_home);
     mock.expect_home()
@@ -1099,7 +1099,7 @@ fn compatible_toolchain_builder_load_from_string() {
         Some(env::join_paths([&mocked_usr_bin, &mocked_usr_local_bin].iter()).unwrap());
 
     let mut mock = MockPycorsHomeProviderTrait::new();
-    mock.expect_project_home_env_variable()
+    mock.expect_project_home()
         .times(1)
         .return_const(mocked_pycors_home);
     mock.expect_home()
