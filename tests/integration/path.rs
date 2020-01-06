@@ -45,7 +45,7 @@ fn some_select() {
     let assert_output = output.assert();
     assert_output
         .success()
-        .stdout(predicate::str::similar(location_375_dir).trim())
+        .stdout(predicate::str::similar(location_375_dir))
         .stderr("");
 }
 
@@ -70,7 +70,7 @@ fn some_latest() {
     let assert_output = output.assert();
     assert_output
         .success()
-        .stdout(predicate::str::similar(location_380_dir).trim())
+        .stdout(predicate::str::similar(location_380_dir))
         .stderr("");
 }
 
@@ -97,6 +97,6 @@ fn some_version_overwrite() {
     let assert_output = output.assert();
     assert_output
         .success()
-        .stdout(predicate::str::similar(location_375_dir).trim())
+        .stdout(predicate::str::similar(location_375_dir))
         .stderr("");
 }

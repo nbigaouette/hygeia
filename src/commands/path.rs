@@ -12,7 +12,7 @@ pub fn run(version: Option<String>) -> Result<()> {
         .compatible_version(PycorsPathsProviderFromEnv::new())?;
 
     match compatible_toolchain {
-        Some(compatible_toolchain) => println!("{}", compatible_toolchain.location.display()),
+        Some(compatible_toolchain) => print!("{}", compatible_toolchain.location.display()),
         None => {
             log::error!("No Python interpreter found at all. Please install at least one!");
             println!()
