@@ -11,7 +11,7 @@ fn none_found() {
     let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
     let output = cmd
         .arg("path")
-        .env(home_env_variable(), &pycors_home)
+        .env(project_home_env_variable(), &pycors_home)
         .env("PATH", pycors_home.join("usr_bin"))
         .current_dir(&cwd)
         .unwrap();
@@ -37,7 +37,7 @@ fn some_select() {
     let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
     let output = cmd
         .arg("path")
-        .env(home_env_variable(), &pycors_home)
+        .env(project_home_env_variable(), &pycors_home)
         .env("PATH", pycors_home.join("usr_bin"))
         .env("RUST_LOG", "")
         .current_dir(&cwd)
@@ -62,7 +62,7 @@ fn some_latest() {
     let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
     let output = cmd
         .arg("path")
-        .env(home_env_variable(), &pycors_home)
+        .env(project_home_env_variable(), &pycors_home)
         .env("PATH", pycors_home.join("usr_bin"))
         .env("RUST_LOG", "")
         .current_dir(&cwd)
@@ -89,7 +89,7 @@ fn some_version_overwrite() {
         .arg("path")
         .arg("--version")
         .arg("~3.7")
-        .env(home_env_variable(), &pycors_home)
+        .env(project_home_env_variable(), &pycors_home)
         .env("PATH", pycors_home.join("usr_bin"))
         .env("RUST_LOG", "")
         .current_dir(&cwd)

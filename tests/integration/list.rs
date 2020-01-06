@@ -9,7 +9,7 @@ fn with_empty_dir() {
     let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
     let output = cmd
         .arg("list")
-        .env(home_env_variable(), &pycors_home)
+        .env(project_home_env_variable(), &pycors_home)
         .env("PATH", pycors_home.join("usr_bin"))
         .current_dir(&cwd) // Change to a clean directory without a '.python-version'
         .unwrap();
@@ -43,7 +43,7 @@ fn two_custom_no_system() {
     let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
     let output = cmd
         .arg("list")
-        .env(home_env_variable(), &pycors_home)
+        .env(project_home_env_variable(), &pycors_home)
         .env("PATH", pycors_home.join("usr_bin"))
         .current_dir(&cwd)
         .unwrap();
@@ -86,7 +86,7 @@ fn selected_but_not_installed() {
     let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
     let output = cmd
         .arg("list")
-        .env(home_env_variable(), &pycors_home)
+        .env(project_home_env_variable(), &pycors_home)
         .env("PATH", pycors_home.join("usr_bin"))
         .current_dir(&cwd)
         .unwrap();

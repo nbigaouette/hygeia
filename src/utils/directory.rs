@@ -12,7 +12,7 @@ use crate::{
 #[cfg_attr(test, mockall::automock)]
 pub trait PycorsHomeProviderTrait {
     fn home(&self) -> Result<PathBuf>;
-    fn home_env_variable(&self) -> Option<OsString>;
+    fn project_home_env_variable(&self) -> Option<OsString>;
     fn paths(&self) -> Option<OsString>;
 }
 
@@ -30,8 +30,8 @@ where
     fn home(&self) -> Result<PathBuf> {
         self.path_provider.home()
     }
-    fn home_env_variable(&self) -> Option<OsString> {
-        self.path_provider.home_env_variable()
+    fn project_home_env_variable(&self) -> Option<OsString> {
+        self.path_provider.project_home_env_variable()
     }
     fn paths(&self) -> Option<OsString> {
         self.path_provider.paths()
@@ -52,8 +52,8 @@ impl PycorsHomeProviderTrait for PycorsPathsProviderFromEnv {
     fn home(&self) -> Result<PathBuf> {
         dirs::home_dir().ok_or_else(|| anyhow::anyhow!("Error getting home directory"))
     }
-    fn home_env_variable(&self) -> Option<OsString> {
-        env::var_os(constants::home_env_variable())
+    fn project_home_env_variable(&self) -> Option<OsString> {
+        env::var_os(constants::project_home_env_variable())
     }
     fn paths(&self) -> Option<OsString> {
         env::var_os("PATH")
@@ -70,7 +70,10 @@ where
     }
 
     pub fn config_home(&self) -> PathBuf {
-        let config_home_from_env = self.path_provider.home_env_variable().map(PathBuf::from);
+        let config_home_from_env = self
+            .path_provider
+            .project_home_env_variable()
+            .map(PathBuf::from);
 
         let default_dot_dir = self.home().ok().map(|p| p.join(DEFAULT_DOT_DIR));
 
@@ -161,7 +164,7 @@ pub mod tests {
         // and the function.
         let paths_provider: PycorsPathsProvider<PycorsPathsProviderFromEnv> =
             PycorsPathsProviderFromEnv::new();
-        let _ = paths_provider.home_env_variable();
+        let _ = paths_provider.project_home_env_variable();
     }
 
     #[test]
@@ -190,7 +193,7 @@ pub mod tests {
 
     mod pycors_paths_trait {
         use super::*;
-        use crate::constants::home_env_variable;
+        use crate::constants::project_home_env_variable;
 
         fn default_home_full_path() -> PathBuf {
             dirs::home_dir().unwrap()
@@ -202,7 +205,7 @@ pub mod tests {
 
         #[test]
         fn path_provider_env() {
-            let expected = match env::var(home_env_variable()) {
+            let expected = match env::var(project_home_env_variable()) {
                 Ok(dir) => PathBuf::from(dir),
                 Err(_) => default_dot_full_path(),
             };
@@ -223,7 +226,7 @@ pub mod tests {
             let expected = pycors_home;
 
             let mut mock = MockPycorsHomeProviderTrait::new();
-            mock.expect_home_env_variable()
+            mock.expect_project_home_env_variable()
                 .times(1)
                 .return_const(mocked_pycors_home);
             mock.expect_home().times(1).return_once(move || mocked_home);
@@ -244,7 +247,7 @@ pub mod tests {
             let expected = pycors_home;
 
             let mut mock = MockPycorsHomeProviderTrait::new();
-            mock.expect_home_env_variable()
+            mock.expect_project_home_env_variable()
                 .times(1)
                 .return_const(mocked_pycors_home);
             mock.expect_home().times(1).return_once(move || mocked_home);
@@ -265,7 +268,7 @@ pub mod tests {
             let expected = pycors_home.join(EXTRA_PACKAGES_FILENAME);
 
             let mut mock = MockPycorsHomeProviderTrait::new();
-            mock.expect_home_env_variable()
+            mock.expect_project_home_env_variable()
                 .times(1)
                 .return_const(mocked_pycors_home);
             mock.expect_home().times(1).return_once(move || mocked_home);
@@ -286,7 +289,7 @@ pub mod tests {
             let expected = pycors_home.join(EXTRA_PACKAGES_FILENAME);
 
             let mut mock = MockPycorsHomeProviderTrait::new();
-            mock.expect_home_env_variable()
+            mock.expect_project_home_env_variable()
                 .times(1)
                 .return_const(mocked_pycors_home);
             mock.expect_home().times(1).return_once(move || mocked_home);
@@ -307,7 +310,7 @@ pub mod tests {
             let expected = pycors_home.join("cache");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
-            mock.expect_home_env_variable()
+            mock.expect_project_home_env_variable()
                 .times(1)
                 .return_const(mocked_pycors_home);
             mock.expect_home().times(1).return_once(move || mocked_home);
@@ -328,7 +331,7 @@ pub mod tests {
             let expected = pycors_home.join("cache");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
-            mock.expect_home_env_variable()
+            mock.expect_project_home_env_variable()
                 .times(1)
                 .return_const(mocked_pycors_home);
             mock.expect_home().times(1).return_once(move || mocked_home);
@@ -349,7 +352,7 @@ pub mod tests {
             let expected = pycors_home.join("installed");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
-            mock.expect_home_env_variable()
+            mock.expect_project_home_env_variable()
                 .times(1)
                 .return_const(mocked_pycors_home);
             mock.expect_home().times(1).return_once(move || mocked_home);
@@ -370,7 +373,7 @@ pub mod tests {
             let expected = pycors_home.join("installed");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
-            mock.expect_home_env_variable()
+            mock.expect_project_home_env_variable()
                 .times(1)
                 .return_const(mocked_pycors_home);
             mock.expect_home().times(1).return_once(move || mocked_home);
@@ -391,7 +394,7 @@ pub mod tests {
             let expected = pycors_home.join("logs");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
-            mock.expect_home_env_variable()
+            mock.expect_project_home_env_variable()
                 .times(1)
                 .return_const(mocked_pycors_home);
             mock.expect_home().times(1).return_once(move || mocked_home);
@@ -412,7 +415,7 @@ pub mod tests {
             let expected = pycors_home.join("logs");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
-            mock.expect_home_env_variable()
+            mock.expect_project_home_env_variable()
                 .times(1)
                 .return_const(mocked_pycors_home);
             mock.expect_home().times(1).return_once(move || mocked_home);
@@ -433,7 +436,7 @@ pub mod tests {
             let expected = pycors_home.join("shims");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
-            mock.expect_home_env_variable()
+            mock.expect_project_home_env_variable()
                 .times(1)
                 .return_const(mocked_pycors_home);
             mock.expect_home().times(1).return_once(move || mocked_home);
@@ -454,7 +457,7 @@ pub mod tests {
             let expected = pycors_home.join("shims");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
-            mock.expect_home_env_variable()
+            mock.expect_project_home_env_variable()
                 .times(1)
                 .return_const(mocked_pycors_home);
             mock.expect_home().times(1).return_once(move || mocked_home);
@@ -475,7 +478,7 @@ pub mod tests {
             let expected = pycors_home.join("cache").join("downloaded");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
-            mock.expect_home_env_variable()
+            mock.expect_project_home_env_variable()
                 .times(1)
                 .return_const(mocked_pycors_home);
             mock.expect_home().times(1).return_once(move || mocked_home);
@@ -496,7 +499,7 @@ pub mod tests {
             let expected = pycors_home.join("cache").join("downloaded");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
-            mock.expect_home_env_variable()
+            mock.expect_project_home_env_variable()
                 .times(1)
                 .return_const(mocked_pycors_home);
             mock.expect_home().times(1).return_once(move || mocked_home);
@@ -517,7 +520,7 @@ pub mod tests {
             let expected = pycors_home.join("cache").join(AVAILABLE_TOOLCHAIN_CACHE);
 
             let mut mock = MockPycorsHomeProviderTrait::new();
-            mock.expect_home_env_variable()
+            mock.expect_project_home_env_variable()
                 .times(1)
                 .return_const(mocked_pycors_home);
             mock.expect_home().times(1).return_once(move || mocked_home);
@@ -538,7 +541,7 @@ pub mod tests {
             let expected = pycors_home.join("cache").join(AVAILABLE_TOOLCHAIN_CACHE);
 
             let mut mock = MockPycorsHomeProviderTrait::new();
-            mock.expect_home_env_variable()
+            mock.expect_project_home_env_variable()
                 .times(1)
                 .return_const(mocked_pycors_home);
             mock.expect_home().times(1).return_once(move || mocked_home);
@@ -559,7 +562,7 @@ pub mod tests {
             let expected = pycors_home.join("cache").join("extracted");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
-            mock.expect_home_env_variable()
+            mock.expect_project_home_env_variable()
                 .times(1)
                 .return_const(mocked_pycors_home);
             mock.expect_home().times(1).return_once(move || mocked_home);
@@ -580,7 +583,7 @@ pub mod tests {
             let expected = pycors_home.join("cache").join("extracted");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
-            mock.expect_home_env_variable()
+            mock.expect_project_home_env_variable()
                 .times(1)
                 .return_const(mocked_pycors_home);
             mock.expect_home().times(1).return_once(move || mocked_home);
@@ -604,7 +607,7 @@ pub mod tests {
             let expected = pycors_home.join("installed").join(version_str);
 
             let mut mock = MockPycorsHomeProviderTrait::new();
-            mock.expect_home_env_variable()
+            mock.expect_project_home_env_variable()
                 .times(1)
                 .return_const(mocked_pycors_home);
             mock.expect_home().times(1).return_once(move || mocked_home);
@@ -628,7 +631,7 @@ pub mod tests {
             let expected = pycors_home.join("installed").join(version_str);
 
             let mut mock = MockPycorsHomeProviderTrait::new();
-            mock.expect_home_env_variable()
+            mock.expect_project_home_env_variable()
                 .times(1)
                 .return_const(mocked_pycors_home);
             mock.expect_home().times(1).return_once(move || mocked_home);
@@ -655,7 +658,7 @@ pub mod tests {
             let expected = pycors_home.join("installed").join(version_str);
 
             let mut mock = MockPycorsHomeProviderTrait::new();
-            mock.expect_home_env_variable()
+            mock.expect_project_home_env_variable()
                 .times(1)
                 .return_const(mocked_pycors_home);
             mock.expect_home().times(1).return_once(move || mocked_home);
@@ -682,7 +685,7 @@ pub mod tests {
             let expected = pycors_home.join("installed").join(version_str);
 
             let mut mock = MockPycorsHomeProviderTrait::new();
-            mock.expect_home_env_variable()
+            mock.expect_project_home_env_variable()
                 .times(1)
                 .return_const(mocked_pycors_home);
             mock.expect_home().times(1).return_once(move || mocked_home);

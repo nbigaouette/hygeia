@@ -252,7 +252,7 @@ mod tests {
         }
 
         let mut mock = MockPycorsHomeProviderTrait::new();
-        mock.expect_home_env_variable()
+        mock.expect_project_home_env_variable()
             .times(3)
             .return_const(mocked_pycors_home);
         mock.expect_home()
@@ -281,7 +281,7 @@ mod tests {
         }
 
         let mut mock = MockPycorsHomeProviderTrait::new();
-        mock.expect_home_env_variable()
+        mock.expect_project_home_env_variable()
             .times(1)
             .return_const(mocked_pycors_home.clone());
         mock.expect_home()
@@ -304,7 +304,7 @@ mod tests {
 
         let home = pycors_home;
         let mut mock = MockPycorsHomeProviderTrait::new();
-        mock.expect_home_env_variable()
+        mock.expect_project_home_env_variable()
             .times(2)
             .return_const(mocked_pycors_home);
         mock.expect_home()
@@ -333,7 +333,7 @@ mod tests {
         }
 
         let mut mock = MockPycorsHomeProviderTrait::new();
-        mock.expect_home_env_variable()
+        mock.expect_project_home_env_variable()
             .times(1)
             .return_const(mocked_pycors_home.clone());
         mock.expect_home()
@@ -361,7 +361,7 @@ mod tests {
 
         let home = pycors_home;
         let mut mock = MockPycorsHomeProviderTrait::new();
-        mock.expect_home_env_variable()
+        mock.expect_project_home_env_variable()
             .times(3)
             .return_const(mocked_pycors_home);
         mock.expect_home()
@@ -389,7 +389,7 @@ mod tests {
         }
 
         let mut mock = MockPycorsHomeProviderTrait::new();
-        mock.expect_home_env_variable()
+        mock.expect_project_home_env_variable()
             .times(1)
             .return_const(mocked_pycors_home.clone());
         mock.expect_home()
@@ -414,7 +414,7 @@ mod tests {
 
         let home = pycors_home;
         let mut mock = MockPycorsHomeProviderTrait::new();
-        mock.expect_home_env_variable()
+        mock.expect_project_home_env_variable()
             .times(3)
             .return_const(mocked_pycors_home);
         mock.expect_home()

@@ -9,7 +9,7 @@ use indoc::indoc;
 use predicates::prelude::*;
 
 use pycors::{
-    constants::{home_env_variable, INFO_FILE, TOOLCHAIN_FILE},
+    constants::{project_home_env_variable, INFO_FILE, TOOLCHAIN_FILE},
     Result,
 };
 

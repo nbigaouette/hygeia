@@ -19,7 +19,7 @@ pub const SHELL_CONFIG_IDENTIFYING_PATTERN_END: &str =
     concat!("End of ", executable_name_from_env!(), " config block.");
 
 /// Return the environment variable used to find the project's config home.
-pub fn home_env_variable() -> &'static str {
+pub fn project_home_env_variable() -> &'static str {
     lazy_static! {
         static ref HOME_ENV_VARIABLE: String =
             format!("{}_HOME", executable_name_from_env!().to_uppercase());
