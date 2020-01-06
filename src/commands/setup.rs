@@ -107,7 +107,9 @@ pub fn run(shell: Shell) -> Result<()> {
     // Add ~/.EXECUTABLE_NAME/shims to $PATH in ~/.bashrc and ~/.bash_profile and install autocomplete
     match shell {
         Shell::Bash => {
-            let home = paths_provider.home()?;
+            let home = paths_provider
+                .home()
+                .ok_or_else(|| anyhow::anyhow!("Failed to get home directory"))?;
 
             bash::setup_bash(&home)?;
         }
