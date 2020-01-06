@@ -2,11 +2,7 @@
 // executable name (integration_tests) due to a bug in rustfmt.
 // See: https://github.com/rust-lang/rustfmt/issues/3794
 
-use std::{
-    env, fs,
-    io::Write,
-    path::{Path, PathBuf},
-};
+use std::{env, fs, io::Write, path::Path};
 
 use assert_cmd::{assert::OutputAssertExt, Command};
 use indoc::indoc;

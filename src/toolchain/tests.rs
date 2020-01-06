@@ -13,7 +13,7 @@ use std::{
     process::{ExitStatus, Output},
 };
 
-use crate::{constants::INFO_FILE, tests::temp_dir, utils::directory::MockPycorsHomeProviderTrait};
+use crate::{constants::INFO_FILE, utils::directory::MockPycorsHomeProviderTrait};
 
 #[cfg(windows)]
 const EXEC_EXTENSION: &str = ".exe";
@@ -159,7 +159,7 @@ fn version_or_path_from_str_success_tilde_major() {
 
 #[test]
 fn version_or_path_from_str_err_path_success() {
-    let dir = temp_dir("toolchain", "version_or_path_from_str_err_path_success");
+    let dir = create_test_temp_dir!();
     let v = dir.to_string_lossy();
     let vop: ToolchainFile = v.parse().unwrap();
     assert_eq!(vop, ToolchainFile::Path(dir));
@@ -167,10 +167,7 @@ fn version_or_path_from_str_err_path_success() {
 
 #[test]
 fn version_or_path_from_str_err_path_failed_dir_not_found() {
-    let dir = temp_dir(
-        "toolchain",
-        "version_or_path_from_str_err_path_failed_dir_not_found",
-    );
+    let dir = create_test_temp_dir!();
     let v = dir.to_string_lossy();
     let vop: ToolchainFile = v.parse().unwrap();
     assert_eq!(vop, ToolchainFile::Path(dir));
@@ -194,7 +191,7 @@ where
 
 #[test]
 fn toolchain_file_load_success_none() {
-    let dir = temp_dir("toolchain", "toolchain_file_load_success_none");
+    let dir = create_test_temp_dir!();
 
     let vop: Result<Option<ToolchainFile>> = with_directory(dir, ToolchainFile::load);
 
@@ -213,7 +210,7 @@ fn toolchain_file_load_error_not_permitted() {
     #[cfg(not(windows))]
     {
         let v = "3.7.4";
-        let dir = temp_dir("toolchain", "toolchain_file_load_error_not_permitted");
+        let dir = create_test_temp_dir!();
 
         if users::get_current_uid() == 0 {
             eprintln!("WARNING: Running test as root is disabled; root can read any file!");
@@ -238,7 +235,7 @@ fn toolchain_file_load_error_not_permitted() {
 #[test]
 fn toolchain_file_load_error_garbage() {
     let v = "non-Version parsable content";
-    let dir = temp_dir("toolchain", "toolchain_file_load_error_garbage");
+    let dir = create_test_temp_dir!();
 
     let mut toolchain_file = File::create(dir.join(TOOLCHAIN_FILE)).unwrap();
     toolchain_file.write_all(v.as_bytes()).unwrap();
@@ -256,7 +253,7 @@ fn toolchain_file_load_error_garbage() {
 #[test]
 fn toolchain_file_load_success_some() {
     let v = "3.7.4";
-    let dir = temp_dir("toolchain", "toolchain_file_load");
+    let dir = create_test_temp_dir!();
 
     let mut toolchain_file = File::create(dir.join(TOOLCHAIN_FILE)).unwrap();
     toolchain_file.write_all(v.as_bytes()).unwrap();
@@ -338,11 +335,7 @@ fn selected_toolchain_from_toolchain_file_version_req_not_installed() {
 
 #[test]
 fn selected_toolchain_from_toolchain_file_path_not_installed() {
-    let dir = temp_dir(
-        "toolchain",
-        "selected_toolchain_from_toolchain_file_path_installed",
-    );
-    let dir = dir.canonicalize().unwrap();
+    let dir = create_test_temp_dir!().canonicalize().unwrap();
 
     let toolchain_file: ToolchainFile = ToolchainFile::Path(dir.clone());
     let installed_toolchains: &[InstalledToolchain] = &[InstalledToolchain {
@@ -523,11 +516,9 @@ fn selected_toolchain_not_installed_toolchain_same_location_none_false() {
 
 #[test]
 fn get_python_versions_from_path_pycors_home_dir_absent() {
-    let pycors_home = temp_dir(
-        "toolchain",
-        "get_python_versions_from_path_pycors_home_dir_absent",
-    );
-    fs::remove_dir_all(&pycors_home).unwrap();
+    let home = create_test_temp_dir!();
+    let pycors_home = home.join(".pycors");
+
     let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
     let mut mock = MockPycorsHomeProviderTrait::new();
@@ -543,8 +534,11 @@ fn get_python_versions_from_path_pycors_home_dir_absent() {
 
 #[test]
 fn get_python_versions_from_path_shim_dir_absent() {
-    let pycors_home = temp_dir("toolchain", "get_python_versions_from_path_shim_dir_absent");
-    let mocked_home = pycors_home.clone();
+    let home = create_test_temp_dir!();
+    let pycors_home = home.join(".pycors");
+    fs::create_dir_all(&pycors_home).unwrap();
+
+    let mocked_home = home;
     let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
     let mut mock = MockPycorsHomeProviderTrait::new();
@@ -563,8 +557,10 @@ fn get_python_versions_from_path_shim_dir_absent() {
 
 #[test]
 fn get_python_versions_from_path_shim_skipped() {
-    let pycors_home = temp_dir("toolchain", "get_python_versions_from_path_shim_skipped");
-    let mocked_home = pycors_home.clone();
+    let home = create_test_temp_dir!();
+    let pycors_home = home.join(".pycors");
+
+    let mocked_home = home;
     let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
     let mut mock = MockPycorsHomeProviderTrait::new();
@@ -586,11 +582,10 @@ fn get_python_versions_from_path_shim_skipped() {
 
 #[test]
 fn get_python_versions_from_path_2717_and_374_and_375() {
-    let pycors_home = temp_dir(
-        "toolchain",
-        "get_python_versions_from_path_2717_and_374_and_375",
-    );
-    let mocked_home = pycors_home.clone();
+    let home = create_test_temp_dir!();
+    let pycors_home = home.join(".pycors");
+
+    let mocked_home = home;
     let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
     let mut mock = MockPycorsHomeProviderTrait::new();
@@ -652,11 +647,10 @@ fn get_python_versions_from_path_2717_and_374_and_375() {
 
 #[test]
 fn get_python_versions_from_path_single_word_wont_parse() {
-    let pycors_home = temp_dir(
-        "toolchain",
-        "get_python_versions_from_path_single_word_wont_parse",
-    );
-    let mocked_home = pycors_home.clone();
+    let home = create_test_temp_dir!();
+    let pycors_home = home.join(".pycors");
+
+    let mocked_home = home;
     let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
     let mut mock = MockPycorsHomeProviderTrait::new();
@@ -688,10 +682,9 @@ fn get_python_versions_from_path_single_word_wont_parse() {
 
 #[test]
 fn get_python_versions_from_path_non_version_wont_parse() {
-    let pycors_home = temp_dir(
-        "toolchain",
-        "get_python_versions_from_path_non_version_wont_parse",
-    );
+    let home = create_test_temp_dir!();
+    let pycors_home = home.join(".pycors");
+
     let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
     let mocked_home = pycors_home.clone();
 
@@ -733,9 +726,11 @@ fn get_python_versions_from_path_failure_to_run() {
 
     #[cfg(not(windows))]
     {
-        let pycors_home = temp_dir("toolchain", "get_python_versions_from_path_failure_to_run");
+        let home = create_test_temp_dir!();
+        let pycors_home = home.join(".pycors");
+        fs::create_dir_all(&pycors_home).unwrap();
 
-        let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+        let mocked_pycors_home = Some(home.as_os_str().to_os_string());
         let mocked_home = pycors_home.clone();
 
         let mut mock = MockPycorsHomeProviderTrait::new();
@@ -766,7 +761,7 @@ fn get_python_versions_from_path_failure_to_run() {
 
 #[test]
 fn is_a_custom_install_true() {
-    let dir = temp_dir("toolchain", "is_a_custom_install_true");
+    let dir = create_test_temp_dir!();
     let info_filename = dir.join(INFO_FILE);
     // Create file in directory
     let mut f = File::create(info_filename).unwrap();
@@ -776,22 +771,23 @@ fn is_a_custom_install_true() {
 
 #[test]
 fn is_a_custom_install_false() {
-    let dir = temp_dir("toolchain", "is_a_custom_install_false");
+    let dir = create_test_temp_dir!();
     assert!(!is_a_custom_install(&dir.join("bin")));
 }
 
 #[test]
 fn find_installed_toolchains_absent_dir() {
-    let test_dir = temp_dir("toolchain", "find_installed_toolchains_absent_dir");
-    let pycors_home = test_dir.join(".pycors");
+    let home = create_test_temp_dir!();
+    let pycors_home = home.join(".pycors");
+
     let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
-    let mocked_usr_bin = test_dir.join("usr_bin");
-    let mocked_usr_local_bin = test_dir.join("usr_local_bin");
+    let mocked_usr_bin = home.join("usr_bin");
+    let mocked_usr_local_bin = home.join("usr_local_bin");
     let mocked_paths =
         Some(env::join_paths([&mocked_usr_bin, &mocked_usr_local_bin].iter()).unwrap());
 
     // Make sure directory does not exists
-    fs::remove_dir(&test_dir).unwrap();
+    fs::remove_dir(&home).unwrap();
 
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_home_env_variable()
@@ -799,7 +795,7 @@ fn find_installed_toolchains_absent_dir() {
         .return_const(mocked_pycors_home);
     mock.expect_home()
         .times(1)
-        .returning(move || Ok(test_dir.clone()));
+        .returning(move || Ok(home.clone()));
     mock.expect_paths().times(1).return_const(mocked_paths);
     let paths_provider = PycorsPathsProvider::from(mock);
 
@@ -810,16 +806,17 @@ fn find_installed_toolchains_absent_dir() {
 
 #[test]
 fn find_installed_toolchains_empty_installed_dir() {
-    let test_dir = temp_dir("toolchain", "find_installed_toolchains_empty_installed_dir");
-    let pycors_home = test_dir.join(".pycors");
+    let home = create_test_temp_dir!();
+    let pycors_home = home.join(".pycors");
+
     let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
-    let mocked_usr_bin = test_dir.join("usr_bin");
-    let mocked_usr_local_bin = test_dir.join("usr_local_bin");
+    let mocked_usr_bin = home.join("usr_bin");
+    let mocked_usr_local_bin = home.join("usr_local_bin");
     let mocked_paths =
         Some(env::join_paths([&mocked_usr_bin, &mocked_usr_local_bin].iter()).unwrap());
 
     // Make sure directory does not exists
-    fs::remove_dir(&test_dir).unwrap();
+    fs::remove_dir(&home).unwrap();
 
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_home_env_variable()
@@ -827,7 +824,7 @@ fn find_installed_toolchains_empty_installed_dir() {
         .return_const(mocked_pycors_home);
     mock.expect_home()
         .times(2)
-        .returning(move || Ok(test_dir.clone()));
+        .returning(move || Ok(home.clone()));
     mock.expect_paths().times(1).return_const(mocked_paths);
     let paths_provider = PycorsPathsProvider::from(mock);
 
@@ -841,19 +838,17 @@ fn find_installed_toolchains_empty_installed_dir() {
 
 #[test]
 fn find_installed_toolchains_dummy_custom_installs() {
-    let test_dir = temp_dir(
-        "toolchain",
-        "find_installed_toolchains_dummy_custom_installs",
-    );
-    let pycors_home = test_dir.join(".pycors");
+    let home = create_test_temp_dir!();
+    let pycors_home = home.join(".pycors");
+
     let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
-    let mocked_usr_bin = test_dir.join("usr_bin");
-    let mocked_usr_local_bin = test_dir.join("usr_local_bin");
+    let mocked_usr_bin = home.join("usr_bin");
+    let mocked_usr_local_bin = home.join("usr_local_bin");
     let mocked_paths =
         Some(env::join_paths([&mocked_usr_bin, &mocked_usr_local_bin].iter()).unwrap());
 
     // Make sure directory does not exists
-    fs::remove_dir(&test_dir).unwrap();
+    fs::remove_dir(&home).unwrap();
 
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_home_env_variable()
@@ -861,7 +856,7 @@ fn find_installed_toolchains_dummy_custom_installs() {
         .return_const(mocked_pycors_home);
     mock.expect_home()
         .times(4)
-        .returning(move || Ok(test_dir.clone()));
+        .returning(move || Ok(home.clone()));
     mock.expect_paths().times(1).return_const(mocked_paths);
     let paths_provider = PycorsPathsProvider::from(mock);
 
@@ -921,19 +916,17 @@ fn find_installed_toolchains_dummy_custom_installs() {
 
 #[test]
 fn find_installed_toolchains_dummy_system_installs() {
-    let test_dir = temp_dir(
-        "toolchain",
-        "find_installed_toolchains_dummy_system_installs",
-    );
-    let pycors_home = test_dir.join(".pycors");
+    let home = create_test_temp_dir!();
+    let pycors_home = home.join(".pycors");
+
     let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
-    let mocked_usr_bin = test_dir.join("usr_bin");
-    let mocked_usr_local_bin = test_dir.join("usr_local_bin");
+    let mocked_usr_bin = home.join("usr_bin");
+    let mocked_usr_local_bin = home.join("usr_local_bin");
     let mocked_paths =
         Some(env::join_paths([&mocked_usr_bin, &mocked_usr_local_bin].iter()).unwrap());
 
     // Make sure directory does not exists
-    fs::remove_dir(&test_dir).unwrap();
+    fs::remove_dir(&home).unwrap();
 
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_home_env_variable()
@@ -941,7 +934,7 @@ fn find_installed_toolchains_dummy_system_installs() {
         .return_const(mocked_pycors_home);
     mock.expect_home()
         .times(4)
-        .returning(move || Ok(test_dir.clone()));
+        .returning(move || Ok(home.clone()));
     mock.expect_paths().times(1).return_const(mocked_paths);
     let paths_provider = PycorsPathsProvider::from(mock);
 
@@ -1058,8 +1051,8 @@ fn find_compatible_toolchain_macos_default() {
 
 #[test]
 fn find_compatible_toolchain_multiple() {
-    let test_dir = temp_dir("toolchain", "find_compatible_toolchain_multiple");
-    let pycors_home = test_dir.join(".pycors");
+    let home = create_test_temp_dir!();
+    let pycors_home = home.join(".pycors");
 
     let installed_toolchains: &[InstalledToolchain] = &[
         InstalledToolchain {
@@ -1139,8 +1132,8 @@ fn find_compatible_toolchain_multiple() {
 
 #[test]
 fn find_compatible_toolchain_same_system_custom() {
-    let test_dir = temp_dir("toolchain", "find_compatible_toolchain_same_system_custom");
-    let pycors_home = test_dir.join(".pycors");
+    let home = create_test_temp_dir!();
+    let pycors_home = home.join(".pycors");
 
     let installed_toolchains: &[InstalledToolchain] = &[
         InstalledToolchain {
@@ -1197,11 +1190,12 @@ fn find_compatible_toolchain_same_system_custom() {
 
 #[test]
 fn compatible_toolchain_builder_load_from_string() {
-    let test_dir = temp_dir("toolchain", "compatible_toolchain_builder_load_from_string");
-    let pycors_home = test_dir.join(".pycors");
+    let home = create_test_temp_dir!();
+    let pycors_home = home.join(".pycors");
+
     let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
-    let mocked_usr_bin = test_dir.join("usr_bin");
-    let mocked_usr_local_bin = test_dir.join("usr_local_bin");
+    let mocked_usr_bin = home.join("usr_bin");
+    let mocked_usr_local_bin = home.join("usr_local_bin");
     let mocked_paths =
         Some(env::join_paths([&mocked_usr_bin, &mocked_usr_local_bin].iter()).unwrap());
 
@@ -1211,7 +1205,7 @@ fn compatible_toolchain_builder_load_from_string() {
         .return_const(mocked_pycors_home);
     mock.expect_home()
         .times(1)
-        .returning(move || Ok(test_dir.clone()));
+        .returning(move || Ok(home.clone()));
     mock.expect_paths().times(1).return_const(mocked_paths);
     let paths_provider = PycorsPathsProvider::from(mock);
     let compatible_toolchain = CompatibleToolchainBuilder::new()

@@ -232,7 +232,7 @@ mod tests {
     use chrono::Duration;
 
     use super::*;
-    use crate::{tests::temp_dir, utils::directory::MockPycorsHomeProviderTrait};
+    use crate::utils::directory::MockPycorsHomeProviderTrait;
 
     use mockall::predicate::*;
 
@@ -240,8 +240,8 @@ mod tests {
 
     #[test]
     fn cache_new_empty() {
-        let pycors_home = temp_dir("cache", "cache_from_env");
-        let home = pycors_home.clone();
+        let home = create_test_temp_dir!();
+        let pycors_home = home.join(".pycors");
 
         let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
@@ -269,8 +269,8 @@ mod tests {
 
     #[test]
     fn cache_up_to_date() {
-        let pycors_home = temp_dir("cache", "cache_up_to_date");
-        let home = pycors_home.clone();
+        let home = create_test_temp_dir!();
+        let pycors_home = home.join(".pycors");
 
         let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
@@ -321,8 +321,8 @@ mod tests {
 
     #[test]
     fn cache_corrupted() {
-        let pycors_home = temp_dir("cache", "cache_corrupted");
-        let home = pycors_home.clone();
+        let home = create_test_temp_dir!();
+        let pycors_home = home.join(".pycors");
 
         let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 
@@ -377,8 +377,8 @@ mod tests {
 
     #[test]
     fn cache_outdated() {
-        let pycors_home = temp_dir("cache", "cache_outdated");
-        let home = pycors_home.clone();
+        let home = create_test_temp_dir!();
+        let pycors_home = home.join(".pycors");
 
         let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
 

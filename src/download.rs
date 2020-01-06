@@ -217,11 +217,9 @@ fn create_download_progress_bar(msg: &str, length: Option<u64>) -> ProgressBar {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use std::fs;
 
-    use crate::tests::temp_dir;
+    use super::*;
 
     struct MockDownloader {
         chunks: Vec<Result<Bytes>>,
@@ -269,7 +267,7 @@ mod tests {
     #[test]
     fn hyper_downloader_success_get() {
         let mut rt = tokio::runtime::Runtime::new().unwrap();
-        let download_dir = temp_dir("download", "hyper_downloader_success_get");
+        let download_dir = create_test_temp_dir!();
         let downloaded_file = download_dir.join("index.html");
         if download_dir.exists() {
             fs::remove_dir_all(&download_dir).unwrap();

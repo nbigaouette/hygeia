@@ -1,3 +1,41 @@
+// https://stackoverflow.com/a/40234666
+#[cfg(test)]
+macro_rules! function_path {
+    () => {{
+        fn f() {}
+        fn type_name_of<T>(_: T) -> &'static str {
+            std::any::type_name::<T>()
+        }
+        let name = type_name_of(f);
+        &name[..name.len() - 3]
+    }};
+}
+
+#[cfg(test)]
+macro_rules! create_test_temp_dir {
+    () => {{
+        let dir = std::env::temp_dir()
+            .join(crate::constants::EXECUTABLE_NAME)
+            .join("integration_tests");
+
+        if !dir.exists() {
+            std::fs::create_dir_all(&dir).unwrap();
+        }
+        let mut dir = dir.canonicalize().unwrap();
+        for component in function_path!().split("::").skip(1) {
+            dir.push(component);
+        }
+
+        if dir.exists() {
+            std::fs::remove_dir_all(&dir).unwrap();
+        }
+
+        std::fs::create_dir_all(&dir).unwrap();
+
+        dir
+    }};
+}
+
 mod cache;
 pub mod commands;
 pub mod constants;
@@ -38,7 +76,7 @@ pub struct Opt {
 
 #[cfg(test)]
 pub mod tests {
-    use std::{env, fs, path::PathBuf};
+    use std::env;
 
     pub fn init_logger() {
         env::var("RUST_LOG")
@@ -51,25 +89,6 @@ pub mod tests {
             })
             .unwrap();
         let _ = env_logger::try_init();
-    }
-
-    pub fn temp_dir(module: &str, subdir: &str) -> PathBuf {
-        let dir = env::temp_dir()
-            .join(crate::constants::EXECUTABLE_NAME)
-            .join(module);
-
-        if !dir.exists() {
-            fs::create_dir_all(&dir).unwrap();
-        }
-        let dir = dir.canonicalize().unwrap().join(subdir);
-
-        if dir.exists() {
-            fs::remove_dir_all(&dir).unwrap();
-        }
-
-        fs::create_dir_all(&dir).unwrap();
-
-        dir
     }
 
     // Version is reported as "unknown" in GitHub Actions.
