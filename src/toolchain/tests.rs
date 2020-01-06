@@ -418,12 +418,12 @@ fn get_python_versions_from_path_pycors_home_dir_absent() {
     let home = create_test_temp_dir!();
     let pycors_home = home.join(".pycors");
 
-    let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+    let mocked_pycors_home = Ok(pycors_home.clone());
 
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()
         .times(0)
-        .return_const(mocked_pycors_home);
+        .return_once(move || mocked_pycors_home);
     let paths_provider = PycorsPathsProvider::from(mock);
 
     let python_versions = get_python_versions_from_path(&pycors_home, &paths_provider);
@@ -437,16 +437,14 @@ fn get_python_versions_from_path_shim_dir_absent() {
     let pycors_home = home.join(".pycors");
     fs::create_dir_all(&pycors_home).unwrap();
 
-    let mocked_home = home;
-    let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+    let mocked_home = Ok(home);
+    let mocked_pycors_home = Ok(pycors_home.clone());
 
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()
         .times(1)
-        .return_const(mocked_pycors_home);
-    mock.expect_home()
-        .times(1)
-        .returning(move || Ok(mocked_home.clone()));
+        .return_once(move || mocked_pycors_home);
+    mock.expect_home().times(1).return_once(move || mocked_home);
     let paths_provider = PycorsPathsProvider::from(mock);
 
     let python_versions = get_python_versions_from_path(&pycors_home, &paths_provider);
@@ -459,16 +457,14 @@ fn get_python_versions_from_path_shim_skipped() {
     let home = create_test_temp_dir!();
     let pycors_home = home.join(".pycors");
 
-    let mocked_home = home;
-    let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+    let mocked_home = Ok(home);
+    let mocked_pycors_home = Ok(pycors_home);
 
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()
         .times(2) // We need the shim dir to call function, hence +1
-        .return_const(mocked_pycors_home);
-    mock.expect_home()
-        .times(2)
-        .returning(move || Ok(mocked_home.clone()));
+        .return_once(move || mocked_pycors_home);
+    mock.expect_home().times(2).return_once(move || mocked_home);
     let paths_provider = PycorsPathsProvider::from(mock);
 
     let shims_dir = paths_provider.shims();
@@ -484,16 +480,14 @@ fn get_python_versions_from_path_2717_and_374_and_375() {
     let home = create_test_temp_dir!();
     let pycors_home = home.join(".pycors");
 
-    let mocked_home = home;
-    let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+    let mocked_home = Ok(home);
+    let mocked_pycors_home = Ok(pycors_home.clone());
 
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()
         .times(2)
-        .return_const(mocked_pycors_home);
-    mock.expect_home()
-        .times(2)
-        .returning(move || Ok(mocked_home.clone()));
+        .return_once(move || mocked_pycors_home);
+    mock.expect_home().times(2).return_once(move || mocked_home);
     let paths_provider = PycorsPathsProvider::from(mock);
 
     let shims_dir = paths_provider.shims();
@@ -549,16 +543,14 @@ fn get_python_versions_from_path_single_word_wont_parse() {
     let home = create_test_temp_dir!();
     let pycors_home = home.join(".pycors");
 
-    let mocked_home = home;
-    let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+    let mocked_home = Ok(home);
+    let mocked_pycors_home = Ok(pycors_home.clone());
 
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()
         .times(2)
-        .return_const(mocked_pycors_home);
-    mock.expect_home()
-        .times(2)
-        .returning(move || Ok(mocked_home.clone()));
+        .return_once(move || mocked_pycors_home);
+    mock.expect_home().times(2).return_once(move || mocked_home);
     let paths_provider = PycorsPathsProvider::from(mock);
 
     let shims_dir = paths_provider.shims();
@@ -584,16 +576,14 @@ fn get_python_versions_from_path_non_version_wont_parse() {
     let home = create_test_temp_dir!();
     let pycors_home = home.join(".pycors");
 
-    let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
-    let mocked_home = pycors_home.clone();
+    let mocked_home = Ok(home);
+    let mocked_pycors_home = Ok(pycors_home.clone());
 
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()
         .times(2)
-        .return_const(mocked_pycors_home);
-    mock.expect_home()
-        .times(2)
-        .returning(move || Ok(mocked_home.clone()));
+        .return_once(move || mocked_pycors_home);
+    mock.expect_home().times(2).return_once(move || mocked_home);
     let paths_provider = PycorsPathsProvider::from(mock);
 
     let shims_dir = paths_provider.shims();
@@ -629,16 +619,14 @@ fn get_python_versions_from_path_failure_to_run() {
         let pycors_home = home.join(".pycors");
         fs::create_dir_all(&pycors_home).unwrap();
 
-        let mocked_pycors_home = Some(home.as_os_str().to_os_string());
-        let mocked_home = pycors_home.clone();
+        let mocked_home = Ok(home);
+        let mocked_pycors_home = Ok(pycors_home.clone());
 
         let mut mock = MockPycorsHomeProviderTrait::new();
         mock.expect_project_home()
             .times(2)
-            .return_const(mocked_pycors_home);
-        mock.expect_home()
-            .times(2)
-            .returning(move || Ok(mocked_home.clone()));
+            .return_once(move || mocked_pycors_home);
+        mock.expect_home().times(2).return_once(move || mocked_home);
         let paths_provider = PycorsPathsProvider::from(mock);
 
         let shims_dir = paths_provider.shims();
@@ -679,7 +667,9 @@ fn find_installed_toolchains_absent_dir() {
     let home = create_test_temp_dir!();
     let pycors_home = home.join(".pycors");
 
-    let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+    let mocked_home = Ok(home.clone());
+    let mocked_pycors_home = Ok(pycors_home);
+
     let mocked_usr_bin = home.join("usr_bin");
     let mocked_usr_local_bin = home.join("usr_local_bin");
     let mocked_paths =
@@ -691,10 +681,8 @@ fn find_installed_toolchains_absent_dir() {
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()
         .times(1)
-        .return_const(mocked_pycors_home);
-    mock.expect_home()
-        .times(1)
-        .returning(move || Ok(home.clone()));
+        .return_once(move || mocked_pycors_home);
+    mock.expect_home().times(1).return_once(move || mocked_home);
     mock.expect_paths().times(1).return_const(mocked_paths);
     let paths_provider = PycorsPathsProvider::from(mock);
 
@@ -708,7 +696,9 @@ fn find_installed_toolchains_empty_installed_dir() {
     let home = create_test_temp_dir!();
     let pycors_home = home.join(".pycors");
 
-    let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+    let mocked_home = Ok(home.clone());
+    let mocked_pycors_home = Ok(pycors_home);
+
     let mocked_usr_bin = home.join("usr_bin");
     let mocked_usr_local_bin = home.join("usr_local_bin");
     let mocked_paths =
@@ -720,10 +710,8 @@ fn find_installed_toolchains_empty_installed_dir() {
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()
         .times(2)
-        .return_const(mocked_pycors_home);
-    mock.expect_home()
-        .times(2)
-        .returning(move || Ok(home.clone()));
+        .return_once(move || mocked_pycors_home);
+    mock.expect_home().times(2).return_once(move || mocked_home);
     mock.expect_paths().times(1).return_const(mocked_paths);
     let paths_provider = PycorsPathsProvider::from(mock);
 
@@ -740,7 +728,9 @@ fn find_installed_toolchains_dummy_custom_installs() {
     let home = create_test_temp_dir!();
     let pycors_home = home.join(".pycors");
 
-    let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+    let mocked_home = Ok(home.clone());
+    let mocked_pycors_home = Ok(pycors_home);
+
     let mocked_usr_bin = home.join("usr_bin");
     let mocked_usr_local_bin = home.join("usr_local_bin");
     let mocked_paths =
@@ -752,10 +742,8 @@ fn find_installed_toolchains_dummy_custom_installs() {
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()
         .times(4)
-        .return_const(mocked_pycors_home);
-    mock.expect_home()
-        .times(4)
-        .returning(move || Ok(home.clone()));
+        .return_once(move || mocked_pycors_home);
+    mock.expect_home().times(4).return_once(move || mocked_home);
     mock.expect_paths().times(1).return_const(mocked_paths);
     let paths_provider = PycorsPathsProvider::from(mock);
 
@@ -818,7 +806,9 @@ fn find_installed_toolchains_dummy_system_installs() {
     let home = create_test_temp_dir!();
     let pycors_home = home.join(".pycors");
 
-    let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+    let mocked_home = Ok(home.clone());
+    let mocked_pycors_home = Ok(pycors_home);
+
     let mocked_usr_bin = home.join("usr_bin");
     let mocked_usr_local_bin = home.join("usr_local_bin");
     let mocked_paths =
@@ -830,10 +820,8 @@ fn find_installed_toolchains_dummy_system_installs() {
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()
         .times(4)
-        .return_const(mocked_pycors_home);
-    mock.expect_home()
-        .times(4)
-        .returning(move || Ok(home.clone()));
+        .return_once(move || mocked_pycors_home);
+    mock.expect_home().times(4).return_once(move || mocked_home);
     mock.expect_paths().times(1).return_const(mocked_paths);
     let paths_provider = PycorsPathsProvider::from(mock);
 
@@ -1092,7 +1080,8 @@ fn compatible_toolchain_builder_load_from_string() {
     let home = create_test_temp_dir!();
     let pycors_home = home.join(".pycors");
 
-    let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+    let mocked_home = Ok(home.clone());
+    let mocked_pycors_home = Ok(pycors_home);
     let mocked_usr_bin = home.join("usr_bin");
     let mocked_usr_local_bin = home.join("usr_local_bin");
     let mocked_paths =
@@ -1101,10 +1090,8 @@ fn compatible_toolchain_builder_load_from_string() {
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()
         .times(1)
-        .return_const(mocked_pycors_home);
-    mock.expect_home()
-        .times(1)
-        .returning(move || Ok(home.clone()));
+        .return_once(move || mocked_pycors_home);
+    mock.expect_home().times(1).return_once(move || mocked_home);
     mock.expect_paths().times(1).return_const(mocked_paths);
     let paths_provider = PycorsPathsProvider::from(mock);
     let compatible_toolchain = CompatibleToolchainBuilder::new()
