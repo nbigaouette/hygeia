@@ -17,6 +17,42 @@ use pycors::{
     Result,
 };
 
+// https://stackoverflow.com/a/40234666
+macro_rules! function_path {
+    () => {{
+        fn f() {}
+        fn type_name_of<T>(_: T) -> &'static str {
+            std::any::type_name::<T>()
+        }
+        let name = type_name_of(f);
+        &name[..name.len() - 3]
+    }};
+}
+
+macro_rules! create_test_temp_dir {
+    () => {{
+        let dir = env::temp_dir()
+            .join(EXECUTABLE_NAME)
+            .join("integration_tests");
+
+        if !dir.exists() {
+            fs::create_dir_all(&dir).unwrap();
+        }
+        let mut dir = dir.canonicalize().unwrap();
+        for component in function_path!().split("::").skip(1) {
+            dir.push(component);
+        }
+
+        if dir.exists() {
+            fs::remove_dir_all(&dir).unwrap();
+        }
+
+        fs::create_dir_all(&dir).unwrap();
+
+        dir
+    }};
+}
+
 mod help;
 mod install;
 mod list;
@@ -25,25 +61,6 @@ mod run;
 mod select;
 mod setup;
 mod version;
-
-pub fn temp_dir(subdir: &str) -> PathBuf {
-    let dir = env::temp_dir()
-        .join(EXECUTABLE_NAME)
-        .join("integration_tests");
-
-    if !dir.exists() {
-        fs::create_dir_all(&dir).unwrap();
-    }
-    let dir = dir.canonicalize().unwrap().join(subdir);
-
-    if dir.exists() {
-        fs::remove_dir_all(&dir).unwrap();
-    }
-
-    fs::create_dir_all(&dir).unwrap();
-
-    dir
-}
 
 fn select(version: &str, cwd: &Path) {
     let _ = fs::create_dir_all(&cwd);

@@ -2,8 +2,9 @@ use super::*;
 
 #[test]
 fn none_found() {
-    let pycors_home = temp_dir("none_found");
-    let cwd = pycors_home.join("current_dir");
+    let home = create_test_temp_dir!();
+    let pycors_home = home.join(".pycors");
+    let cwd = home.join("current_dir");
     fs::create_dir_all(&cwd).unwrap();
     // select("=3.7.5", &cwd);
 
@@ -24,8 +25,9 @@ fn none_found() {
 
 #[test]
 fn some_select() {
-    let pycors_home = temp_dir("some_select");
-    let cwd = pycors_home.join("current_dir");
+    let home = create_test_temp_dir!();
+    let pycors_home = home.join(".pycors");
+    let cwd = home.join("current_dir");
     let _location_380_dir = installed(&pycors_home, "3.8.0", false).unwrap();
     let location_375_dir = installed(&pycors_home, "3.7.5", true).unwrap();
     let _location_374_dir = installed(&pycors_home, "3.7.4", true).unwrap();
@@ -49,8 +51,9 @@ fn some_select() {
 
 #[test]
 fn some_latest() {
-    let pycors_home = temp_dir("some_latest");
-    let cwd = pycors_home.join("current_dir");
+    let home = create_test_temp_dir!();
+    let pycors_home = home.join(".pycors");
+    let cwd = home.join("current_dir");
     let location_380_dir = installed(&pycors_home, "3.8.0", false).unwrap();
     let _location_375_dir = installed(&pycors_home, "3.7.5", true).unwrap();
     let _location_374_dir = installed(&pycors_home, "3.7.4", true).unwrap();
@@ -73,8 +76,9 @@ fn some_latest() {
 
 #[test]
 fn some_version_overwrite() {
-    let pycors_home = temp_dir("some_version_overwrite");
-    let cwd = pycors_home.join("current_dir");
+    let home = create_test_temp_dir!();
+    let pycors_home = home.join(".pycors");
+    let cwd = home.join("current_dir");
     let _location_380_dir = installed(&pycors_home, "3.8.0", false).unwrap();
     let location_375_dir = installed(&pycors_home, "3.7.5", true).unwrap();
     let _location_374_dir = installed(&pycors_home, "3.7.4", true).unwrap();

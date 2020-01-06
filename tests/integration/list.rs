@@ -2,8 +2,9 @@ use super::*;
 
 #[test]
 fn with_empty_dir() {
-    let pycors_home = temp_dir("with_empty_dir");
-    let cwd = pycors_home.join("current_dir");
+    let home = create_test_temp_dir!();
+    let pycors_home = home.join(".pycors");
+    let cwd = home.join("current_dir");
     let _ = fs::create_dir_all(&cwd);
     let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
     let output = cmd
@@ -27,8 +28,9 @@ fn with_empty_dir() {
 
 #[test]
 fn two_custom_no_system() {
-    let pycors_home = temp_dir("two_custom_no_system");
-    let cwd = pycors_home.join("current_dir");
+    let home = create_test_temp_dir!();
+    let pycors_home = home.join(".pycors");
+    let cwd = home.join("current_dir");
     select("=3.7.5", &cwd);
     let location_380_dir = installed(&pycors_home, "3.8.0", false).unwrap();
     let location_375_dir = installed(&pycors_home, "3.7.5", true).unwrap();
@@ -76,8 +78,9 @@ fn two_custom_no_system() {
 
 #[test]
 fn selected_but_not_installed() {
-    let pycors_home = temp_dir("selected_but_not_installed");
-    let cwd = pycors_home.join("current_dir");
+    let home = create_test_temp_dir!();
+    let pycors_home = home.join(".pycors");
+    let cwd = home.join("current_dir");
     select("=3.7.5", &cwd);
 
     let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
