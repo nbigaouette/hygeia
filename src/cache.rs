@@ -233,6 +233,7 @@ mod tests {
 
     use super::*;
     use crate::utils::directory::MockPycorsHomeProviderTrait;
+    use pycors_test_helpers::create_test_temp_dir;
 
     use mockall::predicate::*;
 

@@ -152,6 +152,8 @@ pub mod tests {
 
     use super::*;
 
+    use pycors_test_helpers::create_test_temp_dir;
+
     #[test]
     fn pycors_paths_from_env() {
         // Playing an env variables is subject to race conditions

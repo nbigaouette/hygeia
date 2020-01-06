@@ -221,6 +221,8 @@ mod tests {
 
     use super::*;
 
+    use pycors_test_helpers::create_test_temp_dir;
+
     struct MockDownloader {
         chunks: Vec<Result<Bytes>>,
     }

@@ -1,41 +1,3 @@
-// https://stackoverflow.com/a/40234666
-#[cfg(test)]
-macro_rules! function_path {
-    () => {{
-        fn f() {}
-        fn type_name_of<T>(_: T) -> &'static str {
-            std::any::type_name::<T>()
-        }
-        let name = type_name_of(f);
-        &name[..name.len() - 3]
-    }};
-}
-
-#[cfg(test)]
-macro_rules! create_test_temp_dir {
-    () => {{
-        let dir = std::env::temp_dir()
-            .join(crate::constants::EXECUTABLE_NAME)
-            .join("integration_tests");
-
-        if !dir.exists() {
-            std::fs::create_dir_all(&dir).unwrap();
-        }
-        let mut dir = dir.canonicalize().unwrap();
-        for component in function_path!().split("::").skip(1) {
-            dir.push(component);
-        }
-
-        if dir.exists() {
-            std::fs::remove_dir_all(&dir).unwrap();
-        }
-
-        std::fs::create_dir_all(&dir).unwrap();
-
-        dir
-    }};
-}
-
 mod cache;
 pub mod commands;
 pub mod constants;
@@ -77,19 +39,6 @@ pub struct Opt {
 #[cfg(test)]
 pub mod tests {
     use std::env;
-
-    pub fn init_logger() {
-        env::var("RUST_LOG")
-            .or_else(|_| -> Result<String, ()> {
-                let rust_log = "debug".to_string();
-                println!("Environment variable 'RUST_LOG' not set.");
-                println!("Setting to: {}", rust_log);
-                env::set_var("RUST_LOG", &rust_log);
-                Ok(rust_log)
-            })
-            .unwrap();
-        let _ = env_logger::try_init();
-    }
 
     // Version is reported as "unknown" in GitHub Actions.
     // See https://github.com/nbigaouette/pycors/pull/90/checks?check_run_id=311900597

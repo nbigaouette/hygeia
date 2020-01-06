@@ -442,6 +442,8 @@ pub enum SpinnerMessage {
 mod tests {
     use super::*;
 
+    use pycors_test_helpers::create_test_temp_dir;
+
     fn fixture_installed_toolchains() -> Vec<InstalledToolchain> {
         vec![
             InstalledToolchain {
