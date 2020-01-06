@@ -231,7 +231,7 @@ pub mod tests {
             mock.expect_project_home()
                 .times(1)
                 .return_const(mocked_pycors_home);
-            mock.expect_home().times(1).return_const(mocked_home);
+            mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.config_home();
@@ -252,7 +252,7 @@ pub mod tests {
             mock.expect_project_home()
                 .times(1)
                 .return_const(mocked_pycors_home);
-            mock.expect_home().times(1).return_const(mocked_home);
+            mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.config_home();
@@ -273,7 +273,7 @@ pub mod tests {
             mock.expect_project_home()
                 .times(1)
                 .return_const(mocked_pycors_home);
-            mock.expect_home().times(1).return_const(mocked_home);
+            mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.default_extra_package_file();
@@ -294,7 +294,7 @@ pub mod tests {
             mock.expect_project_home()
                 .times(1)
                 .return_const(mocked_pycors_home);
-            mock.expect_home().times(1).return_const(mocked_home);
+            mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.default_extra_package_file();
@@ -315,7 +315,7 @@ pub mod tests {
             mock.expect_project_home()
                 .times(1)
                 .return_const(mocked_pycors_home);
-            mock.expect_home().times(1).return_const(mocked_home);
+            mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.cache();
@@ -336,7 +336,7 @@ pub mod tests {
             mock.expect_project_home()
                 .times(1)
                 .return_const(mocked_pycors_home);
-            mock.expect_home().times(1).return_const(mocked_home);
+            mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.cache();
@@ -357,7 +357,7 @@ pub mod tests {
             mock.expect_project_home()
                 .times(1)
                 .return_const(mocked_pycors_home);
-            mock.expect_home().times(1).return_const(mocked_home);
+            mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.installed();
@@ -378,7 +378,7 @@ pub mod tests {
             mock.expect_project_home()
                 .times(1)
                 .return_const(mocked_pycors_home);
-            mock.expect_home().times(1).return_const(mocked_home);
+            mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.installed();
@@ -399,7 +399,7 @@ pub mod tests {
             mock.expect_project_home()
                 .times(1)
                 .return_const(mocked_pycors_home);
-            mock.expect_home().times(1).return_const(mocked_home);
+            mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.logs();
@@ -420,7 +420,7 @@ pub mod tests {
             mock.expect_project_home()
                 .times(1)
                 .return_const(mocked_pycors_home);
-            mock.expect_home().times(1).return_const(mocked_home);
+            mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.logs();
@@ -441,7 +441,7 @@ pub mod tests {
             mock.expect_project_home()
                 .times(1)
                 .return_const(mocked_pycors_home);
-            mock.expect_home().times(1).return_const(mocked_home);
+            mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.shims();
@@ -462,7 +462,7 @@ pub mod tests {
             mock.expect_project_home()
                 .times(1)
                 .return_const(mocked_pycors_home);
-            mock.expect_home().times(1).return_const(mocked_home);
+            mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.shims();
@@ -483,7 +483,7 @@ pub mod tests {
             mock.expect_project_home()
                 .times(1)
                 .return_const(mocked_pycors_home);
-            mock.expect_home().times(1).return_const(mocked_home);
+            mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.downloaded();
@@ -504,7 +504,7 @@ pub mod tests {
             mock.expect_project_home()
                 .times(1)
                 .return_const(mocked_pycors_home);
-            mock.expect_home().times(1).return_const(mocked_home);
+            mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.downloaded();
@@ -525,7 +525,7 @@ pub mod tests {
             mock.expect_project_home()
                 .times(1)
                 .return_const(mocked_pycors_home);
-            mock.expect_home().times(1).return_const(mocked_home);
+            mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.available_toolchains_cache_file();
@@ -546,7 +546,7 @@ pub mod tests {
             mock.expect_project_home()
                 .times(1)
                 .return_const(mocked_pycors_home);
-            mock.expect_home().times(1).return_const(mocked_home);
+            mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.available_toolchains_cache_file();
@@ -567,7 +567,7 @@ pub mod tests {
             mock.expect_project_home()
                 .times(1)
                 .return_const(mocked_pycors_home);
-            mock.expect_home().times(1).return_const(mocked_home);
+            mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.extracted();
@@ -588,7 +588,7 @@ pub mod tests {
             mock.expect_project_home()
                 .times(1)
                 .return_const(mocked_pycors_home);
-            mock.expect_home().times(1).return_const(mocked_home);
+            mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.extracted();
@@ -612,7 +612,7 @@ pub mod tests {
             mock.expect_project_home()
                 .times(1)
                 .return_const(mocked_pycors_home);
-            mock.expect_home().times(1).return_const(mocked_home);
+            mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.install_dir(&version);
@@ -636,7 +636,7 @@ pub mod tests {
             mock.expect_project_home()
                 .times(1)
                 .return_const(mocked_pycors_home);
-            mock.expect_home().times(1).return_const(mocked_home);
+            mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.install_dir(&version);
@@ -663,7 +663,7 @@ pub mod tests {
             mock.expect_project_home()
                 .times(1)
                 .return_const(mocked_pycors_home);
-            mock.expect_home().times(1).return_const(mocked_home);
+            mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.bin_dir(&version);
@@ -690,7 +690,7 @@ pub mod tests {
             mock.expect_project_home()
                 .times(1)
                 .return_const(mocked_pycors_home);
-            mock.expect_home().times(1).return_const(mocked_home);
+            mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
             let to_validate = paths_provider.bin_dir(&version);

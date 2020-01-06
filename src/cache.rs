@@ -256,7 +256,7 @@ mod tests {
         mock.expect_project_home()
             .times(3)
             .return_const(mocked_project_home);
-        mock.expect_home().times(3).return_const(mocked_home);
+        mock.expect_home().times(0).return_const(mocked_home);
 
         let paths_provider = PycorsPathsProvider::from(mock);
 
@@ -287,7 +287,7 @@ mod tests {
         mock.expect_project_home()
             .times(1)
             .return_const(mocked_project_home1);
-        mock.expect_home().times(1).return_const(mocked_home1);
+        mock.expect_home().times(0).return_const(mocked_home1);
 
         let paths_provider = PycorsPathsProvider::from(mock);
         let cache_file = paths_provider.available_toolchains_cache_file();
@@ -307,7 +307,7 @@ mod tests {
         mock.expect_project_home()
             .times(2)
             .return_const(mocked_project_home2);
-        mock.expect_home().times(2).return_const(mocked_home2);
+        mock.expect_home().times(0).return_const(mocked_home2);
         let paths_provider = PycorsPathsProvider::from(mock);
 
         // Let's create the cache for real
@@ -337,7 +337,7 @@ mod tests {
         mock.expect_project_home()
             .times(1)
             .return_const(mocked_project_home1);
-        mock.expect_home().times(1).return_const(mocked_home1);
+        mock.expect_home().times(0).return_const(mocked_home1);
 
         let paths_provider = PycorsPathsProvider::from(mock);
         let cache_file = paths_provider.available_toolchains_cache_file();
@@ -362,7 +362,7 @@ mod tests {
         mock.expect_project_home()
             .times(3)
             .return_const(mocked_project_home2);
-        mock.expect_home().times(3).return_const(mocked_home2);
+        mock.expect_home().times(0).return_const(mocked_home2);
         let paths_provider = PycorsPathsProvider::from(mock);
 
         let mut mock = MockToolchainsCacheFetch::new();
@@ -391,7 +391,7 @@ mod tests {
         mock.expect_project_home()
             .times(1)
             .return_const(mocked_project_home1);
-        mock.expect_home().times(1).return_const(mocked_home1);
+        mock.expect_home().times(0).return_const(mocked_home1);
 
         let paths_provider = PycorsPathsProvider::from(mock);
         let cache_file = paths_provider.available_toolchains_cache_file();
@@ -413,7 +413,7 @@ mod tests {
         mock.expect_project_home()
             .times(3)
             .return_const(mocked_project_home2);
-        mock.expect_home().times(3).return_const(mocked_home2);
+        mock.expect_home().times(0).return_const(mocked_home2);
         let paths_provider = PycorsPathsProvider::from(mock);
 
         let mut mock = MockToolchainsCacheFetch::new();
