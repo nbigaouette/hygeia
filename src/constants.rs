@@ -27,6 +27,17 @@ pub fn project_home_env_variable() -> &'static str {
     &HOME_ENV_VARIABLE
 }
 
+/// Return the environment variable used to overwrite the home directory
+pub fn home_overwrite_env_variable() -> &'static str {
+    lazy_static! {
+        static ref HOME_OVERWRITE_ENV_VARIABLE: String = format!(
+            "{}_OVERWRITE_HOME",
+            executable_name_from_env!().to_uppercase()
+        );
+    }
+    &HOME_OVERWRITE_ENV_VARIABLE
+}
+
 /// Filename describing which version of this project installed a toolchain.
 pub const INFO_FILE: &str = concat!("installed_by_", executable_name_from_env!(), ".txt");
 
