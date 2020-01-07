@@ -46,7 +46,10 @@ impl PycorsPathsProviderFromEnv {
 
 impl PycorsHomeProviderTrait for PycorsPathsProviderFromEnv {
     fn home(&self) -> Option<PathBuf> {
-        dirs::home_dir()
+        match env::var_os(constants::home_overwrite_env_variable()) {
+            Some(home) => Some(PathBuf::from(home)),
+            None => dirs::home_dir(),
+        }
     }
     fn project_home(&self) -> Option<PathBuf> {
         env::var_os(constants::project_home_env_variable()).map(PathBuf::from)
