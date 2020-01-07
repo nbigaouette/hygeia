@@ -80,8 +80,9 @@ pub fn setup_bash(home: &Path) -> Result<()> {
         let bash_config_file = home.join(bash_config_file);
 
         if !bash_config_file.exists() {
-            log::debug!("File {:?} does not exists, skipping.", bash_config_file);
-            continue;
+            log::debug!("File {:?} does not exists, creating.", bash_config_file);
+            let mut f = fs::File::create(&bash_config_file)?;
+            f.write_all(b"")?;
         }
 
         log::info!("Adding configuration to {:?}...", bash_config_file);
