@@ -1,5 +1,5 @@
 use semver::Version;
-use std::{env, ffi::OsString, path::PathBuf};
+use std::{env, path::PathBuf};
 
 use crate::constants::{
     self, AVAILABLE_TOOLCHAIN_CACHE, DEFAULT_DOT_DIR, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME,
@@ -9,7 +9,7 @@ use crate::constants::{
 pub trait PycorsHomeProviderTrait {
     fn home(&self) -> Option<PathBuf>;
     fn project_home(&self) -> Option<PathBuf>;
-    fn paths(&self) -> Option<OsString>;
+    fn paths(&self) -> Vec<PathBuf>;
 }
 
 pub struct PycorsPathsProvider<P>
@@ -29,7 +29,7 @@ where
     fn project_home(&self) -> Option<PathBuf> {
         self.path_provider.project_home()
     }
-    fn paths(&self) -> Option<OsString> {
+    fn paths(&self) -> Vec<PathBuf> {
         self.path_provider.paths()
     }
 }
@@ -54,8 +54,11 @@ impl PycorsHomeProviderTrait for PycorsPathsProviderFromEnv {
     fn project_home(&self) -> Option<PathBuf> {
         env::var_os(constants::project_home_env_variable()).map(PathBuf::from)
     }
-    fn paths(&self) -> Option<OsString> {
-        env::var_os("PATH")
+    fn paths(&self) -> Vec<PathBuf> {
+        match env::var_os("PATH") {
+            Some(p) => env::split_paths(&p).collect(),
+            None => Vec::new(),
+        }
     }
 }
 

@@ -464,12 +464,8 @@ where
 {
     let mut other_pythons: HashMap<Version, PathBuf> = HashMap::new();
 
-    if let Some(original_path) = paths_provider.paths() {
-        if !original_path.is_empty() {
-            for path in env::split_paths(&original_path) {
-                other_pythons.extend(get_python_versions_from_path(&path, &paths_provider));
-            }
-        }
+    for path in paths_provider.paths() {
+        other_pythons.extend(get_python_versions_from_path(&path, &paths_provider));
     }
 
     let mut other_pythons: Vec<InstalledToolchain> = other_pythons

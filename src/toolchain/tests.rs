@@ -672,8 +672,7 @@ fn find_installed_toolchains_absent_dir() {
 
     let mocked_usr_bin = home.join("usr_bin");
     let mocked_usr_local_bin = home.join("usr_local_bin");
-    let mocked_paths =
-        Some(env::join_paths([&mocked_usr_bin, &mocked_usr_local_bin].iter()).unwrap());
+    let mocked_paths = vec![mocked_usr_bin, mocked_usr_local_bin];
 
     // Make sure directory does not exists
     fs::remove_dir(&home).unwrap();
@@ -701,8 +700,7 @@ fn find_installed_toolchains_empty_installed_dir() {
 
     let mocked_usr_bin = home.join("usr_bin");
     let mocked_usr_local_bin = home.join("usr_local_bin");
-    let mocked_paths =
-        Some(env::join_paths([&mocked_usr_bin, &mocked_usr_local_bin].iter()).unwrap());
+    let mocked_paths = vec![mocked_usr_bin, mocked_usr_local_bin];
 
     // Make sure directory does not exists
     fs::remove_dir(&home).unwrap();
@@ -733,8 +731,7 @@ fn find_installed_toolchains_dummy_custom_installs() {
 
     let mocked_usr_bin = home.join("usr_bin");
     let mocked_usr_local_bin = home.join("usr_local_bin");
-    let mocked_paths =
-        Some(env::join_paths([&mocked_usr_bin, &mocked_usr_local_bin].iter()).unwrap());
+    let mocked_paths = vec![mocked_usr_bin, mocked_usr_local_bin];
 
     // Make sure directory does not exists
     fs::remove_dir(&home).unwrap();
@@ -811,8 +808,7 @@ fn find_installed_toolchains_dummy_system_installs() {
 
     let mocked_usr_bin = home.join("usr_bin");
     let mocked_usr_local_bin = home.join("usr_local_bin");
-    let mocked_paths =
-        Some(env::join_paths([&mocked_usr_bin, &mocked_usr_local_bin].iter()).unwrap());
+    let mocked_paths = vec![mocked_usr_bin.clone(), mocked_usr_local_bin.clone()];
 
     // Make sure directory does not exists
     fs::remove_dir(&home).unwrap();
@@ -1084,8 +1080,7 @@ fn compatible_toolchain_builder_load_from_string() {
     let mocked_pycors_home = Some(pycors_home);
     let mocked_usr_bin = home.join("usr_bin");
     let mocked_usr_local_bin = home.join("usr_local_bin");
-    let mocked_paths =
-        Some(env::join_paths([&mocked_usr_bin, &mocked_usr_local_bin].iter()).unwrap());
+    let mocked_paths = vec![mocked_usr_bin, mocked_usr_local_bin];
 
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()
