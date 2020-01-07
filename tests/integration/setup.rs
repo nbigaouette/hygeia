@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use super::*;
 
 #[test]
@@ -32,7 +34,7 @@ fn setup_bash_success_from_scratch() {
 #          appear as soon as possible in the $PATH environment variable to
 #          to function properly.
 export PYCORS_HOME="{}"
-source ${{PYCORS_HOME}}/shell/bash/config.sh
+source {}
 # End of pycors config block.
 #############################################################################
 "#,
@@ -40,7 +42,12 @@ source ${{PYCORS_HOME}}/shell/bash/config.sh
         EXECUTABLE_NAME,
         EXECUTABLE_NAME,
         EXECUTABLE_NAME,
-        pycors_home.display()
+        pycors_home.display(),
+        Path::new("${PYCORS_HOME}")
+            .join("shell")
+            .join("bash")
+            .join("config.sh")
+            .display(),
     );
 
     let bashrc_content = fs::read_to_string(home.join(".bashrc")).unwrap();
@@ -69,7 +76,7 @@ fn setup_bash_success_twice() {
 #          appear as soon as possible in the $PATH environment variable to
 #          to function properly.
 export PYCORS_HOME="{}"
-source ${{PYCORS_HOME}}/shell/bash/config.sh
+source {}
 # End of pycors config block.
 #############################################################################
 "#,
@@ -77,7 +84,12 @@ source ${{PYCORS_HOME}}/shell/bash/config.sh
         EXECUTABLE_NAME,
         EXECUTABLE_NAME,
         EXECUTABLE_NAME,
-        pycors_home.display()
+        pycors_home.display(),
+        Path::new("${PYCORS_HOME}")
+            .join("shell")
+            .join("bash")
+            .join("config.sh")
+            .display(),
     );
 
     let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();

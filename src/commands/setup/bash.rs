@@ -120,9 +120,10 @@ pub fn setup_bash(home: &Path) -> Result<()> {
             &mut tmp_file,
             "{}",
             format!(
-                r#"source ${{{}_HOME}}/{}"#,
-                exec_name_capital,
-                utils::directory::shell::bash::config::file_path().display()
+                "source {}",
+                Path::new(&format!("${{{}_HOME}}", exec_name_capital))
+                    .join(utils::directory::shell::bash::config::file_path())
+                    .display()
             )
         )
         .with_context(|| format!("Failed to write source line to {:?}", tmp_file_path))?;
