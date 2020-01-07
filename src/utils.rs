@@ -33,7 +33,7 @@ pub fn copy_file<P1: AsRef<Path>, P2: AsRef<Path>>(from: P1, to: P2) -> Result<u
     let to = to.as_ref();
     if from == to {
         Err(anyhow::anyhow!(
-            "Will not copy {:?} unto {:?} as this would probably truncate it.",
+            "Will not copy {:?} unto itself {:?} as this would probably truncate it.",
             from,
             to
         ))
