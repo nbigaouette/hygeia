@@ -9,7 +9,10 @@ use indoc::indoc;
 use predicates::prelude::*;
 
 use pycors::{
-    constants::{project_home_env_variable, INFO_FILE, TOOLCHAIN_FILE},
+    constants::{
+        home_overwrite_env_variable, project_home_env_variable, EXECUTABLE_NAME, INFO_FILE,
+        TOOLCHAIN_FILE,
+    },
     Result,
 };
 
