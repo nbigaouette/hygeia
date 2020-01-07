@@ -23,7 +23,7 @@ pub fn run(shell: Shell) -> Result<()> {
 
     let paths_provider = PycorsPathsProviderFromEnv::new();
 
-    let config_home_dir = paths_provider.config_home();
+    let config_home_dir = paths_provider.project_home();
     let shims_dir = paths_provider.shims();
 
     // Create all required directories
@@ -31,7 +31,7 @@ pub fn run(shell: Shell) -> Result<()> {
         paths_provider.cache(),
         paths_provider.installed(),
         paths_provider
-            .config_home()
+            .project_home()
             .join(utils::directory::shell::bash::config::dir_relative()),
         paths_provider.shims(),
     ] {

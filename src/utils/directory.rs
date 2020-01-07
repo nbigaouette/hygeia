@@ -68,7 +68,7 @@ where
         PycorsPathsProvider { path_provider }
     }
 
-    pub fn config_home(&self) -> PathBuf {
+    pub fn project_home(&self) -> PathBuf {
         let config_home_from_env = self.path_provider.project_home();
 
         match config_home_from_env {
@@ -89,23 +89,23 @@ where
     }
 
     pub fn default_extra_package_file(&self) -> PathBuf {
-        self.config_home().join(EXTRA_PACKAGES_FILENAME)
+        self.project_home().join(EXTRA_PACKAGES_FILENAME)
     }
 
     pub fn cache(&self) -> PathBuf {
-        self.config_home().join("cache")
+        self.project_home().join("cache")
     }
 
     pub fn installed(&self) -> PathBuf {
-        self.config_home().join("installed")
+        self.project_home().join("installed")
     }
 
     pub fn logs(&self) -> PathBuf {
-        self.config_home().join("logs")
+        self.project_home().join("logs")
     }
 
     pub fn shims(&self) -> PathBuf {
-        self.config_home().join("shims")
+        self.project_home().join("shims")
     }
 
     pub fn downloaded(&self) -> PathBuf {
@@ -216,7 +216,7 @@ pub mod tests {
             };
 
             let paths_provider = PycorsPathsProviderFromEnv::new();
-            let to_validate = paths_provider.config_home();
+            let to_validate = paths_provider.project_home();
             assert_eq!(to_validate, expected);
         }
 
@@ -237,7 +237,7 @@ pub mod tests {
             mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
-            let to_validate = paths_provider.config_home();
+            let to_validate = paths_provider.project_home();
             assert_eq!(to_validate, expected);
         }
 
@@ -258,7 +258,7 @@ pub mod tests {
             mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
-            let to_validate = paths_provider.config_home();
+            let to_validate = paths_provider.project_home();
             assert_eq!(to_validate, expected);
         }
 
