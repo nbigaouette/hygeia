@@ -23,6 +23,9 @@ pub fn run(shell: Shell) -> Result<()> {
 
     let paths_provider = PycorsPathsProviderFromEnv::new();
 
+    let config_home_dir = paths_provider.config_home();
+    let shims_dir = paths_provider.shims();
+
     // Create all required directories
     for dir in &[
         paths_provider.cache(),
@@ -38,9 +41,48 @@ pub fn run(shell: Shell) -> Result<()> {
         }
     }
 
+    // Add ~/.EXECUTABLE_NAME/shims to $PATH in ~/.bashrc and ~/.bash_profile and install autocomplete
+    match shell {
+        Shell::Bash => {
+            let home = paths_provider
+                .home()
+                .ok_or_else(|| anyhow::anyhow!("Failed to get home directory"))?;
+
+            bash::setup_bash(&home)?;
+        }
+        Shell::PowerShell => {
+            // Add the autocomplete too
+            let autocomplete_file = config_home_dir.join(&format!("_{}.ps1", EXECUTABLE_NAME));
+            let mut f = fs::File::create(&autocomplete_file)?;
+            commands::autocomplete::run(shell, &mut f)?;
+
+            match dirs::document_dir() {
+                None => {
+                    anyhow::bail!("Could not get Document directory");
+                }
+                Some(document_dir) => {
+                    let ps_dir = document_dir.join("WindowsPowerShell");
+                    if !ps_dir.exists() {
+                        create_dir_all(&ps_dir)?;
+                    }
+                    // Should match the value of PowerShell's '$profile' automatic variable
+                    let profile = ps_dir.join("Microsoft.PowerShell_profile.ps1");
+
+                    let mut file = OpenOptions::new()
+                        .create(true)
+                        .write(true)
+                        .append(true)
+                        .open(&profile)?;
+                    // FIXME: This appends, we want prepends
+                    writeln!(file, r#"$env:Path += ";{}""#, shims_dir.display())?;
+                    writeln!(file, ". {}", autocomplete_file.display())?;
+                }
+            }
+        }
+        _ => anyhow::bail!("Unsupported shell: {}", shell),
+    }
+
     // Copy itself into ~/.EXECUTABLE_NAME/shim
-    let config_home_dir = paths_provider.config_home();
-    let shims_dir = paths_provider.shims();
     let copy_from = env::current_exe()?;
     let copy_to = {
         #[cfg_attr(not(windows), allow(unused_mut))]
@@ -103,47 +145,6 @@ pub fn run(shell: Shell) -> Result<()> {
     );
     let mut file = File::create(output_filename)?;
     file.write_all(extra_packages_file_default_content.as_bytes())?;
-
-    // Add ~/.EXECUTABLE_NAME/shims to $PATH in ~/.bashrc and ~/.bash_profile and install autocomplete
-    match shell {
-        Shell::Bash => {
-            let home = paths_provider
-                .home()
-                .ok_or_else(|| anyhow::anyhow!("Failed to get home directory"))?;
-
-            bash::setup_bash(&home)?;
-        }
-        Shell::PowerShell => {
-            // Add the autocomplete too
-            let autocomplete_file = config_home_dir.join(&format!("_{}.ps1", EXECUTABLE_NAME));
-            let mut f = fs::File::create(&autocomplete_file)?;
-            commands::autocomplete::run(shell, &mut f)?;
-
-            match dirs::document_dir() {
-                None => {
-                    anyhow::bail!("Could not get Document directory");
-                }
-                Some(document_dir) => {
-                    let ps_dir = document_dir.join("WindowsPowerShell");
-                    if !ps_dir.exists() {
-                        create_dir_all(&ps_dir)?;
-                    }
-                    // Should match the value of PowerShell's '$profile' automatic variable
-                    let profile = ps_dir.join("Microsoft.PowerShell_profile.ps1");
-
-                    let mut file = OpenOptions::new()
-                        .create(true)
-                        .write(true)
-                        .append(true)
-                        .open(&profile)?;
-                    // FIXME: This appends, we want prepends
-                    writeln!(file, r#"$env:Path += ";{}""#, shims_dir.display())?;
-                    writeln!(file, ". {}", autocomplete_file.display())?;
-                }
-            }
-        }
-        _ => anyhow::bail!("Unsupported shell: {}", shell),
-    }
 
     log::info!("Done!");
     Ok(())
