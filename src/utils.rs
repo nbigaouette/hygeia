@@ -33,7 +33,7 @@ pub fn copy_file<P1: AsRef<Path>, P2: AsRef<Path>>(from: P1, to: P2) -> Result<u
     let to = to.as_ref();
     if from == to {
         Err(anyhow::anyhow!(
-            "Will not copy {:?} unto {:?} as this would probably truncate it.",
+            "Will not copy {:?} unto itself {:?} as this would probably truncate it.",
             from,
             to
         ))
@@ -441,7 +441,8 @@ pub enum SpinnerMessage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tests::temp_dir;
+
+    use pycors_test_helpers::create_test_temp_dir;
 
     fn fixture_installed_toolchains() -> Vec<InstalledToolchain> {
         vec![
@@ -480,11 +481,8 @@ mod tests {
 
     #[test]
     fn copy_file_success() {
-        let tmp_dir = temp_dir("utils", "copy_file_success");
-        if tmp_dir.exists() {
-            fs::remove_dir_all(&tmp_dir).unwrap()
-        };
-        fs::create_dir_all(&tmp_dir).unwrap();
+        let tmp_dir = create_test_temp_dir!();
+
         let copied_file_location = tmp_dir.join("dummy_copied_file");
         let _ = fs::remove_file(&copied_file_location);
         assert!(!copied_file_location.exists());
@@ -603,11 +601,7 @@ mod tests {
 
     #[test]
     fn create_info_file_success() {
-        let tmp_dir = temp_dir("utils", "create_info_file_success");
-        if tmp_dir.exists() {
-            fs::remove_dir_all(&tmp_dir).unwrap()
-        };
-        fs::create_dir_all(&tmp_dir).unwrap();
+        let tmp_dir = create_test_temp_dir!();
         let version = Version::new(3, 7, 5);
         let expected_file_path = tmp_dir.join(INFO_FILE);
         let expected_file_begin = "Python 3.7.5 installed using ";

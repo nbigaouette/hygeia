@@ -62,9 +62,6 @@ pub fn no_shim_execution() -> Result<()> {
 
     if let Some(subcommand) = opt.subcommand {
         match subcommand {
-            Command::Autocomplete { shell } => {
-                commands::autocomplete::run(shell, &mut std::io::stdout())?;
-            }
             Command::List => commands::list::run()?,
             Command::Path { version } => commands::path::run(version)?,
             Command::Version { version } => commands::version::run(version)?,

@@ -38,39 +38,7 @@ pub struct Opt {
 
 #[cfg(test)]
 pub mod tests {
-    use std::{env, fs, path::PathBuf};
-
-    pub fn init_logger() {
-        env::var("RUST_LOG")
-            .or_else(|_| -> Result<String, ()> {
-                let rust_log = "debug".to_string();
-                println!("Environment variable 'RUST_LOG' not set.");
-                println!("Setting to: {}", rust_log);
-                env::set_var("RUST_LOG", &rust_log);
-                Ok(rust_log)
-            })
-            .unwrap();
-        let _ = env_logger::try_init();
-    }
-
-    pub fn temp_dir(module: &str, subdir: &str) -> PathBuf {
-        let dir = env::temp_dir()
-            .join(crate::constants::EXECUTABLE_NAME)
-            .join(module);
-
-        if !dir.exists() {
-            fs::create_dir_all(&dir).unwrap();
-        }
-        let dir = dir.canonicalize().unwrap().join(subdir);
-
-        if dir.exists() {
-            fs::remove_dir_all(&dir).unwrap();
-        }
-
-        fs::create_dir_all(&dir).unwrap();
-
-        dir
-    }
+    use std::env;
 
     // Version is reported as "unknown" in GitHub Actions.
     // See https://github.com/nbigaouette/pycors/pull/90/checks?check_run_id=311900597

@@ -5,16 +5,15 @@ use std::{
 };
 
 use anyhow::Context;
-use structopt::clap::Shell;
+use structopt::{clap::Shell, StructOpt};
 
 use crate::{
-    commands,
     constants::{
         EXECUTABLE_NAME, SHELL_CONFIG_IDENTIFYING_PATTERN_END,
         SHELL_CONFIG_IDENTIFYING_PATTERN_START,
     },
     utils::{self, directory::PycorsPathsProviderFromEnv},
-    Result,
+    Opt, Result,
 };
 
 pub fn setup_bash(home: &Path) -> Result<()> {
@@ -23,11 +22,11 @@ pub fn setup_bash(home: &Path) -> Result<()> {
 
     // Add the autocomplete too
     let autocomplete_file = paths_provider
-        .config_home()
+        .project_home()
         .join(utils::directory::shell::bash::config::autocomplete());
     let mut f = fs::File::create(&autocomplete_file)
         .with_context(|| format!("Failed creating file {:?}", autocomplete_file))?;
-    commands::autocomplete::run(Shell::Bash, &mut f)?;
+    Opt::clap().gen_completions_to(EXECUTABLE_NAME, Shell::Bash, &mut f);
 
     let config_lines: Vec<String> = vec![
         String::from(r#"# Add the shims directory to path, removing all other"#),
@@ -68,7 +67,7 @@ pub fn setup_bash(home: &Path) -> Result<()> {
     ];
 
     let config_file = paths_provider
-        .config_home()
+        .project_home()
         .join(utils::directory::shell::bash::config::file_path());
     let f = BufWriter::new(fs::File::create(&config_file)?);
     write_config_to(f, &config_lines, &autocomplete_file)?;
@@ -80,8 +79,9 @@ pub fn setup_bash(home: &Path) -> Result<()> {
         let bash_config_file = home.join(bash_config_file);
 
         if !bash_config_file.exists() {
-            log::debug!("File {:?} does not exists, skipping.", bash_config_file);
-            continue;
+            log::debug!("File {:?} does not exists, creating.", bash_config_file);
+            let mut f = fs::File::create(&bash_config_file)?;
+            f.write_all(b"")?;
         }
 
         log::info!("Adding configuration to {:?}...", bash_config_file);
@@ -111,7 +111,7 @@ pub fn setup_bash(home: &Path) -> Result<()> {
             format!(
                 r#"export {}_HOME="{}""#,
                 exec_name_capital,
-                PycorsPathsProviderFromEnv::new().config_home().display()
+                PycorsPathsProviderFromEnv::new().project_home().display()
             )
         )
         .with_context(|| format!("Failed to export line to {:?}", tmp_file_path))?;
@@ -119,9 +119,10 @@ pub fn setup_bash(home: &Path) -> Result<()> {
             &mut tmp_file,
             "{}",
             format!(
-                r#"source ${{{}_HOME}}/{}"#,
-                exec_name_capital,
-                utils::directory::shell::bash::config::file_path().display()
+                "source {}",
+                Path::new(&format!("${{{}_HOME}}", exec_name_capital))
+                    .join(utils::directory::shell::bash::config::file_path())
+                    .display()
             )
         )
         .with_context(|| format!("Failed to write source line to {:?}", tmp_file_path))?;

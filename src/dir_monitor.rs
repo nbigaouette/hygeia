@@ -50,7 +50,7 @@ impl DirectoryMonitor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tests::temp_dir;
+    use pycors_test_helpers::create_test_temp_dir;
     use std::{
         fs::{create_dir_all, remove_dir_all, File},
         io::Write,
@@ -64,7 +64,7 @@ mod tests {
 
     #[test]
     fn one_file() {
-        let tmp_dir = temp_dir("dir_monitor", "one_file");
+        let tmp_dir = create_test_temp_dir!();
         let _ = remove_dir_all(&tmp_dir);
         create_dir_all(&tmp_dir).unwrap();
 

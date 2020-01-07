@@ -232,7 +232,8 @@ mod tests {
     use chrono::Duration;
 
     use super::*;
-    use crate::{tests::temp_dir, utils::directory::MockPycorsHomeProviderTrait};
+    use crate::utils::directory::MockPycorsHomeProviderTrait;
+    use pycors_test_helpers::create_test_temp_dir;
 
     use mockall::predicate::*;
 
@@ -240,23 +241,22 @@ mod tests {
 
     #[test]
     fn cache_new_empty() {
-        let pycors_home = temp_dir("cache", "cache_from_env");
-        let home = pycors_home.clone();
+        let home = create_test_temp_dir!();
+        let project_home = home.join(".pycors");
 
-        let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+        let mocked_home = Some(home);
+        let mocked_project_home = Some(project_home.clone());
 
         // The test expects an empty directory
-        if pycors_home.exists() {
-            fs::remove_dir_all(&pycors_home).unwrap();
+        if project_home.exists() {
+            fs::remove_dir_all(&project_home).unwrap();
         }
 
         let mut mock = MockPycorsHomeProviderTrait::new();
-        mock.expect_home_env_variable()
+        mock.expect_project_home()
             .times(3)
-            .return_const(mocked_pycors_home);
-        mock.expect_home()
-            .times(3)
-            .returning(move || Ok(home.clone()));
+            .return_const(mocked_project_home);
+        mock.expect_home().times(0).return_const(mocked_home);
 
         let paths_provider = PycorsPathsProvider::from(mock);
 
@@ -269,23 +269,25 @@ mod tests {
 
     #[test]
     fn cache_up_to_date() {
-        let pycors_home = temp_dir("cache", "cache_up_to_date");
-        let home = pycors_home.clone();
+        let home = create_test_temp_dir!();
+        let project_home = home.join(".pycors");
 
-        let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+        let mocked_home1 = Some(home.clone());
+        let mocked_home2 = Some(home);
+
+        let mocked_project_home1 = Some(project_home.clone());
+        let mocked_project_home2 = Some(project_home.clone());
 
         // The test expects an empty directory
-        if pycors_home.exists() {
-            fs::remove_dir_all(&pycors_home).unwrap();
+        if project_home.exists() {
+            fs::remove_dir_all(&project_home).unwrap();
         }
 
         let mut mock = MockPycorsHomeProviderTrait::new();
-        mock.expect_home_env_variable()
+        mock.expect_project_home()
             .times(1)
-            .return_const(mocked_pycors_home.clone());
-        mock.expect_home()
-            .times(1)
-            .returning(move || Ok(home.clone()));
+            .return_const(mocked_project_home1);
+        mock.expect_home().times(0).return_const(mocked_home1);
 
         let paths_provider = PycorsPathsProvider::from(mock);
         let cache_file = paths_provider.available_toolchains_cache_file();
@@ -301,14 +303,11 @@ mod tests {
         let mut f = File::create(cache_file).unwrap();
         f.write_all(cache_json.as_bytes()).unwrap();
 
-        let home = pycors_home;
         let mut mock = MockPycorsHomeProviderTrait::new();
-        mock.expect_home_env_variable()
+        mock.expect_project_home()
             .times(2)
-            .return_const(mocked_pycors_home);
-        mock.expect_home()
-            .times(2)
-            .returning(move || Ok(home.clone()));
+            .return_const(mocked_project_home2);
+        mock.expect_home().times(0).return_const(mocked_home2);
         let paths_provider = PycorsPathsProvider::from(mock);
 
         // Let's create the cache for real
@@ -321,23 +320,24 @@ mod tests {
 
     #[test]
     fn cache_corrupted() {
-        let pycors_home = temp_dir("cache", "cache_corrupted");
-        let home = pycors_home.clone();
+        let home = create_test_temp_dir!();
+        let project_home = home.join(".pycors");
 
-        let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+        let mocked_home1 = Some(home.clone());
+        let mocked_home2 = Some(home);
+        let mocked_project_home1 = Some(project_home.clone());
+        let mocked_project_home2 = Some(project_home.clone());
 
         // The test expects an empty directory
-        if pycors_home.exists() {
-            fs::remove_dir_all(&pycors_home).unwrap();
+        if project_home.exists() {
+            fs::remove_dir_all(&project_home).unwrap();
         }
 
         let mut mock = MockPycorsHomeProviderTrait::new();
-        mock.expect_home_env_variable()
+        mock.expect_project_home()
             .times(1)
-            .return_const(mocked_pycors_home.clone());
-        mock.expect_home()
-            .times(1)
-            .returning(move || Ok(home.clone()));
+            .return_const(mocked_project_home1);
+        mock.expect_home().times(0).return_const(mocked_home1);
 
         let paths_provider = PycorsPathsProvider::from(mock);
         let cache_file = paths_provider.available_toolchains_cache_file();
@@ -358,14 +358,11 @@ mod tests {
 
         // Let's create the cache for real
 
-        let home = pycors_home;
         let mut mock = MockPycorsHomeProviderTrait::new();
-        mock.expect_home_env_variable()
+        mock.expect_project_home()
             .times(3)
-            .return_const(mocked_pycors_home);
-        mock.expect_home()
-            .times(3)
-            .returning(move || Ok(home.clone()));
+            .return_const(mocked_project_home2);
+        mock.expect_home().times(0).return_const(mocked_home2);
         let paths_provider = PycorsPathsProvider::from(mock);
 
         let mut mock = MockToolchainsCacheFetch::new();
@@ -377,23 +374,24 @@ mod tests {
 
     #[test]
     fn cache_outdated() {
-        let pycors_home = temp_dir("cache", "cache_outdated");
-        let home = pycors_home.clone();
+        let home = create_test_temp_dir!();
+        let project_home = home.join(".pycors");
 
-        let mocked_pycors_home = Some(pycors_home.as_os_str().to_os_string());
+        let mocked_home1 = Some(home.clone());
+        let mocked_home2 = Some(home);
+        let mocked_project_home1 = Some(project_home.clone());
+        let mocked_project_home2 = Some(project_home.clone());
 
         // The test expects an empty directory
-        if pycors_home.exists() {
-            fs::remove_dir_all(&pycors_home).unwrap();
+        if project_home.exists() {
+            fs::remove_dir_all(&project_home).unwrap();
         }
 
         let mut mock = MockPycorsHomeProviderTrait::new();
-        mock.expect_home_env_variable()
+        mock.expect_project_home()
             .times(1)
-            .return_const(mocked_pycors_home.clone());
-        mock.expect_home()
-            .times(1)
-            .returning(move || Ok(home.clone()));
+            .return_const(mocked_project_home1);
+        mock.expect_home().times(0).return_const(mocked_home1);
 
         let paths_provider = PycorsPathsProvider::from(mock);
         let cache_file = paths_provider.available_toolchains_cache_file();
@@ -411,14 +409,11 @@ mod tests {
         // Save the cache
         f.write_all(&cache_bytes).unwrap();
 
-        let home = pycors_home;
         let mut mock = MockPycorsHomeProviderTrait::new();
-        mock.expect_home_env_variable()
+        mock.expect_project_home()
             .times(3)
-            .return_const(mocked_pycors_home);
-        mock.expect_home()
-            .times(3)
-            .returning(move || Ok(home.clone()));
+            .return_const(mocked_project_home2);
+        mock.expect_home().times(0).return_const(mocked_home2);
         let paths_provider = PycorsPathsProvider::from(mock);
 
         let mut mock = MockToolchainsCacheFetch::new();
