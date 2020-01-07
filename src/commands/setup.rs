@@ -4,16 +4,15 @@ use std::{
     io::Write,
 };
 
-use structopt::clap::Shell;
+use structopt::{clap::Shell, StructOpt};
 
 use crate::{
-    commands,
     constants::{EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME_CONTENT},
     utils::{
         self,
         directory::{PycorsHomeProviderTrait, PycorsPathsProviderFromEnv},
     },
-    Result,
+    Opt, Result,
 };
 
 pub mod bash;
@@ -54,7 +53,7 @@ pub fn run(shell: Shell) -> Result<()> {
             // Add the autocomplete too
             let autocomplete_file = config_home_dir.join(&format!("_{}.ps1", EXECUTABLE_NAME));
             let mut f = fs::File::create(&autocomplete_file)?;
-            commands::autocomplete::run(shell, &mut f)?;
+            Opt::clap().gen_completions_to(EXECUTABLE_NAME, Shell::PowerShell, &mut f);
 
             match dirs::document_dir() {
                 None => {

@@ -2,7 +2,6 @@ use std::path::PathBuf;
 
 use structopt::{self, StructOpt};
 
-pub mod autocomplete;
 pub mod install;
 pub mod list;
 pub mod path;
@@ -17,13 +16,6 @@ pub struct VersionOrPath {
 }
 #[derive(StructOpt, Debug)]
 pub enum Command {
-    /// Print to stdout an autocomplete script for the specified shell
-    ///
-    /// For example:
-    ///     pycors autocomplete bash > /etc/bash_completion.d/pycors.bash-completion
-    #[structopt(name = "autocomplete")]
-    Autocomplete { shell: structopt::clap::Shell },
-
     /// List installed Python versions
     #[structopt(name = "list")]
     List,

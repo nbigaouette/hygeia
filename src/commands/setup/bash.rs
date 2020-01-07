@@ -5,16 +5,15 @@ use std::{
 };
 
 use anyhow::Context;
-use structopt::clap::Shell;
+use structopt::{clap::Shell, StructOpt};
 
 use crate::{
-    commands,
     constants::{
         EXECUTABLE_NAME, SHELL_CONFIG_IDENTIFYING_PATTERN_END,
         SHELL_CONFIG_IDENTIFYING_PATTERN_START,
     },
     utils::{self, directory::PycorsPathsProviderFromEnv},
-    Result,
+    Opt, Result,
 };
 
 pub fn setup_bash(home: &Path) -> Result<()> {
@@ -27,7 +26,7 @@ pub fn setup_bash(home: &Path) -> Result<()> {
         .join(utils::directory::shell::bash::config::autocomplete());
     let mut f = fs::File::create(&autocomplete_file)
         .with_context(|| format!("Failed creating file {:?}", autocomplete_file))?;
-    commands::autocomplete::run(Shell::Bash, &mut f)?;
+    Opt::clap().gen_completions_to(EXECUTABLE_NAME, Shell::Bash, &mut f);
 
     let config_lines: Vec<String> = vec![
         String::from(r#"# Add the shims directory to path, removing all other"#),
