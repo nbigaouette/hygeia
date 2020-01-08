@@ -20,7 +20,7 @@ jobs:
     strategy:
       matrix:
         rust:
-          - 1.39.0
+          - 1.40.0
     steps:
       - uses: actions/checkout@v1
       - uses: actions-rs/toolchain@v1
@@ -43,7 +43,7 @@ jobs:
     strategy:
       matrix:
         rust:
-          - 1.39.0
+          - 1.40.0
     steps:
       - uses: actions/checkout@v1
         with:
@@ -80,7 +80,7 @@ jobs:
       matrix:
         os: [ubuntu-18.04, windows-2019, macOS-latest]
         rust:
-          - 1.39.0
+          - 1.40.0
     steps:
       - name: Git checkout
         uses: actions/checkout@v1
@@ -152,7 +152,7 @@ jobs:
     strategy:
       matrix:
         rust:
-          - 1.39.0
+          - 1.40.0
     steps:
       - uses: actions/checkout@v1
         with:
@@ -269,15 +269,15 @@ jobs:
         include:
           - build: musl
             os: ubuntu-18.04
-            rust: 1.39.0
+            rust: 1.40.0
             target: x86_64-unknown-linux-musl
           - build: macos
             os: macOS-latest
-            rust: 1.39.0
+            rust: 1.40.0
             target: x86_64-apple-darwin
           - build: win-msvc-64
             os: windows-2019
-            rust: 1.39.0
+            rust: 1.40.0
             target: x86_64-pc-windows-msvc
     steps:
       - name: Git checkout
