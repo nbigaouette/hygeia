@@ -36,6 +36,18 @@ pub fn run(shell: Shell) -> Result<()> {
         }
     }
 
+    // Create an dummy file that will be recognized when searching the PATH for
+    // python interpreters. We don't want to "find" the shims we install here.
+    let mut file = fs::File::create(paths_provider.shims_directory_identifier_file())?;
+    writeln!(
+        file,
+        concat!(
+            "This file's job is to tell {} the directory contains shims, not real Python interpreters.\n",
+            "Please do not delete!"
+        ),
+        EXECUTABLE_NAME
+    )?;
+
     // Add ~/.EXECUTABLE_NAME/shims to $PATH in ~/.bashrc and ~/.bash_profile and install autocomplete
     match shell {
         Shell::Bash => bash::setup_bash(&paths_provider),

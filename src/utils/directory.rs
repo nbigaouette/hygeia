@@ -3,6 +3,7 @@ use std::{env, path::PathBuf};
 
 use crate::constants::{
     self, AVAILABLE_TOOLCHAIN_CACHE, DEFAULT_DOT_DIR, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME,
+    SHIMS_DIRECTORY_IDENTIFIER_FILE,
 };
 
 #[cfg_attr(test, mockall::automock)]
@@ -127,6 +128,10 @@ where
 
     pub fn available_toolchains_cache_file(&self) -> PathBuf {
         self.cache().join(AVAILABLE_TOOLCHAIN_CACHE)
+    }
+
+    pub fn shims_directory_identifier_file(&self) -> PathBuf {
+        self.shims().join(SHIMS_DIRECTORY_IDENTIFIER_FILE)
     }
 
     pub fn extracted(&self) -> PathBuf {

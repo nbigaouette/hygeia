@@ -14,7 +14,7 @@ use thiserror::Error;
 use which::which_in;
 
 use crate::{
-    constants::{EXECUTABLE_NAME, TOOLCHAIN_FILE},
+    constants::{EXECUTABLE_NAME, SHIMS_DIRECTORY_IDENTIFIER_FILE, TOOLCHAIN_FILE},
     utils::{
         self,
         directory::{PycorsHomeProviderTrait, PycorsPathsProvider, PycorsPathsProviderFromEnv},
@@ -465,15 +465,10 @@ where
     let mut other_pythons: HashMap<Version, PathBuf> = HashMap::new();
 
     for path in paths_provider.paths() {
-        match path.components().last() {
-            None => log::error!("Failed to get last component of path {:?}", path),
-            Some(component) => {
-                if component.as_os_str() == std::ffi::OsStr::new("shims") {
-                    log::debug!("Skipping 'shims' directory found in PATH ({:?})", path);
-                } else {
-                    other_pythons.extend(get_python_versions_from_path(&path, &paths_provider));
-                }
-            }
+        if path.join(SHIMS_DIRECTORY_IDENTIFIER_FILE).exists() {
+            log::debug!("Skipping shims directory found in PATH ({:?})", path);
+        } else {
+            other_pythons.extend(get_python_versions_from_path(&path, &paths_provider));
         }
     }
 

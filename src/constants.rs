@@ -64,3 +64,5 @@ pub const TOOLCHAIN_FILE: &str = ".python-version";
 pub const PYTHON_SOURCE_INDEX_URL: &str = "https://www.python.org/downloads/source/";
 
 pub const AVAILABLE_TOOLCHAIN_CACHE: &str = "available_toolchains.json";
+
+pub const SHIMS_DIRECTORY_IDENTIFIER_FILE: &str = "this_is_a_shims_directory.txt";
