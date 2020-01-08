@@ -19,11 +19,12 @@ use crate::{
 
 #[cfg_attr(windows, allow(dead_code))]
 pub fn install_package(
+    release: bool,
     version_to_install: &Version,
     install_extra_packages: Option<&commands::InstallExtraPackagesOptions>,
 ) -> Result<()> {
     extract_source(&version_to_install).with_context(|| "Failed to extract source")?;
-    compile_source(&version_to_install, install_extra_packages)
+    compile_source(release, &version_to_install, install_extra_packages)
         .with_context(|| "Failed to compile source")?;
     Ok(())
 }
@@ -64,6 +65,7 @@ pub fn extract_source(version: &Version) -> Result<()> {
 
 #[cfg_attr(windows, allow(dead_code))]
 pub fn compile_source(
+    release: bool,
     version: &Version,
     install_extra_packages: Option<&commands::InstallExtraPackagesOptions>,
 ) -> Result<()> {
@@ -71,7 +73,6 @@ pub fn compile_source(
 
     let install_dir = PycorsPathsProviderFromEnv::new().install_dir(version);
 
-    #[cfg_attr(not(macos), allow(unused_mut))]
     let mut configure_args = vec![
         "--prefix".to_string(),
         install_dir
@@ -80,8 +81,10 @@ pub fn compile_source(
                 anyhow::anyhow!("Error converting install dir {:?} to `str`", install_dir)
             })?
             .to_string(),
-        "--enable-optimizations".to_string(),
     ];
+    if release {
+        configure_args.push("--enable-optimizations".to_string());
+    }
 
     #[cfg_attr(not(macos), allow(unused_mut))]
     let mut cflags: Vec<String> = Vec::new();

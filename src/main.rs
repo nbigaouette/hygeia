@@ -67,12 +67,19 @@ pub fn no_shim_execution() -> Result<()> {
             Command::Version { version } => commands::version::run(version)?,
             Command::Select(version_or_path) => commands::select::run(version_or_path)?,
             Command::Install {
+                release,
                 from_version,
                 force,
                 install_extra_packages,
                 select,
             } => {
-                commands::install::run(from_version, force, &install_extra_packages, select)?;
+                commands::install::run(
+                    release,
+                    from_version,
+                    force,
+                    &install_extra_packages,
+                    select,
+                )?;
             }
             Command::Run { version, command } => commands::run::run(version, &command)?,
             Command::Setup { shell } => commands::setup::run(shell)?,

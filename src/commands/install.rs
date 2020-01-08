@@ -28,6 +28,7 @@ pub enum InstallError {
 }
 
 pub fn run(
+    release: bool,
     requested_version: Option<String>,
     force_install: bool,
     install_extra_packages: &commands::InstallExtraPackagesOptions,
@@ -123,7 +124,7 @@ pub fn run(
             ))?;
             // FIXME: Validate downloaded package with checksum
             // FIXME: Validate downloaded package with signature
-            install_package(&requested_version.version, install_extra_packages)?;
+            install_package(release, &requested_version.version, install_extra_packages)?;
         }
     }
 
@@ -159,12 +160,13 @@ pub fn run(
 }
 
 fn install_package(
+    #[cfg_attr(windows, allow(unused_variables))] release: bool,
     version_to_install: &Version,
     install_extra_packages: Option<&commands::InstallExtraPackagesOptions>,
 ) -> Result<()> {
     #[cfg(not(target_os = "windows"))]
     {
-        unix::install_package(&version_to_install, install_extra_packages)?;
+        unix::install_package(release, &version_to_install, install_extra_packages)?;
     }
     #[cfg(target_os = "windows")]
     {

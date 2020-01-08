@@ -61,6 +61,9 @@ pub enum Command {
     /// Install version, either from the provided version or from `.python-version`
     #[structopt(name = "install")]
     Install {
+        /// Build toolchain in release mode, with optimizations (slower)
+        release: bool,
+
         /// Specified version to install
         from_version: Option<String>,
 
