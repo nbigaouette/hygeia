@@ -8,6 +8,7 @@ use crate::constants::{
 #[cfg_attr(test, mockall::automock)]
 pub trait PycorsHomeProviderTrait {
     fn home(&self) -> Option<PathBuf>;
+    fn document(&self) -> Option<PathBuf>;
     fn project_home(&self) -> Option<PathBuf>;
     fn paths(&self) -> Vec<PathBuf>;
 }
@@ -25,6 +26,9 @@ where
 {
     fn home(&self) -> Option<PathBuf> {
         self.path_provider.home()
+    }
+    fn document(&self) -> Option<PathBuf> {
+        self.path_provider.document()
     }
     fn project_home(&self) -> Option<PathBuf> {
         self.path_provider.project_home()
@@ -51,6 +55,13 @@ impl PycorsHomeProviderTrait for PycorsPathsProviderFromEnv {
             None => dirs::home_dir(),
         }
     }
+    fn document(&self) -> Option<PathBuf> {
+        match env::var_os(constants::document_overwrite_env_variable()) {
+            Some(document) => Some(PathBuf::from(document)),
+            None => dirs::document_dir(),
+        }
+    }
+
     fn project_home(&self) -> Option<PathBuf> {
         env::var_os(constants::project_home_env_variable()).map(PathBuf::from)
     }
