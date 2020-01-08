@@ -124,6 +124,20 @@ fn _mock_executable(
 }
 
 #[macro_export]
+macro_rules! function_path {
+    () => {{
+        // https://stackoverflow.com/a/40234666
+        fn f() {}
+        fn type_name_of<T>(_: T) -> &'static str {
+            std::any::type_name::<T>()
+        }
+        let name = type_name_of(f);
+        let function_path = &name[..name.len() - 3];
+        function_path
+    }};
+}
+
+#[macro_export]
 macro_rules! create_test_temp_dir {
     () => {{
         let dir = std::env::temp_dir()
@@ -135,15 +149,7 @@ macro_rules! create_test_temp_dir {
         }
         let mut dir = dir.canonicalize().unwrap();
 
-        // ---------------------------------
-        // https://stackoverflow.com/a/40234666
-        fn f() {}
-        fn type_name_of<T>(_: T) -> &'static str {
-            std::any::type_name::<T>()
-        }
-        let name = type_name_of(f);
-        let function_path = &name[..name.len() - 3];
-        // ---------------------------------
+        let function_path = pycors_test_helpers::function_path!();
 
         for component in function_path.split("::").skip(1) {
             dir.push(component);
