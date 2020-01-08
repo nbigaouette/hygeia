@@ -1,20 +1,9 @@
-use std::path::PathBuf;
 
 use super::*;
 
 use anyhow::Context;
 
-use pycors::utils::directory::{PycorsHomeProviderTrait, PycorsPathsProvider};
 use pycors_test_helpers::EXECUTABLE_EXTENSION;
-
-mockall::mock! {
-    PycorsHomeProviderTrait {}     // Name of the mock struct, less the "Mock" prefix
-    trait PycorsHomeProviderTrait {   // definition of the trait to mock
-        fn home(&self) -> Option<PathBuf>;
-        fn project_home(&self) -> Option<PathBuf>;
-        fn paths(&self) -> Vec<PathBuf>;
-    }
-}
 
 fn assert_pip_successfully_installed<P>(paths_provider: &PycorsPathsProvider<P>)
 where
