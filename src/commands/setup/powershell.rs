@@ -28,7 +28,7 @@ where
         .with_context(|| format!("Failed to create file {:?}", autocomplete_file))?;
     Opt::clap().gen_completions_to(EXECUTABLE_NAME, Shell::PowerShell, &mut f);
 
-    match dirs::document_dir() {
+    match paths_provider.document() {
         None => {
             anyhow::bail!("Could not get Document directory");
         }
