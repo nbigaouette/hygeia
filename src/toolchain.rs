@@ -465,7 +465,16 @@ where
     let mut other_pythons: HashMap<Version, PathBuf> = HashMap::new();
 
     for path in paths_provider.paths() {
-        other_pythons.extend(get_python_versions_from_path(&path, &paths_provider));
+        match path.components().last() {
+            None => log::error!("Failed to get last component of path {:?}", path),
+            Some(component) => {
+                if component.as_os_str() == std::ffi::OsStr::new("shims") {
+                    log::debug!("Skipping 'shims' directory found in PATH ({:?})", path);
+                } else {
+                    other_pythons.extend(get_python_versions_from_path(&path, &paths_provider));
+                }
+            }
+        }
     }
 
     let mut other_pythons: Vec<InstalledToolchain> = other_pythons
