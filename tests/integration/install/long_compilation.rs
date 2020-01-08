@@ -189,6 +189,14 @@ fn install_twice_forced() {
         // Make sure installation worked
         assert_python_successfully_installed(&paths_provider, "3.7.5", &cwd);
 
+        // Since we'll force a reinstallation, delete the installed directory.
+        fs::remove_dir_all(
+            paths_provider
+                .install_dir(&Version::parse("3.7.5").unwrap())
+                .join("bin"),
+        )
+        .unwrap();
+
         let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
         let output = cmd
             .arg("install")
