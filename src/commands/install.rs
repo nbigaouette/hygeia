@@ -108,7 +108,13 @@ pub fn run(
             // Configure make make install
             let with_progress_bar = true;
             let mut rt = tokio::runtime::Runtime::new()?;
-            let mut downloader = HyperDownloader::new(requested_version.source_url())?;
+
+            #[cfg(windows)]
+            let download_url = requested_version.windows_pre_built_url();
+            #[cfg(not(windows))]
+            let download_url = requested_version.source_url();
+
+            let mut downloader = HyperDownloader::new(download_url)?;
             let download_dir = PycorsPathsProviderFromEnv::new().downloaded();
             rt.block_on(download_to_path(
                 &mut downloader,
