@@ -81,6 +81,7 @@ pub fn compile_source(
                 anyhow::anyhow!("Error converting install dir {:?} to `str`", install_dir)
             })?
             .to_string(),
+        "--enable-shared".to_string(),
     ];
     if release {
         configure_args.push("--enable-optimizations".to_string());
