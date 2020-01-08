@@ -7,6 +7,7 @@ use std::{env, fs, io::Write, path::Path};
 use assert_cmd::{assert::OutputAssertExt, Command};
 use indoc::indoc;
 use predicates::prelude::*;
+use semver::Version;
 
 use pycors::{
     constants::{
@@ -16,7 +17,7 @@ use pycors::{
     Result,
 };
 
-use pycors_test_helpers::{create_test_temp_dir, mock_executable, MockedOutput};
+use pycors_test_helpers::{create_test_temp_dir, function_path, mock_executable, MockedOutput};
 
 mod help;
 mod install;
