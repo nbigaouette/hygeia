@@ -108,7 +108,8 @@ pub fn compile_source(
         let macos_sdk_path = String::from_utf8(
             std::process::Command::new("xcrun")
                 .arg("--show-sdk-path")
-                .output()?
+                .output()
+                .with_context(|| "Failed to execute 'xcrun --show-sdk-path'")?
                 .stdout,
         )
         .with_context(|| "Failed to run command 'xrun' to find macOS SDK path")?;
@@ -204,7 +205,12 @@ pub fn compile_source(
         let basename_dest = basename_to_link
             .replace("-###", &ver_maj)
             .replace("###", &ver_maj);
-        utils::create_hard_link(basename_src, basename_dest)?;
+        utils::create_hard_link(&basename_src, &basename_dest).with_context(|| {
+            format!(
+                "Failed to create hard link {:?} pointing to {:?}",
+                basename_dest, basename_src
+            )
+        })?;
     }
 
     log::debug!(
