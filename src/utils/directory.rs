@@ -66,7 +66,6 @@ impl<P> PycorsPathsProvider<P>
 where
     P: PycorsHomeProviderTrait,
 {
-    #[cfg(test)]
     pub fn from(path_provider: P) -> Self {
         PycorsPathsProvider { path_provider }
     }
