@@ -249,15 +249,7 @@ where
     };
 
     let shims_dir = paths_provider.shims();
-    let shims_dir = match shims_dir.canonicalize() {
-        Ok(shims_dir) => shims_dir,
-        Err(e) => {
-            log::error!("Failed to canonicalize shims directory: {:?}", e);
-            // Return non-canonicalize path and continue
-            shims_dir
-        }
-    };
-    if path == shims_dir {
+    if path == shims_dir.canonicalize().unwrap_or(shims_dir) {
         log::debug!("Skipping shims directory");
         return other_pythons;
     }
