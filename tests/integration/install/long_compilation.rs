@@ -179,8 +179,7 @@ fn install_twice_forced() {
             .arg("=3.7.5")
             .env(project_home_env_variable(), &pycors_home)
             .env(home_overwrite_env_variable(), &home)
-            .env("RUST_LOG", "pycors=debug")
-            // .env("RUST_LOG", "")
+            .env("RUST_LOG", "")
             .current_dir(&cwd)
             .unwrap();
         let assert_output = output.assert();
@@ -204,7 +203,7 @@ fn install_twice_forced() {
             .arg("--force")
             .env(project_home_env_variable(), &pycors_home)
             .env(home_overwrite_env_variable(), &home)
-            .env("RUST_LOG", "pycors=debug")
+            .env("RUST_LOG", "")
             .current_dir(&cwd)
             .unwrap();
         let assert_output = output.assert();
