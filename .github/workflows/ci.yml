@@ -211,7 +211,7 @@ jobs:
           path: target
           key: cargo-build-target-tarpaulin-${{ hashFiles('**/Cargo.lock') }}
       - name: Run tarpaulin
-        run: cargo tarpaulin --out Xml --verbose -- "tests::"
+        run: cargo tarpaulin --out Xml --verbose --exclude-files "tests/integration/*" --exclude-files "xtask/*" --exclude-files "pycors_test_helpers/*" integration_tests -- "tests::"
       - name: Upload coverage to codecov.io
         # run: bash <(curl -s https://codecov.io/bash)
         uses: codecov/codecov-action@v1
