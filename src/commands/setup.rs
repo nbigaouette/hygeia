@@ -1,28 +1,21 @@
-use std::{
-    env, fs,
-    fs::{create_dir_all, File, OpenOptions},
-    io::Write,
-};
+use std::{env, fs, io::Write};
 
-use structopt::{clap::Shell, StructOpt};
+use structopt::clap::Shell;
 
 use crate::{
     constants::{EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME_CONTENT},
-    utils::{
-        self,
-        directory::{PycorsHomeProviderTrait, PycorsPathsProviderFromEnv},
-    },
-    Opt, Result,
+    utils::{self, directory::PycorsPathsProviderFromEnv},
+    Result,
 };
 
 pub mod bash;
+pub mod powershell;
 
 pub fn run(shell: Shell) -> Result<()> {
     log::info!("Setting up the shim...");
 
     let paths_provider = PycorsPathsProviderFromEnv::new();
 
-    let config_home_dir = paths_provider.project_home();
     let shims_dir = paths_provider.shims();
 
     // Create all required directories
@@ -32,6 +25,9 @@ pub fn run(shell: Shell) -> Result<()> {
         paths_provider
             .project_home()
             .join(utils::directory::shell::bash::config::dir_relative()),
+        paths_provider
+            .project_home()
+            .join(utils::directory::shell::powershell::config::dir_relative()),
         paths_provider.shims(),
     ] {
         if !utils::path_exists(&dir) {
@@ -42,44 +38,10 @@ pub fn run(shell: Shell) -> Result<()> {
 
     // Add ~/.EXECUTABLE_NAME/shims to $PATH in ~/.bashrc and ~/.bash_profile and install autocomplete
     match shell {
-        Shell::Bash => {
-            let home = paths_provider
-                .home()
-                .ok_or_else(|| anyhow::anyhow!("Failed to get home directory"))?;
-
-            bash::setup_bash(&home)?;
-        }
-        Shell::PowerShell => {
-            // Add the autocomplete too
-            let autocomplete_file = config_home_dir.join(&format!("_{}.ps1", EXECUTABLE_NAME));
-            let mut f = fs::File::create(&autocomplete_file)?;
-            Opt::clap().gen_completions_to(EXECUTABLE_NAME, Shell::PowerShell, &mut f);
-
-            match dirs::document_dir() {
-                None => {
-                    anyhow::bail!("Could not get Document directory");
-                }
-                Some(document_dir) => {
-                    let ps_dir = document_dir.join("WindowsPowerShell");
-                    if !ps_dir.exists() {
-                        create_dir_all(&ps_dir)?;
-                    }
-                    // Should match the value of PowerShell's '$profile' automatic variable
-                    let profile = ps_dir.join("Microsoft.PowerShell_profile.ps1");
-
-                    let mut file = OpenOptions::new()
-                        .create(true)
-                        .write(true)
-                        .append(true)
-                        .open(&profile)?;
-                    // FIXME: This appends, we want prepends
-                    writeln!(file, r#"$env:Path += ";{}""#, shims_dir.display())?;
-                    writeln!(file, ". {}", autocomplete_file.display())?;
-                }
-            }
-        }
+        Shell::Bash => bash::setup_bash(&paths_provider),
+        Shell::PowerShell => powershell::setup_powershell(&paths_provider),
         _ => anyhow::bail!("Unsupported shell: {}", shell),
-    }
+    }?;
 
     // Copy itself into ~/.EXECUTABLE_NAME/shim
     let copy_from = env::current_exe()?;
@@ -142,7 +104,7 @@ pub fn run(shell: Shell) -> Result<()> {
         "Writing list of default packages to install to {:?}",
         output_filename
     );
-    let mut file = File::create(output_filename)?;
+    let mut file = fs::File::create(output_filename)?;
     file.write_all(extra_packages_file_default_content.as_bytes())?;
 
     log::info!("Done!");
