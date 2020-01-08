@@ -8,9 +8,9 @@ use std::{
 pub use anyhow::{Context, Result};
 
 #[cfg(windows)]
-const EXEC_EXTENSION: &str = ".exe";
+pub const EXECUTABLE_EXTENSION: &str = ".exe";
 #[cfg(not(windows))]
-const EXEC_EXTENSION: &str = "";
+pub const EXECUTABLE_EXTENSION: &str = "";
 
 pub fn init_logger() {
     env::var("RUST_LOG")
@@ -62,11 +62,11 @@ fn _mock_executable(
 
     let stdout_filepath = executable_location.join(format!(
         "{}{}_pycors_tests_to_print_stdout.txt",
-        executable_name, EXEC_EXTENSION
+        executable_name, EXECUTABLE_EXTENSION
     ));
     let stderr_filepath = executable_location.join(format!(
         "{}{}_pycors_tests_to_print_stderr.txt",
-        executable_name, EXEC_EXTENSION
+        executable_name, EXECUTABLE_EXTENSION
     ));
 
     if stdout_filepath.exists() {
@@ -110,13 +110,13 @@ fn _mock_executable(
 
     fs::copy(
         &print_file_to_stdout,
-        executable_location.join(format!("{}{}", executable_name, EXEC_EXTENSION)),
+        executable_location.join(format!("{}{}", executable_name, EXECUTABLE_EXTENSION)),
     )
     .with_context(|| {
         format!(
             "Failed to copy {:?} to {:?}",
             print_file_to_stdout,
-            executable_location.join(format!("{}{}", executable_name, EXEC_EXTENSION))
+            executable_location.join(format!("{}{}", executable_name, EXECUTABLE_EXTENSION))
         )
     })?;
 
@@ -155,11 +155,11 @@ macro_rules! create_test_temp_dir {
             dir.push(component);
         }
 
-        if dir.exists() {
-            std::fs::remove_dir_all(&dir).unwrap();
-        }
+        // if dir.exists() {
+        //     std::fs::remove_dir_all(&dir).unwrap();
+        // }
 
-        std::fs::create_dir_all(&dir).unwrap();
+        // std::fs::create_dir_all(&dir).unwrap();
 
         dir
     }};
