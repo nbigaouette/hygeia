@@ -38,9 +38,6 @@ fn simple_install_from_scratch_success() {
         let assert_output = output.assert();
         assert_output.success().stdout("").stderr("");
 
-        // Make sure pip was installed successfully
-        assert_pip_successfully_installed(&paths_provider);
-
         // Make sure installation worked
         assert_python_successfully_installed(&paths_provider, "3.7.5", &cwd);
 
@@ -84,9 +81,6 @@ fn simple_install_from_scratch_select_success() {
             .unwrap();
         let assert_output = output.assert();
         assert_output.success().stdout("").stderr("");
-
-        // Make sure pip was installed successfully
-        assert_pip_successfully_installed(&paths_provider);
 
         // Make sure installation worked
         assert_python_successfully_installed(&paths_provider, "3.7.5", &cwd);
@@ -134,9 +128,6 @@ fn install_twice_noop() {
             .unwrap();
         let assert_output = output.assert();
         assert_output.success().stdout("").stderr("");
-
-        // Make sure pip was installed successfully
-        assert_pip_successfully_installed(&paths_provider);
 
         // Make sure installation worked
         assert_python_successfully_installed(&paths_provider, "3.7.5", &cwd);
@@ -195,9 +186,6 @@ fn install_twice_forced() {
         let assert_output = output.assert();
         assert_output.success().stdout("").stderr("");
 
-        // Make sure pip was installed successfully
-        assert_pip_successfully_installed(&paths_provider);
-
         // Make sure installation worked
         assert_python_successfully_installed(&paths_provider, "3.7.5", &cwd);
 
@@ -212,10 +200,7 @@ fn install_twice_forced() {
             .current_dir(&cwd)
             .unwrap();
         let assert_output = output.assert();
-        assert_output.success().stdout("").stderr(
-            predicates::str::contains("skipped: file get-pip.py already downloaded.")
-                .and(predicates::str::contains("Installing 3.7.5 succeeded!")),
-        );
+        assert_output.success().stdout("").stderr("");
 
         // Make sure installation worked
         assert_python_successfully_installed(&paths_provider, "3.7.5", &cwd);
