@@ -227,6 +227,8 @@ where
     S: AsRef<std::ffi::OsStr> + std::fmt::Debug,
     P: AsRef<Path>,
 {
+    log::debug!("Running {} {:?}", cmd, args);
+
     let logs_dir = PycorsPathsProviderFromEnv::new().logs();
 
     // FIXME: Extract generics part to own function to reduce bloat
