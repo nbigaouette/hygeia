@@ -4,8 +4,6 @@ use pycors::{
     utils::directory::{shell, PycorsPathsProvider},
 };
 
-use pretty_assertions::assert_eq;
-
 #[cfg_attr(not(windows), ignore)]
 #[test]
 fn setup_powershell_success_from_scratch() {
