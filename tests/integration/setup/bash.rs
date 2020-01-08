@@ -2,6 +2,7 @@ use std::path::Path;
 
 use super::*;
 
+#[cfg_attr(windows, ignore)]
 #[test]
 fn setup_bash_success_from_scratch() {
     let home = create_test_temp_dir!();
@@ -57,6 +58,7 @@ source {}
     assert_eq!(bash_profile_content, expected_bashrc);
 }
 
+#[cfg_attr(windows, ignore)]
 #[test]
 fn setup_bash_success_twice() {
     let home = create_test_temp_dir!();
