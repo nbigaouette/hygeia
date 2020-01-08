@@ -155,11 +155,11 @@ macro_rules! create_test_temp_dir {
             dir.push(component);
         }
 
-        // if dir.exists() {
-        //     std::fs::remove_dir_all(&dir).unwrap();
-        // }
+        if dir.exists() {
+            std::fs::remove_dir_all(&dir).unwrap();
+        }
 
-        // std::fs::create_dir_all(&dir).unwrap();
+        std::fs::create_dir_all(&dir).unwrap();
 
         dir
     }};
