@@ -154,6 +154,23 @@ pub mod shell {
             }
         }
     }
+    pub mod powershell {
+        pub mod config {
+            use std::path::{Path, PathBuf};
+
+            pub fn dir_relative() -> PathBuf {
+                Path::new("shell").join("powershell")
+            }
+
+            pub fn file_path() -> PathBuf {
+                dir_relative().join("config.ps1")
+            }
+
+            pub fn autocomplete() -> PathBuf {
+                dir_relative().join("completion.ps1")
+            }
+        }
+    }
 }
 
 #[cfg(test)]
