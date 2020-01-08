@@ -3,7 +3,6 @@ use super::*;
 // NOTE: Do not overwrite the 'PATH' environment variable in 'Command' calls: toolchains
 //       are being compiled, they thus need access to compilers and co.
 
-#[ignore]
 #[test]
 fn simple_install_from_scratch_success() {
     #[cfg(windows)]
@@ -50,7 +49,6 @@ fn simple_install_from_scratch_success() {
     }
 }
 
-#[ignore]
 #[test]
 fn simple_install_from_scratch_select_success() {
     #[cfg(windows)]
@@ -102,7 +100,6 @@ fn simple_install_from_scratch_select_success() {
     }
 }
 
-#[ignore]
 #[test]
 fn install_twice_noop() {
     #[cfg(windows)]
@@ -162,7 +159,6 @@ fn install_twice_noop() {
     }
 }
 
-#[ignore]
 #[test]
 fn install_twice_forced() {
     #[cfg(windows)]
