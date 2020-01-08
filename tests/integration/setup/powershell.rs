@@ -45,7 +45,6 @@ fn setup_powershell_success_from_scratch() {
             .display(),
     );
 
-    println!("document: {}", document.display());
     let ps_profile_content = fs::read_to_string(
         document
             .join("WindowsPowerShell")
