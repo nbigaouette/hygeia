@@ -28,7 +28,10 @@ jobs:
           profile: minimal
           toolchain: ${{ matrix.rust }}
           override: true
-      - run: rustup component add rustfmt
+      - name: Install rustfmt
+        run: |
+          rustup component add rustfmt
+          rustfmt --version
       - uses: actions-rs/cargo@v1
         with:
           command: fmt
