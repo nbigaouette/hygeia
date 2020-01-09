@@ -19,11 +19,12 @@ use crate::{
 
 #[cfg_attr(windows, allow(dead_code))]
 pub fn install_package(
+    release: bool,
     version_to_install: &Version,
     install_extra_packages: Option<&commands::InstallExtraPackagesOptions>,
 ) -> Result<()> {
     extract_source(&version_to_install).with_context(|| "Failed to extract source")?;
-    compile_source(&version_to_install, install_extra_packages)
+    compile_source(release, &version_to_install, install_extra_packages)
         .with_context(|| "Failed to compile source")?;
     Ok(())
 }
@@ -64,6 +65,7 @@ pub fn extract_source(version: &Version) -> Result<()> {
 
 #[cfg_attr(windows, allow(dead_code))]
 pub fn compile_source(
+    release: bool,
     version: &Version,
     install_extra_packages: Option<&commands::InstallExtraPackagesOptions>,
 ) -> Result<()> {
@@ -71,7 +73,6 @@ pub fn compile_source(
 
     let install_dir = PycorsPathsProviderFromEnv::new().install_dir(version);
 
-    #[cfg_attr(not(macos), allow(unused_mut))]
     let mut configure_args = vec![
         "--prefix".to_string(),
         install_dir
@@ -80,8 +81,11 @@ pub fn compile_source(
                 anyhow::anyhow!("Error converting install dir {:?} to `str`", install_dir)
             })?
             .to_string(),
-        "--enable-optimizations".to_string(),
+        "--enable-shared".to_string(),
     ];
+    if release {
+        configure_args.push("--enable-optimizations".to_string());
+    }
 
     #[cfg_attr(not(macos), allow(unused_mut))]
     let mut cflags: Vec<String> = Vec::new();
@@ -108,7 +112,8 @@ pub fn compile_source(
         let macos_sdk_path = String::from_utf8(
             std::process::Command::new("xcrun")
                 .arg("--show-sdk-path")
-                .output()?
+                .output()
+                .with_context(|| "Failed to execute 'xcrun --show-sdk-path'")?
                 .stdout,
         )
         .with_context(|| "Failed to run command 'xrun' to find macOS SDK path")?;
@@ -117,9 +122,16 @@ pub fn compile_source(
         cppflags.push("-I/opt/X11/include".into());
     }
 
-    env::set_var("CFLAGS", cflags.join(" "));
-    env::set_var("CPPFLAGS", cppflags.join(" "));
-    env::set_var("LDFLAGS", ldflags.join(" "));
+    let environment_variables = vec![
+        ("CFLAGS", cflags.join(" ")),
+        ("CPPFLAGS", cppflags.join(" ")),
+        ("LDFLAGS", ldflags.join(" ")),
+        // When compiling dynamically (--enable-shared), we need to
+        // add a directory to the runtime library search path.
+        // See https://stackoverflow.com/questions/37757314/problems-installing-python-3-with-enable-shared
+        #[cfg(target_os = "linux")]
+        ("LD_RUN_PATH", format!("{}/lib", install_dir.display())),
+    ];
 
     let basename = utils::build_basename(&version);
     let extract_dir = PycorsPathsProviderFromEnv::new()
@@ -131,16 +143,25 @@ pub fn compile_source(
         "[3/15] Configure",
         "./configure",
         &configure_args,
+        &environment_variables,
         &extract_dir,
     )
     .with_context(|| format!("Failed to run command ./configure {:?}", configure_args))?;
-    utils::run_cmd_template::<&str, &PathBuf>(&version, "[4/15] Make", "make", &[], &extract_dir)
-        .with_context(|| "Failed to run command 'make'")?;
+    utils::run_cmd_template::<&str, &PathBuf, _, _>(
+        &version,
+        "[4/15] Make",
+        "make",
+        &[],
+        &environment_variables,
+        &extract_dir,
+    )
+    .with_context(|| "Failed to run command 'make'")?;
     utils::run_cmd_template(
         &version,
         "[5/15] Make install",
         "make",
         &["install"],
+        &environment_variables,
         &extract_dir,
     )
     .with_context(|| "Failed to run command 'make install'")?;
@@ -204,7 +225,12 @@ pub fn compile_source(
         let basename_dest = basename_to_link
             .replace("-###", &ver_maj)
             .replace("###", &ver_maj);
-        utils::create_hard_link(basename_src, basename_dest)?;
+        utils::create_hard_link(&basename_src, &basename_dest).with_context(|| {
+            format!(
+                "Failed to create hard link {:?} pointing to {:?}",
+                basename_dest, basename_src
+            )
+        })?;
     }
 
     log::debug!(

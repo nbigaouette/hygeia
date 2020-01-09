@@ -35,7 +35,7 @@ fn run_success_python_version_from_selected() {
     assert_output
         .success()
         .stdout(predicate::str::similar("Python 3.7.5").trim().normalize())
-        .stderr("");
+        .stderr(predicate::str::is_empty().trim());
 }
 
 #[test]
@@ -93,7 +93,7 @@ fn run_success_python_version_from_overwrite() {
     assert_output
         .success()
         .stdout(predicate::str::similar("Python 3.7.5").trim().normalize())
-        .stderr("");
+        .stderr(predicate::str::is_empty().trim());
 
     let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
     let output = cmd
@@ -110,7 +110,7 @@ fn run_success_python_version_from_overwrite() {
     assert_output
         .success()
         .stdout(predicate::str::similar("Python 3.7.4").trim().normalize())
-        .stderr("");
+        .stderr(predicate::str::is_empty().trim());
 
     let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
     let output = cmd
@@ -127,7 +127,7 @@ fn run_success_python_version_from_overwrite() {
     assert_output
         .success()
         .stdout(predicate::str::similar("Python 3.7.5").trim().normalize())
-        .stderr("");
+        .stderr(predicate::str::is_empty().trim());
 
     let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
     let output = cmd
@@ -144,5 +144,5 @@ fn run_success_python_version_from_overwrite() {
     assert_output
         .success()
         .stdout(predicate::str::similar("Python 3.8.0").trim().normalize())
-        .stderr("");
+        .stderr(predicate::str::is_empty().trim());
 }

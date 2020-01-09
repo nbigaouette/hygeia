@@ -647,6 +647,45 @@ fn get_python_versions_from_path_failure_to_run() {
 }
 
 #[test]
+fn get_python_versions_from_path_python_2715_plus_should_parse_issue_102() {
+    let home = create_test_temp_dir!();
+    let pycors_home = home.join(".pycors");
+
+    let mocked_home = Some(home);
+    let mocked_pycors_home = Some(pycors_home.clone());
+
+    let mut mock = MockPycorsHomeProviderTrait::new();
+    mock.expect_project_home()
+        .times(2)
+        .return_const(mocked_pycors_home);
+    mock.expect_home().times(0).return_const(mocked_home);
+    let paths_provider = PycorsPathsProvider::from(mock);
+
+    let shims_dir = paths_provider.shims();
+    fs::create_dir_all(&shims_dir).unwrap();
+
+    mock_executable(
+        &pycors_home,
+        "python",
+        MockedOutput {
+            out: Some("Python 2.7.15+"),
+            err: None,
+        },
+    )
+    .unwrap();
+
+    let python_versions = get_python_versions_from_path(&pycors_home, &paths_provider);
+
+    let expected_versions: HashMap<Version, PathBuf> =
+        [(Version::parse("2.7.15").unwrap(), pycors_home)]
+            .iter()
+            .cloned()
+            .collect();
+
+    assert_eq!(python_versions, expected_versions);
+}
+
+#[test]
 fn is_a_custom_install_true() {
     let dir = create_test_temp_dir!();
     let info_filename = dir.join(INFO_FILE);

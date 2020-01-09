@@ -52,12 +52,23 @@ pub struct AvailableToolchain {
 }
 
 impl AvailableToolchain {
+    #[cfg_attr(windows, allow(dead_code))]
     pub fn source_url(&self) -> Url {
         let mut new_url = self.base_url.clone();
         new_url
             .path_segments_mut()
             .unwrap()
             .extend(&[&self.source_tar_gz]);
+        new_url
+    }
+
+    #[cfg_attr(not(windows), allow(dead_code))]
+    pub fn windows_pre_built_url(&self) -> Url {
+        let mut new_url = self.base_url.clone();
+        new_url
+            .path_segments_mut()
+            .unwrap()
+            .extend(&[&format!("python-{}-embed-amd64.zip", self.version)]);
         new_url
     }
 }

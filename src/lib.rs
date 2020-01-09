@@ -6,7 +6,7 @@ mod download;
 mod os;
 pub mod shim;
 mod toolchain;
-mod utils;
+pub mod utils;
 
 pub use anyhow::Result;
 pub use structopt::StructOpt;

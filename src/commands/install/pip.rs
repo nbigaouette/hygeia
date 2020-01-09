@@ -91,6 +91,7 @@ pub fn install_extra_pip_packages(
             ));
             log::debug!("python_major_bin: {:?}", python_major_bin);
             if let Some(python_major_bin) = python_major_bin.to_str() {
+                let env_variables: [(&str, &str); 0] = [];
                 for (i, to_pip_install) in to_pip_installs.iter().enumerate() {
                     if let Err(e) = utils::run_cmd_template(
                         version,
@@ -104,6 +105,7 @@ pub fn install_extra_pip_packages(
                             "--upgrade",
                             to_pip_install,
                         ],
+                        &env_variables,
                         &install_dir,
                     ) {
                         log::error!("Failed to pip install {}: {:?}", to_pip_install, e);

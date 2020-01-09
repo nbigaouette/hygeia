@@ -3,11 +3,13 @@ use std::{env, path::PathBuf};
 
 use crate::constants::{
     self, AVAILABLE_TOOLCHAIN_CACHE, DEFAULT_DOT_DIR, EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME,
+    SHIMS_DIRECTORY_IDENTIFIER_FILE,
 };
 
 #[cfg_attr(test, mockall::automock)]
 pub trait PycorsHomeProviderTrait {
     fn home(&self) -> Option<PathBuf>;
+    fn document(&self) -> Option<PathBuf>;
     fn project_home(&self) -> Option<PathBuf>;
     fn paths(&self) -> Vec<PathBuf>;
 }
@@ -25,6 +27,9 @@ where
 {
     fn home(&self) -> Option<PathBuf> {
         self.path_provider.home()
+    }
+    fn document(&self) -> Option<PathBuf> {
+        self.path_provider.document()
     }
     fn project_home(&self) -> Option<PathBuf> {
         self.path_provider.project_home()
@@ -51,6 +56,13 @@ impl PycorsHomeProviderTrait for PycorsPathsProviderFromEnv {
             None => dirs::home_dir(),
         }
     }
+    fn document(&self) -> Option<PathBuf> {
+        match env::var_os(constants::document_overwrite_env_variable()) {
+            Some(document) => Some(PathBuf::from(document)),
+            None => dirs::document_dir(),
+        }
+    }
+
     fn project_home(&self) -> Option<PathBuf> {
         env::var_os(constants::project_home_env_variable()).map(PathBuf::from)
     }
@@ -66,7 +78,6 @@ impl<P> PycorsPathsProvider<P>
 where
     P: PycorsHomeProviderTrait,
 {
-    #[cfg(test)]
     pub fn from(path_provider: P) -> Self {
         PycorsPathsProvider { path_provider }
     }
@@ -119,6 +130,10 @@ where
         self.cache().join(AVAILABLE_TOOLCHAIN_CACHE)
     }
 
+    pub fn shims_directory_identifier_file(&self) -> PathBuf {
+        self.shims().join(SHIMS_DIRECTORY_IDENTIFIER_FILE)
+    }
+
     pub fn extracted(&self) -> PathBuf {
         self.cache().join("extracted")
     }
@@ -152,6 +167,23 @@ pub mod shell {
 
             pub fn autocomplete() -> PathBuf {
                 dir_relative().join("completion.sh")
+            }
+        }
+    }
+    pub mod powershell {
+        pub mod config {
+            use std::path::{Path, PathBuf};
+
+            pub fn dir_relative() -> PathBuf {
+                Path::new("shell").join("powershell")
+            }
+
+            pub fn file_path() -> PathBuf {
+                dir_relative().join("config.ps1")
+            }
+
+            pub fn autocomplete() -> PathBuf {
+                dir_relative().join("completion.ps1")
             }
         }
     }

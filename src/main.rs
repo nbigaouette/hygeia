@@ -1,5 +1,4 @@
 // FIXME: Get rid of utils::path_exists(), use std::Path::exists() instead.
-// FIXME: Running '/usr/bin/python2 -V' returns Python 2.7.15+, which fails parsing: ERROR pycors::settings] Failed to parse version string "2.7.15+": ParseError("Error parsing prerelease")
 // FIXME: Replace 'format_err!()' with structs/enums
 // FIXME: Gracefully handle errors that bubble to main
 // FIXME: Add -vvv flag to control log level
@@ -67,12 +66,19 @@ pub fn no_shim_execution() -> Result<()> {
             Command::Version { version } => commands::version::run(version)?,
             Command::Select(version_or_path) => commands::select::run(version_or_path)?,
             Command::Install {
+                release,
                 from_version,
                 force,
                 install_extra_packages,
                 select,
             } => {
-                commands::install::run(from_version, force, &install_extra_packages, select)?;
+                commands::install::run(
+                    release,
+                    from_version,
+                    force,
+                    &install_extra_packages,
+                    select,
+                )?;
             }
             Command::Run { version, command } => commands::run::run(version, &command)?,
             Command::Setup { shell } => commands::setup::run(shell)?,

@@ -8,9 +8,9 @@ use std::{
 pub use anyhow::{Context, Result};
 
 #[cfg(windows)]
-const EXEC_EXTENSION: &str = ".exe";
+pub const EXECUTABLE_EXTENSION: &str = ".exe";
 #[cfg(not(windows))]
-const EXEC_EXTENSION: &str = "";
+pub const EXECUTABLE_EXTENSION: &str = "";
 
 pub fn init_logger() {
     env::var("RUST_LOG")
@@ -62,11 +62,11 @@ fn _mock_executable(
 
     let stdout_filepath = executable_location.join(format!(
         "{}{}_pycors_tests_to_print_stdout.txt",
-        executable_name, EXEC_EXTENSION
+        executable_name, EXECUTABLE_EXTENSION
     ));
     let stderr_filepath = executable_location.join(format!(
         "{}{}_pycors_tests_to_print_stderr.txt",
-        executable_name, EXEC_EXTENSION
+        executable_name, EXECUTABLE_EXTENSION
     ));
 
     if stdout_filepath.exists() {
@@ -110,17 +110,31 @@ fn _mock_executable(
 
     fs::copy(
         &print_file_to_stdout,
-        executable_location.join(format!("{}{}", executable_name, EXEC_EXTENSION)),
+        executable_location.join(format!("{}{}", executable_name, EXECUTABLE_EXTENSION)),
     )
     .with_context(|| {
         format!(
             "Failed to copy {:?} to {:?}",
             print_file_to_stdout,
-            executable_location.join(format!("{}{}", executable_name, EXEC_EXTENSION))
+            executable_location.join(format!("{}{}", executable_name, EXECUTABLE_EXTENSION))
         )
     })?;
 
     Ok(())
+}
+
+#[macro_export]
+macro_rules! function_path {
+    () => {{
+        // https://stackoverflow.com/a/40234666
+        fn f() {}
+        fn type_name_of<T>(_: T) -> &'static str {
+            std::any::type_name::<T>()
+        }
+        let name = type_name_of(f);
+        let function_path = &name[..name.len() - 3];
+        function_path
+    }};
 }
 
 #[macro_export]
@@ -135,15 +149,7 @@ macro_rules! create_test_temp_dir {
         }
         let mut dir = dir.canonicalize().unwrap();
 
-        // ---------------------------------
-        // https://stackoverflow.com/a/40234666
-        fn f() {}
-        fn type_name_of<T>(_: T) -> &'static str {
-            std::any::type_name::<T>()
-        }
-        let name = type_name_of(f);
-        let function_path = &name[..name.len() - 3];
-        // ---------------------------------
+        let function_path = pycors_test_helpers::function_path!();
 
         for component in function_path.split("::").skip(1) {
             dir.push(component);

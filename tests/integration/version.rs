@@ -13,7 +13,7 @@ fn assert_version_output(output: std::process::Output) {
             ))
             .normalize(),
         )
-        .stderr("");
+        .stderr(predicate::str::is_empty().trim());
 }
 
 #[test]

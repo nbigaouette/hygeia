@@ -2,21 +2,27 @@
 // executable name (integration_tests) due to a bug in rustfmt.
 // See: https://github.com/rust-lang/rustfmt/issues/3794
 
-use std::{env, fs, io::Write, path::Path};
+use std::{
+    env, fs,
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 use assert_cmd::{assert::OutputAssertExt, Command};
 use indoc::indoc;
 use predicates::prelude::*;
+use semver::Version;
 
 use pycors::{
     constants::{
         home_overwrite_env_variable, project_home_env_variable, EXECUTABLE_NAME, INFO_FILE,
         TOOLCHAIN_FILE,
     },
+    utils::directory::{PycorsHomeProviderTrait, PycorsPathsProvider},
     Result,
 };
 
-use pycors_test_helpers::{create_test_temp_dir, mock_executable, MockedOutput};
+use pycors_test_helpers::{create_test_temp_dir, function_path, mock_executable, MockedOutput};
 
 mod help;
 mod install;
@@ -26,6 +32,16 @@ mod run;
 mod select;
 mod setup;
 mod version;
+
+mockall::mock! {
+    PycorsHomeProviderTrait {}     // Name of the mock struct, less the "Mock" prefix
+    trait PycorsHomeProviderTrait {   // definition of the trait to mock
+        fn home(&self) -> Option<PathBuf>;
+        fn document(&self) -> Option<PathBuf>;
+        fn project_home(&self) -> Option<PathBuf>;
+        fn paths(&self) -> Vec<PathBuf>;
+    }
+}
 
 fn select(version: &str, cwd: &Path) {
     let _ = fs::create_dir_all(&cwd);

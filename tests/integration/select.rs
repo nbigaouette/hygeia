@@ -18,7 +18,10 @@ fn from_none_exact() {
         .current_dir(&cwd)
         .unwrap();
     let assert_output = output.assert();
-    assert_output.success().stdout("").stderr("");
+    assert_output
+        .success()
+        .stdout(predicate::str::is_empty().trim())
+        .stderr(predicate::str::is_empty().trim());
 
     let file_content = fs::read_to_string(cwd.join(TOOLCHAIN_FILE)).unwrap();
     assert_eq!(file_content.trim(), "= 3.7.5");
@@ -42,7 +45,10 @@ fn from_none_tilde() {
         .current_dir(&cwd)
         .unwrap();
     let assert_output = output.assert();
-    assert_output.success().stdout("").stderr("");
+    assert_output
+        .success()
+        .stdout(predicate::str::is_empty().trim())
+        .stderr(predicate::str::is_empty().trim());
 
     let file_content = fs::read_to_string(cwd.join(TOOLCHAIN_FILE)).unwrap();
     assert_eq!(file_content.trim(), "= 3.7.5");
@@ -67,7 +73,10 @@ fn from_some_exact() {
         .current_dir(&cwd)
         .unwrap();
     let assert_output = output.assert();
-    assert_output.success().stdout("").stderr("");
+    assert_output
+        .success()
+        .stdout(predicate::str::is_empty().trim())
+        .stderr(predicate::str::is_empty().trim());
 
     let file_content = fs::read_to_string(cwd.join(TOOLCHAIN_FILE)).unwrap();
     assert_eq!(file_content.trim(), "= 3.7.5");
@@ -92,7 +101,7 @@ fn from_none_not_installed() {
     let assert_output = output.assert();
     assert_output
         .failure()
-        .stdout("")
+        .stdout(predicate::str::is_empty().trim())
         .stderr(predicate::str::similar("Error: Python version =3.7.5 not found!").trim());
 
     assert!(!cwd.join(TOOLCHAIN_FILE).exists());
@@ -117,7 +126,7 @@ fn from_some_not_installed() {
     let assert_output = output.assert();
     assert_output
         .failure()
-        .stdout("")
+        .stdout(predicate::str::is_empty().trim())
         .stderr(predicate::str::similar("Error: Python version =3.7.5 not found!").trim());
 
     let file_content = fs::read_to_string(cwd.join(TOOLCHAIN_FILE)).unwrap();

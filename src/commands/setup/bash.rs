@@ -12,18 +12,27 @@ use crate::{
         EXECUTABLE_NAME, SHELL_CONFIG_IDENTIFYING_PATTERN_END,
         SHELL_CONFIG_IDENTIFYING_PATTERN_START,
     },
-    utils::{self, directory::PycorsPathsProviderFromEnv},
+    utils::{
+        self,
+        directory::{PycorsHomeProviderTrait, PycorsPathsProvider},
+    },
     Opt, Result,
 };
 
-pub fn setup_bash(home: &Path) -> Result<()> {
+pub fn setup_bash<P>(paths_provider: &PycorsPathsProvider<P>) -> Result<()>
+where
+    P: PycorsHomeProviderTrait,
+{
     let exec_name_capital = EXECUTABLE_NAME.to_uppercase();
-    let paths_provider = PycorsPathsProviderFromEnv::new();
+
+    let home = paths_provider
+        .home()
+        .ok_or_else(|| anyhow::anyhow!("Failed to get home directory"))?;
+    let project_home = paths_provider.project_home();
 
     // Add the autocomplete too
-    let autocomplete_file = paths_provider
-        .project_home()
-        .join(utils::directory::shell::bash::config::autocomplete());
+    let autocomplete_file =
+        project_home.join(utils::directory::shell::bash::config::autocomplete());
     let mut f = fs::File::create(&autocomplete_file)
         .with_context(|| format!("Failed creating file {:?}", autocomplete_file))?;
     Opt::clap().gen_completions_to(EXECUTABLE_NAME, Shell::Bash, &mut f);
@@ -66,16 +75,12 @@ pub fn setup_bash(home: &Path) -> Result<()> {
         String::from(r#"fi"#),
     ];
 
-    let config_file = paths_provider
-        .project_home()
-        .join(utils::directory::shell::bash::config::file_path());
+    let config_file = project_home.join(utils::directory::shell::bash::config::file_path());
     let f = BufWriter::new(fs::File::create(&config_file)?);
     write_config_to(f, &config_lines, &autocomplete_file)?;
 
     for bash_config_file in &[".bashrc", ".bash_profile"] {
-        let tmp_file_path = PycorsPathsProviderFromEnv::new()
-            .cache()
-            .join(bash_config_file);
+        let tmp_file_path = paths_provider.cache().join(bash_config_file);
         let bash_config_file = home.join(bash_config_file);
 
         if !bash_config_file.exists() {
@@ -111,7 +116,7 @@ pub fn setup_bash(home: &Path) -> Result<()> {
             format!(
                 r#"export {}_HOME="{}""#,
                 exec_name_capital,
-                PycorsPathsProviderFromEnv::new().project_home().display()
+                paths_provider.project_home().display()
             )
         )
         .with_context(|| format!("Failed to export line to {:?}", tmp_file_path))?;

@@ -3,6 +3,7 @@ use std::{
     io::{self, BufReader, Write},
 };
 
+use anyhow::Context;
 use semver::Version;
 
 use crate::{
@@ -24,18 +25,29 @@ pub fn install_package(
 
     let cwd = PycorsPathsProviderFromEnv::new().downloaded();
     let archive = build_filename_zip(version);
+    let archive_path = cwd.join(archive);
 
-    let file = BufReader::new(File::open(cwd.join(archive)).unwrap());
-    let mut archive = zip::ZipArchive::new(file).unwrap();
+    let file = BufReader::new(
+        File::open(&archive_path)
+            .with_context(|| format!("Failed to open archive {:?}", archive_path))?,
+    );
+    let mut archive = zip::ZipArchive::new(file)
+        .with_context(|| format!("Failed to open archive as zip file: {:?}", archive_path))?;
 
     for i in 0..archive.len() {
-        let mut file = archive.by_index(i).unwrap();
+        let mut file = archive.by_index(i).with_context(|| {
+            format!(
+                "Failed to access file at index {} in zip archive {:?}",
+                i, archive_path
+            )
+        })?;
         let filename = file.sanitized_name();
 
         if (&*file.name()).ends_with('/') {
             let outpath = install_dir.join(&filename);
             log::debug!("{:?} --> \"{}\"", filename, outpath.as_path().display());
-            fs::create_dir_all(&outpath).unwrap();
+            fs::create_dir_all(&outpath)
+                .with_context(|| format!("Failed to create directory {:?}", outpath))?;
         } else {
             let outpath = install_dir.join(&filename);
             log::debug!(
@@ -46,11 +58,18 @@ pub fn install_package(
             );
             if let Some(p) = outpath.parent() {
                 if !p.exists() {
-                    fs::create_dir_all(&p).unwrap();
+                    fs::create_dir_all(&p)
+                        .with_context(|| format!("Failed to create directory {:?}", p))?;
                 }
             }
-            let mut outfile = File::create(&outpath).unwrap();
-            io::copy(&mut file, &mut outfile).unwrap();
+            let mut outfile_file = File::create(&outpath)
+                .with_context(|| format!("Failed to create file {:?}", outpath))?;
+            io::copy(&mut file, &mut outfile_file).with_context(|| {
+                format!(
+                    "Failed to extract file {:?} from zip archive into {:?}",
+                    filename, outpath
+                )
+            })?;
         }
     }
 
@@ -66,12 +85,14 @@ pub fn install_package(
     // File is too small to bother for a progress bar
     let with_progress_bar = false;
     let mut downloader = HyperDownloader::new(GET_PIP_URL)?;
-    futures::executor::block_on(download_to_path(
+    let mut rt = tokio::runtime::Runtime::new()?;
+    rt.block_on(download_to_path(
         &mut downloader,
         &cache_dir,
         with_progress_bar,
     ))?;
 
+    let env_variables: [(&str, &str); 0] = [];
     utils::run_cmd_template(
         &version,
         "Install pip",
@@ -80,6 +101,7 @@ pub fn install_package(
             get_pip_py.to_string_lossy().into_owned(),
             "--no-warn-script-location".to_string(),
         ],
+        &env_variables,
         &install_dir,
     )?;
 

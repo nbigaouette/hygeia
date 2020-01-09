@@ -28,6 +28,7 @@ pub enum InstallError {
 }
 
 pub fn run(
+    release: bool,
     requested_version: Option<String>,
     force_install: bool,
     install_extra_packages: &commands::InstallExtraPackagesOptions,
@@ -108,7 +109,13 @@ pub fn run(
             // Configure make make install
             let with_progress_bar = true;
             let mut rt = tokio::runtime::Runtime::new()?;
-            let mut downloader = HyperDownloader::new(requested_version.source_url())?;
+
+            #[cfg(windows)]
+            let download_url = requested_version.windows_pre_built_url();
+            #[cfg(not(windows))]
+            let download_url = requested_version.source_url();
+
+            let mut downloader = HyperDownloader::new(download_url)?;
             let download_dir = PycorsPathsProviderFromEnv::new().downloaded();
             rt.block_on(download_to_path(
                 &mut downloader,
@@ -117,7 +124,7 @@ pub fn run(
             ))?;
             // FIXME: Validate downloaded package with checksum
             // FIXME: Validate downloaded package with signature
-            install_package(&requested_version.version, install_extra_packages)?;
+            install_package(release, &requested_version.version, install_extra_packages)?;
         }
     }
 
@@ -153,12 +160,13 @@ pub fn run(
 }
 
 fn install_package(
+    #[cfg_attr(windows, allow(unused_variables))] release: bool,
     version_to_install: &Version,
     install_extra_packages: Option<&commands::InstallExtraPackagesOptions>,
 ) -> Result<()> {
     #[cfg(not(target_os = "windows"))]
     {
-        unix::install_package(&version_to_install, install_extra_packages)?;
+        unix::install_package(release, &version_to_install, install_extra_packages)?;
     }
     #[cfg(target_os = "windows")]
     {

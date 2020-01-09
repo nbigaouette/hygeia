@@ -64,6 +64,10 @@ pub enum Command {
         /// Specified version to install
         from_version: Option<String>,
 
+        /// Build toolchain in release mode, with optimizations (slower)
+        #[structopt(short, long)]
+        release: bool,
+
         /// Force installation, even if already installed
         #[structopt(long)]
         force: bool,
