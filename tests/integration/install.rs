@@ -40,14 +40,29 @@ fn assert_python_successfully_installed<P, S, T>(
     let output = cmd.arg("--version").current_dir(&cwd).unwrap();
 
     let assert_output = output.assert();
-    assert_output
-        .success()
-        .stdout(
-            predicate::str::similar(format!("Python {}", version))
-                .trim()
-                .normalize(),
-        )
-        .stderr(predicate::str::is_empty().trim());
+
+    let predicate_empty = predicate::str::is_empty().trim();
+    let predicate_version = predicate::str::similar(format!("Python {}", version))
+        .trim()
+        .normalize();
+    let predicate_prefix = predicate::str::contains(format!(
+        "{}",
+        paths_provider.install_dir(&version).display()
+    ))
+    .trim()
+    .normalize();
+
+    if version >= Version::parse("3.3.8").unwrap() {
+        assert_output
+            .success()
+            .stdout(predicate_version)
+            .stderr(predicate_empty);
+    } else {
+        assert_output
+            .success()
+            .stdout(predicate_empty)
+            .stderr(predicate_version);
+    };
 
     // Make sure the prefix matches the expected installation directory
     if cfg!(not(target_os = "windows")) {
@@ -59,17 +74,17 @@ fn assert_python_successfully_installed<P, S, T>(
         let output = cmd.arg("--prefix").current_dir(&cwd).unwrap();
 
         let assert_output = output.assert();
-        assert_output
-            .success()
-            .stdout(
-                predicate::str::contains(format!(
-                    "{}",
-                    paths_provider.install_dir(&version).display()
-                ))
-                .trim()
-                .normalize(),
-            )
-            .stderr(predicate::str::is_empty().trim());
+        if version >= Version::parse("3.3.8").unwrap() {
+            assert_output
+                .success()
+                .stdout(predicate_prefix)
+                .stderr(predicate_empty);
+        } else {
+            assert_output
+                .success()
+                .stdout(predicate_empty)
+                .stderr(predicate_prefix);
+        }
     }
 }
 
