@@ -35,15 +35,9 @@ fn assert_python_successfully_installed<P, S, T>(
         .bin_dir(&version)
         .join(format!("python{}", EXECUTABLE_EXTENSION));
 
-    let pycors_home = paths_provider.project_home();
-
     // Make sure we can run the installed toolchain
     let mut cmd = Command::new(&bin_file);
-    let output = cmd
-        .arg("--version")
-        .env(project_home_env_variable(), &pycors_home)
-        .current_dir(&cwd)
-        .unwrap();
+    let output = cmd.arg("--version").current_dir(&cwd).unwrap();
 
     let assert_output = output.assert();
     assert_output
@@ -61,7 +55,6 @@ fn assert_python_successfully_installed<P, S, T>(
         let output = cmd
             .arg("-c")
             .arg(r#""import sysconfig; print(sysconfig.get_config_vars('prefix'))""#)
-            .env(project_home_env_variable(), &pycors_home)
             .current_dir(&cwd)
             .unwrap();
 
