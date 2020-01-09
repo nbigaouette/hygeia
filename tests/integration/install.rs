@@ -51,12 +51,12 @@ fn assert_python_successfully_installed<P, S, T>(
 
     // Make sure the prefix matches the expected installation directory
     if cfg!(not(target_os = "windows")) {
-        let mut cmd = Command::new(&bin_file);
-        let output = cmd
-            .arg("-c")
-            .arg(r#""import sysconfig; print(sysconfig.get_config_vars('prefix'))""#)
-            .current_dir(&cwd)
-            .unwrap();
+        let config_bin_file = paths_provider
+            .bin_dir(&version)
+            .join(format!("python3-config{}", EXECUTABLE_EXTENSION));
+
+        let mut cmd = Command::new(&config_bin_file);
+        let output = cmd.arg("--prefix").current_dir(&cwd).unwrap();
 
         let assert_output = output.assert();
         assert_output
