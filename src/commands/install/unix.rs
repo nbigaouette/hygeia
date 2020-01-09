@@ -94,6 +94,14 @@ pub fn compile_source(
     #[cfg_attr(not(macos), allow(unused_mut))]
     let mut ldflags: Vec<String> = Vec::new();
 
+    #[cfg(target_os = "linux")]
+    {
+        // When compiling dynamically (--enable-shared), we need to
+        // add a directory to the runtime library search path.
+        // See https://stackoverflow.com/questions/37757314/problems-installing-python-3-with-enable-shared
+        ldflags.push(format!("-Wl,-rpath {}", install_dir.display()));
+    }
+
     // See https://devguide.python.org/setup/#macos-and-os-x
     #[cfg(target_os = "macos")]
     {
