@@ -74,4 +74,5 @@ fn assert_python_successfully_installed<P, S, T>(
 }
 
 mod long_compilation;
+mod long_install_many;
 mod windows_only;
