@@ -92,6 +92,7 @@ pub fn install_package(
         with_progress_bar,
     ))?;
 
+    let env_variables: [(&str, &str); 0] = [];
     utils::run_cmd_template(
         &version,
         "Install pip",
@@ -100,6 +101,7 @@ pub fn install_package(
             get_pip_py.to_string_lossy().into_owned(),
             "--no-warn-script-location".to_string(),
         ],
+        &env_variables,
         &install_dir,
     )?;
 

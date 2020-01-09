@@ -216,18 +216,38 @@ impl Drop for ChildProcess {
     }
 }
 
-pub fn run_cmd_template<S, P>(
+pub fn run_cmd_template<S, P, SEnvName, SEnvValue>(
     version: &Version,
     line_header: &str,
     cmd: &str,
     args: &[S],
+    envs: &[(SEnvName, SEnvValue)],
     cwd: P,
 ) -> Result<()>
 where
     S: AsRef<std::ffi::OsStr> + std::fmt::Debug,
+    SEnvName: AsRef<std::ffi::OsStr> + std::fmt::Debug,
+    SEnvValue: AsRef<std::ffi::OsStr> + std::fmt::Debug,
     P: AsRef<Path>,
 {
-    log::debug!("Running {} {:?}", cmd, args);
+    log::debug!(
+        "Running {} {}",
+        cmd,
+        args.iter()
+            .map(|s| s.as_ref().to_string_lossy())
+            .collect::<Vec<_>>()
+            .join(" ")
+    );
+    log::debug!("Using environment variables:");
+    envs.iter()
+        .map(|(name, value)| {
+            format!(
+                "{}={}",
+                name.as_ref().to_string_lossy(),
+                value.as_ref().to_string_lossy()
+            )
+        })
+        .for_each(|s| log::debug!("    {}", s));
 
     let logs_dir = PycorsPathsProviderFromEnv::new().logs();
 
@@ -291,6 +311,10 @@ where
         std::process::Command::new(cmd)
             .args(args)
             .env("PATH", &new_path)
+            .envs(
+                envs.iter()
+                    .map(|(name, value)| (name.as_ref(), value.as_ref())),
+            )
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
             .spawn()
@@ -620,6 +644,7 @@ mod tests {
         let line_header = "0 utils::tests::run_cmd_template_success";
         let cmd = "cargo";
         let args = &["-V"];
+        let envs: &[(&str, String)] = &[];
         let cwd = ".";
 
         let expected_file_path = PycorsPathsProviderFromEnv::new()
@@ -630,7 +655,7 @@ mod tests {
         }
 
         println!("expected_file_path: {:?}", expected_file_path);
-        run_cmd_template(&version, line_header, cmd, args, cwd).unwrap();
+        run_cmd_template(&version, line_header, cmd, args, envs, cwd).unwrap();
 
         let re = regex::Regex::new(r#"(?P<date>20[0-9]{2}-[0-1][0-9]-[0-3][0-9]T[0-2][0-9]:[0-5][0-9]:[0-5][0-9].[0-9]+[-+][0-2][0-9]:[0-5][0-9]) - (?P<cmd>.*)"#).unwrap();
         let file_content = fs::read_to_string(&expected_file_path).unwrap();
@@ -657,6 +682,7 @@ mod tests {
         let line_header = "0 utils::tests::run_cmd_template_fail_stdout";
         let cmd = "non-existent-command";
         let args = &["-V"];
+        let envs: &[(&str, String)] = &[];
         let cwd = ".";
 
         let expected_file_path = PycorsPathsProviderFromEnv::new()
@@ -667,7 +693,7 @@ mod tests {
         }
 
         println!("expected_file_path: {:?}", expected_file_path);
-        run_cmd_template(&version, line_header, cmd, args, cwd).unwrap_err();
+        run_cmd_template(&version, line_header, cmd, args, envs, cwd).unwrap_err();
 
         let re = regex::Regex::new(r#"(?P<date>20[0-9]{2}-[0-1][0-9]-[0-3][0-9]T[0-2][0-9]:[0-5][0-9]:[0-5][0-9].[0-9]+[-+][0-2][0-9]:[0-5][0-9]) - (?P<cmd>.*)"#).unwrap();
         let file_content = fs::read_to_string(&expected_file_path).unwrap();
@@ -691,6 +717,7 @@ mod tests {
         let line_header = "0 utils::tests::run_cmd_template_fail_stderr";
         let cmd = "cargo";
         let args = &["non-existent-subcommand"];
+        let envs: &[(&str, String)] = &[];
         let cwd = ".";
 
         let expected_file_path = PycorsPathsProviderFromEnv::new()
@@ -700,7 +727,7 @@ mod tests {
             fs::remove_file(&expected_file_path).unwrap();
         }
 
-        run_cmd_template(&version, line_header, cmd, args, cwd).unwrap_err();
+        run_cmd_template(&version, line_header, cmd, args, envs, cwd).unwrap_err();
 
         let re = regex::Regex::new(r#"(?P<date>20[0-9]{2}-[0-3][0-9]-[0-1][0-9]T[0-2][0-9]:[0-5][0-9]:[0-5][0-9].[0-9]+[-+][0-2][0-9]:[0-5][0-9]) - (?P<cmd>.*)"#).unwrap();
         let file_content = fs::read_to_string(&expected_file_path).unwrap();

@@ -94,14 +94,6 @@ pub fn compile_source(
     #[cfg_attr(not(macos), allow(unused_mut))]
     let mut ldflags: Vec<String> = Vec::new();
 
-    #[cfg(target_os = "linux")]
-    {
-        // When compiling dynamically (--enable-shared), we need to
-        // add a directory to the runtime library search path.
-        // See https://stackoverflow.com/questions/37757314/problems-installing-python-3-with-enable-shared
-        ldflags.push(format!("-Wl,-rpath {}", install_dir.display()));
-    }
-
     // See https://devguide.python.org/setup/#macos-and-os-x
     #[cfg(target_os = "macos")]
     {
@@ -130,9 +122,16 @@ pub fn compile_source(
         cppflags.push("-I/opt/X11/include".into());
     }
 
-    env::set_var("CFLAGS", cflags.join(" "));
-    env::set_var("CPPFLAGS", cppflags.join(" "));
-    env::set_var("LDFLAGS", ldflags.join(" "));
+    let environment_variables = vec![
+        ("CFLAGS", cflags.join(" ")),
+        ("CPPFLAGS", cppflags.join(" ")),
+        ("LDFLAGS", ldflags.join(" ")),
+        // When compiling dynamically (--enable-shared), we need to
+        // add a directory to the runtime library search path.
+        // See https://stackoverflow.com/questions/37757314/problems-installing-python-3-with-enable-shared
+        #[cfg(target_os = "linux")]
+        ("LD_RUN_PATH", format!("{}/lib", install_dir.display())),
+    ];
 
     let basename = utils::build_basename(&version);
     let extract_dir = PycorsPathsProviderFromEnv::new()
@@ -144,16 +143,25 @@ pub fn compile_source(
         "[3/15] Configure",
         "./configure",
         &configure_args,
+        &environment_variables,
         &extract_dir,
     )
     .with_context(|| format!("Failed to run command ./configure {:?}", configure_args))?;
-    utils::run_cmd_template::<&str, &PathBuf>(&version, "[4/15] Make", "make", &[], &extract_dir)
-        .with_context(|| "Failed to run command 'make'")?;
+    utils::run_cmd_template::<&str, &PathBuf, _, _>(
+        &version,
+        "[4/15] Make",
+        "make",
+        &[],
+        &environment_variables,
+        &extract_dir,
+    )
+    .with_context(|| "Failed to run command 'make'")?;
     utils::run_cmd_template(
         &version,
         "[5/15] Make install",
         "make",
         &["install"],
+        &environment_variables,
         &extract_dir,
     )
     .with_context(|| "Failed to run command 'make install'")?;
