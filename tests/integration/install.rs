@@ -53,7 +53,7 @@ fn assert_python_successfully_installed<P, S, T>(
                 .trim()
                 .normalize(),
         )
-        .stderr("");
+        .stderr(predicate::str::is_empty().trim());
 
     // Make sure the prefix matches the expected installation directory
     if cfg!(not(target_os = "windows")) {
@@ -76,7 +76,7 @@ fn assert_python_successfully_installed<P, S, T>(
                 .trim()
                 .normalize(),
             )
-            .stderr("");
+            .stderr(predicate::str::is_empty().trim());
     }
 }
 

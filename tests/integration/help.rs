@@ -16,7 +16,7 @@ fn assert_help_output(output: std::process::Output) {
             .and(predicate::str::contains("FLAGS:"))
             .and(predicate::str::contains("SUBCOMMANDS:")),
         )
-        .stderr("");
+        .stderr(predicate::str::is_empty().trim());
 }
 
 #[test]

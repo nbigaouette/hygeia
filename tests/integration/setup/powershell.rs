@@ -32,7 +32,10 @@ fn setup_powershell_success_from_scratch() {
         .current_dir(&cwd)
         .unwrap();
     let assert_output = output.assert();
-    assert_output.success().stdout("").stderr("");
+    assert_output
+        .success()
+        .stdout(predicate::str::is_empty().trim())
+        .stderr(predicate::str::is_empty().trim());
 
     let expected_ps_profile = format!(
         r#"$env:Path += ";{}"

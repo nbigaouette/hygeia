@@ -37,7 +37,10 @@ fn simple_install_from_scratch_success() {
             .current_dir(&cwd)
             .unwrap();
         let assert_output = output.assert();
-        assert_output.success().stdout("").stderr("");
+        assert_output
+            .success()
+            .stdout(predicate::str::is_empty().trim())
+            .stderr(predicate::str::is_empty().trim());
 
         // Make sure pip was installed successfully
         assert_pip_successfully_installed(&paths_provider);
@@ -61,7 +64,7 @@ fn simple_install_from_scratch_success() {
         assert_output
             .success()
             .stdout(predicate::str::similar("Python 3.7.5").trim().normalize())
-            .stderr("");
+            .stderr(predicate::str::is_empty().trim());
     }
 }
 
@@ -103,7 +106,10 @@ fn simple_install_from_scratch_select_success() {
             .current_dir(&cwd)
             .unwrap();
         let assert_output = output.assert();
-        assert_output.success().stdout("").stderr("");
+        assert_output
+            .success()
+            .stdout(predicate::str::is_empty().trim())
+            .stderr(predicate::str::is_empty().trim());
 
         // Make sure pip was installed successfully
         assert_pip_successfully_installed(&paths_provider);
@@ -154,7 +160,10 @@ fn install_twice_noop() {
             .current_dir(&cwd)
             .unwrap();
         let assert_output = output.assert();
-        assert_output.success().stdout("").stderr("");
+        assert_output
+            .success()
+            .stdout(predicate::str::is_empty().trim())
+            .stderr(predicate::str::is_empty().trim());
 
         // Make sure pip was installed successfully
         assert_pip_successfully_installed(&paths_provider);
@@ -171,7 +180,7 @@ fn install_twice_noop() {
         let assert_output = output.assert();
         assert_output
             .success()
-            .stdout("")
+            .stdout(predicate::str::is_empty().trim())
             .stderr(predicates::str::contains(
                 "Python version 3.7.5 already installed!",
             ));
@@ -216,7 +225,10 @@ fn install_twice_forced() {
             .current_dir(&cwd)
             .unwrap();
         let assert_output = output.assert();
-        assert_output.success().stdout("").stderr("");
+        assert_output
+            .success()
+            .stdout(predicate::str::is_empty().trim())
+            .stderr(predicate::str::is_empty().trim());
 
         // Make sure pip was installed successfully
         assert_pip_successfully_installed(&paths_provider);
@@ -233,9 +245,12 @@ fn install_twice_forced() {
             .current_dir(&cwd)
             .unwrap();
         let assert_output = output.assert();
-        assert_output.success().stdout("").stderr(
-            predicates::str::contains("skipped: file get-pip.py already downloaded.")
-                .and(predicates::str::contains("Installing 3.7.5 succeeded!")),
-        );
+        assert_output
+            .success()
+            .stdout(predicate::str::is_empty().trim())
+            .stderr(
+                predicates::str::contains("skipped: file get-pip.py already downloaded.")
+                    .and(predicates::str::contains("Installing 3.7.5 succeeded!")),
+            );
     }
 }

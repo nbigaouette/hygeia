@@ -21,7 +21,10 @@ fn setup_bash_success_from_scratch() {
         .current_dir(&cwd)
         .unwrap();
     let assert_output = output.assert();
-    assert_output.success().stdout("").stderr("");
+    assert_output
+        .success()
+        .stdout(predicate::str::is_empty().trim())
+        .stderr(predicate::str::is_empty().trim());
 
     let expected_bashrc = format!(
         r#"
@@ -105,7 +108,10 @@ source {}
         .current_dir(&cwd)
         .unwrap();
     let assert_output = output.assert();
-    assert_output.success().stdout("").stderr("");
+    assert_output
+        .success()
+        .stdout(predicate::str::is_empty().trim())
+        .stderr(predicate::str::is_empty().trim());
 
     let bashrc_content = fs::read_to_string(home.join(".bashrc")).unwrap();
 
@@ -140,7 +146,10 @@ source {}
         .current_dir(&cwd)
         .unwrap();
     let assert_output = output.assert();
-    assert_output.success().stdout("").stderr("");
+    assert_output
+        .success()
+        .stdout(predicate::str::is_empty().trim())
+        .stderr(predicate::str::is_empty().trim());
 
     // After a second 'pycors setup bash', the extra lines should be above since
     // our block is extracted and moved to the end of the file.

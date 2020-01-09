@@ -22,7 +22,7 @@ fn with_empty_dir() {
                 +--------+---------+---------------------+----------+"
             )).trim().normalize()
             )
-        // .stderr("")
+        // .stderr(predicate::str::is_empty().trim())
         ;
 }
 
@@ -72,7 +72,7 @@ fn two_custom_no_system() {
                 dashes,
             )).normalize()
             )
-        // .stderr("")
+        // .stderr(predicate::str::is_empty().trim())
         ;
 }
 
@@ -101,6 +101,6 @@ fn selected_but_not_installed() {
                 +--------+---------+---------------------+----------+"
             )).trim().normalize()
             )
-        // .stderr("")
+        // .stderr(predicate::str::is_empty().trim())
         ;
 }
