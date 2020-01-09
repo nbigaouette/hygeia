@@ -290,7 +290,7 @@ where
                 );
                 continue;
             }
-            Some(python_version_str) => python_version_str,
+            Some(python_version_str) => python_version_str.trim_end_matches('+'),
         };
         let python_version = match Version::parse(python_version_str) {
             Err(e) => {
