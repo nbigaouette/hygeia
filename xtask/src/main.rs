@@ -135,7 +135,7 @@ fn run_tests(tests_type: Tests) -> Result<(), DynError> {
                     "test",
                     "--color=always",
                     "--no-fail-fast",
-                    "all::",
+                    "integration::install::all::",
                     "--",
                     "--color=always",
                     "--nocapture",
