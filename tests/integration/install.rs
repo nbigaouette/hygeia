@@ -49,7 +49,7 @@ fn assert_python_successfully_installed<P, S, T>(
     let predicate_version = predicate::str::similar(format!("Python {}", version))
         .trim()
         .normalize();
-    let predicate_prefix = predicate::str::contains(format!(
+    let predicate_prefix = predicate::str::similar(format!(
         "{}",
         paths_provider.install_dir(&version).display()
     ))
@@ -77,18 +77,13 @@ fn assert_python_successfully_installed<P, S, T>(
         let mut cmd = Command::new(&config_bin_file);
         let output = cmd.arg("--prefix").current_dir(&cwd).unwrap();
 
+        // Some Python version outputs to stdout, others to stderr. Just merge
+        // them for the comparison.
         let assert_output = output.assert();
-        if version >= Version::parse("3.3.8").unwrap() {
-            assert_output
-                .success()
-                .stdout(predicate_prefix)
-                .stderr(predicate_empty);
-        } else {
-            assert_output
-                .success()
-                .stdout(predicate_empty)
-                .stderr(predicate_prefix);
-        }
+        let stdout = String::from_utf8_lossy(&assert_output.get_output().stdout);
+        let stderr = String::from_utf8_lossy(&assert_output.get_output().stderr);
+        let merged = format!("{}{}", stdout.trim(), stderr.trim());
+        assert!(predicate_prefix.eval(&merged));
     }
 }
 
