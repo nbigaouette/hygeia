@@ -1,12 +1,6 @@
 // TODO: Add `git describe --dirty=-modified --tags --always --long` to archive name
 
-use std::{
-    env, fs,
-    io::{self, BufRead, BufReader},
-    path::Path,
-    process::{Command, Stdio},
-    str::FromStr,
-};
+use std::{env, fs, io, path::Path, process::Command, str::FromStr};
 
 use structopt::StructOpt;
 use zip::write::FileOptions;
@@ -205,34 +199,10 @@ pub fn cargo(arguments: &[&str]) -> Result<(), DynError> {
 
     println!("Running:\n    {} {}", cargo, arguments.join(" "));
 
-    let mut child = Command::new(&cargo)
-        .args(arguments)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()?;
+    let mut child = Command::new(&cargo).args(arguments).spawn()?;
 
-    let mut stderr = None;
-    std::mem::swap(&mut child.stderr, &mut stderr);
-
-    let reader_stderr = BufReader::new(stderr.expect("stderr"));
-
-    // Cargo outputs to stderr
-    reader_stderr
-        .lines()
-        .filter_map(|line| line.ok())
-        .for_each(|line| eprintln!("{}", line));
-
-    let remaining_output = child.wait_with_output()?;
-
-    for line in String::from_utf8_lossy(&remaining_output.stdout).lines() {
-        println!("{}", line);
-    }
-
-    for line in String::from_utf8_lossy(&remaining_output.stderr).lines() {
-        eprintln!("{}", line);
-    }
-
-    if remaining_output.status.success() {
+    let exit_status = child.wait()?;
+    if exit_status.success() {
         Ok(())
     } else {
         Err(Box::new(std::io::Error::new(
@@ -241,7 +211,7 @@ pub fn cargo(arguments: &[&str]) -> Result<(), DynError> {
                 r#"Failed to run "{} {}". Error code: {:?}"#,
                 cargo,
                 arguments.join(" "),
-                remaining_output.status.code()
+                exit_status.code()
             ),
         )))
     }
