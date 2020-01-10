@@ -157,6 +157,13 @@ macro_rules! _create_test_temp_dir_impl {
 
         dir.push($directory);
 
+        let dir: std::path::PathBuf = dir
+            .components()
+            // Strip current directory from the path, mainly introduced by
+            // the macro create_test_temp_dir!() when called without argument.
+            .filter(|c| *c != std::path::Component::CurDir)
+            .collect();
+
         if dir.exists() {
             std::fs::remove_dir_all(&dir).unwrap();
         }
