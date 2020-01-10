@@ -145,6 +145,11 @@ jobs:
         with:
           command: test
           args: --no-fail-fast "integration::" -- --nocapture
+      - name: Integration Tests (install all Python 3)
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --no-fail-fast "all::" -- --ignored --nocapture
 
   clippy:
     name: Clippy
