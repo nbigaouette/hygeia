@@ -3,7 +3,7 @@
 use std::{
     env, fs,
     io::{self, BufRead, BufReader},
-    path::{Path, PathBuf},
+    path::Path,
     process::{Command, Stdio},
     str::FromStr,
 };
