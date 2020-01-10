@@ -30,10 +30,10 @@ enum Opt {
     /// Package the binary into a zip file meant for release
     PackageArtifacts {
         /// Build target (debug or release)
-        #[structopt(short, long)]
+        #[structopt(long)]
         target: Target,
         /// Target triple (f.e. x86_64-apple-darwin)
-        #[structopt(short, long)]
+        #[structopt(long)]
         target_triple: String,
     },
     /// Run tests
