@@ -5,6 +5,9 @@ use rstest::rstest;
 
 use pycors_test_helpers::EXECUTABLE_EXTENSION;
 
+mod long_compilation;
+mod windows_only;
+
 fn assert_pip_successfully_installed<P>(paths_provider: &PycorsPathsProvider<P>)
 where
     P: PycorsHomeProviderTrait,
@@ -89,8 +92,6 @@ fn assert_python_successfully_installed<P, S, T>(
     }
 }
 
-mod long_compilation;
-mod windows_only;
 // NOTE: Do not overwrite the 'PATH' environment variable in 'Command' calls: toolchains
 //       are being compiled, they thus need access to compilers and co.
 #[ignore]
