@@ -138,18 +138,18 @@ jobs:
       - name: Unit Tests (cargo test)
         uses: actions-rs/cargo@v1
         with:
-          command: test
-          args: --no-fail-fast "tests::" -- --nocapture
+          command: xtask
+          args: test unit
       - name: Integration Tests (cargo test integration)
         uses: actions-rs/cargo@v1
         with:
-          command: test
-          args: --no-fail-fast "integration::" -- --nocapture
+          command: xtask
+          args: test integration commands
       - name: Integration Tests (install all Python 3)
         uses: actions-rs/cargo@v1
         with:
-          command: test
-          args: --no-fail-fast "all::" -- --ignored --nocapture
+          command: xtask
+          args: test integration all-versions
 
   clippy:
     name: Clippy
