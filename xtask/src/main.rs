@@ -84,6 +84,7 @@ fn main() {
         eprintln!("{}", e);
         std::process::exit(-1);
     }
+    println!("cargo xtask success!")
 }
 
 fn try_main() -> Result<(), DynError> {
