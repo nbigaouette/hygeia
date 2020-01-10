@@ -1,6 +1,12 @@
 // TODO: Add `git describe --dirty=-modified --tags --always --long` to archive name
 
-use std::{env, fs, io, path::Path, process::Command, str::FromStr};
+use std::{
+    env, fs,
+    io::{self, BufRead, BufReader},
+    path::{Path, PathBuf},
+    process::{Command, Stdio},
+    str::FromStr,
+};
 
 use structopt::StructOpt;
 use zip::write::FileOptions;
@@ -30,6 +36,8 @@ enum Opt {
         #[structopt(short, long)]
         target_triple: String,
     },
+    /// Run tests
+    Test(Tests),
 }
 
 #[derive(StructOpt, Debug)]
@@ -61,6 +69,22 @@ impl FromStr for Target {
     }
 }
 
+#[derive(StructOpt, Debug)]
+enum Tests {
+    /// Run unit tests
+    Unit,
+    /// Run integration tests
+    Integration(IntegrationTests),
+}
+
+#[derive(StructOpt, Debug)]
+enum IntegrationTests {
+    /// Run integration tests covering all commands
+    Commands,
+    /// Run integration tests that compile all Python 3 versions available
+    AllVersions,
+}
+
 fn main() {
     if let Err(e) = try_main() {
         eprintln!("{}", e);
@@ -77,7 +101,50 @@ fn try_main() -> Result<(), DynError> {
             target,
             target_triple,
         } => package_artifacts(target, target_triple),
+        Opt::Test(tests_type) => run_tests(tests_type),
     }
+}
+
+fn run_tests(tests_type: Tests) -> Result<(), DynError> {
+    let result = match tests_type {
+        Tests::Unit => {
+            cargo(&[
+                "test",
+                "--color=always",
+                "--no-fail-fast",
+                "tests::",
+                "--",
+                "--color=always",
+                "--nocapture",
+            ])?;
+        }
+        Tests::Integration(integration_tests) => match integration_tests {
+            IntegrationTests::Commands => {
+                cargo(&[
+                    "test",
+                    "--color=always",
+                    "--no-fail-fast",
+                    "integration::",
+                    "--",
+                    "--color=always",
+                    "--nocapture",
+                ])?;
+            }
+            IntegrationTests::AllVersions => {
+                cargo(&[
+                    "test",
+                    "--color=always",
+                    "--no-fail-fast",
+                    "all::",
+                    "--",
+                    "--color=always",
+                    "--nocapture",
+                ])?;
+            }
+        },
+    };
+
+    Ok(result)
 }
 
 fn release_url() -> Result<(), DynError> {
@@ -130,6 +197,53 @@ fn package_artifacts(target: Target, target_triple: String) -> Result<(), DynErr
     zip.finish()?;
 
     Ok(())
+}
+
+pub fn cargo(arguments: &[&str]) -> Result<(), DynError> {
+    let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
+
+    println!("Running:\n    {} {}", cargo, arguments.join(" "));
+
+    let mut child = Command::new(&cargo)
+        .args(arguments)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()?;
+
+    let mut stderr = None;
+    std::mem::swap(&mut child.stderr, &mut stderr);
+
+    let reader_stderr = BufReader::new(stderr.expect("stderr"));
+
+    // Cargo outputs to stderr
+    reader_stderr
+        .lines()
+        .filter_map(|line| line.ok())
+        .for_each(|line| eprintln!("{}", line));
+
+    let remaining_output = child.wait_with_output()?;
+
+    for line in String::from_utf8_lossy(&remaining_output.stdout).lines() {
+        println!("{}", line);
+    }
+
+    for line in String::from_utf8_lossy(&remaining_output.stderr).lines() {
+        eprintln!("{}", line);
+    }
+
+    if remaining_output.status.success() {
+        Ok(())
+    } else {
+        Err(Box::new(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            format!(
+                r#"Failed to run "{} {}". Error code: {:?}"#,
+                cargo,
+                arguments.join(" "),
+                remaining_output.status.code()
+            ),
+        )))
+    }
 }
 
 pub fn git_describe() -> Result<String, DynError> {
