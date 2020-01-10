@@ -139,6 +139,7 @@ fn run_tests(tests_type: Tests) -> Result<(), DynError> {
                     "--",
                     "--color=always",
                     "--nocapture",
+                    "--ignored",
                 ])?;
             }
         },
