@@ -222,7 +222,7 @@ fn cache_outdated() {
 #[test]
 fn parse_source_html() {
     let parsed: Vec<AvailableToolchain> = parse_source_index_html(SOURCE_INDEX_HTML).unwrap();
-    assert_eq!(parsed.len(), 213);
+    assert_eq!(parsed.len(), 217);
 
     assert_eq!(
         parsed[0].source_url(),
