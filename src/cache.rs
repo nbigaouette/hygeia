@@ -47,14 +47,16 @@ impl ToolchainsCacheFetch for ToolchainsCacheFetchOnline {
     }
 }
 
+pub type AvailableToolchain = AvailableToolchainFromSource;
+
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
-pub struct AvailableToolchain {
+pub struct AvailableToolchainFromSource {
     pub version: Version,
     pub base_url: Url,
     pub source_tar_gz: String,
 }
 
-impl AvailableToolchain {
+impl AvailableToolchainFromSource {
     #[cfg_attr(windows, allow(dead_code))]
     pub fn source_url(&self) -> Url {
         let mut new_url = self.base_url.clone();
