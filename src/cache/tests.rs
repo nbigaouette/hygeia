@@ -221,17 +221,22 @@ fn cache_outdated() {
 
 #[test]
 fn parse_source_html() {
-    let parsed: Vec<AvailableToolchain> = parse_source_index_html(SOURCE_INDEX_HTML).unwrap();
+    let parsed: Vec<AvailableToolchainFromSource> =
+        parse_source_index_html(SOURCE_INDEX_HTML).unwrap();
     assert_eq!(parsed.len(), 217);
 
+    assert_eq!(parsed[0].version, Version::parse("3.9.0-a2").unwrap());
     assert_eq!(
-        parsed[0].source_url(),
-        Url::parse("https://www.python.org/ftp/python/3.9.0/Python-3.9.0a1.tgz").unwrap()
+        parsed[0].base_url,
+        Url::parse("https://www.python.org/ftp/python/3.9.0").unwrap()
     );
+    assert_eq!(parsed[0].source_tar_gz, "Python-3.9.0a2.tgz");
 
     #[rustfmt::skip]
-    let expected: Vec<AvailableToolchain> = vec![
+    let expected: Vec<AvailableToolchainFromSource> = vec![
+        atwfs!("3.9.0-a2", "3.9.0", "3.9.0a2"),
         atwfs!("3.9.0-a1", "3.9.0", "3.9.0a1"),
+        atwfs!("3.8.1", "3.8.1", "3.8.1"),
         atwfs!("3.8.1-rc1", "3.8.1", "3.8.1rc1"),
         atwfs!("3.8.0", "3.8.0", "3.8.0"),
         atwfs!("3.8.0-rc1", "3.8.0", "3.8.0rc1"),
@@ -243,6 +248,7 @@ fn parse_source_html() {
         atwfs!("3.8.0-a3", "3.8.0", "3.8.0a3"),
         atwfs!("3.8.0-a2", "3.8.0", "3.8.0a2"),
         atwfs!("3.8.0-a1", "3.8.0", "3.8.0a1"),
+        atwfs!("3.7.6", "3.7.6", "3.7.6"),
         atwfs!("3.7.6-rc1", "3.7.6", "3.7.6rc1"),
         atwfs!("3.7.5", "3.7.5", "3.7.5"),
         atwfs!("3.7.5-rc1", "3.7.5", "3.7.5rc1"),
@@ -264,6 +270,7 @@ fn parse_source_html() {
         atwfs!("3.7.0-a3", "3.7.0", "3.7.0a3"),
         atwfs!("3.7.0-a2", "3.7.0", "3.7.0a2"),
         atwfs!("3.7.0-a1", "3.7.0", "3.7.0a1"),
+        atwfs!("3.6.10", "3.6.10", "3.6.10"),
         atwfs!("3.6.10-rc1", "3.6.10", "3.6.10rc1"),
         atwfs!("3.6.9", "3.6.9", "3.6.9"),
         atwfs!("3.6.9-rc1", "3.6.9", "3.6.9rc1"),
@@ -450,8 +457,6 @@ fn parse_source_html() {
 
 #[test]
 fn parse_win_prebuilt_html() {
-    pycors_test_helpers::init_logger();
-
     let parsed: Vec<AvailableToolchainWindowsPreBuilt> =
         parse_win_pre_built_index_html(WIN_PREBUILT_INDEX_HTML).unwrap();
     assert_eq!(parsed.len(), 82);
