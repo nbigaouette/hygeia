@@ -11,6 +11,8 @@ use mockall::predicate::*;
 const SOURCE_INDEX_HTML: &str = include_str!("../../tests/fixtures/html/source/index.html");
 const WIN_PREBUILT_INDEX_HTML: &str = include_str!("../../tests/fixtures/html/windows/index.html");
 
+use pretty_assertions::assert_eq;
+
 macro_rules! atwfs {
     ($version:expr, $version_url:expr, $version_archive:expr) => {{
         AvailableToolchainFromSource {
@@ -31,6 +33,27 @@ macro_rules! atwpb {
                 .parse()
                 .unwrap(),
             win_pre_built: concat!("python-", $version_archive, "-embed-amd64.zip").into(),
+        }
+    }};
+}
+
+macro_rules! at {
+    ($version:expr, $version_url:expr, $version_archive:expr, source=$source_available:expr, prebuilt=$prebuilt_available:expr) => {{
+        AvailableToolchain {
+            version: $version.parse().unwrap(),
+            base_url: concat!("https://www.python.org/ftp/python/", $version_url)
+                .parse()
+                .unwrap(),
+            source_tar_gz: if $source_available {
+                Some(concat!("Python-", $version_archive, ".tgz").into())
+            } else {
+                None
+            },
+            win_pre_built: if $prebuilt_available {
+                Some(concat!("python-", $version_archive, "-embed-amd64.zip").into())
+            } else {
+                None
+            },
         }
     }};
 }
@@ -547,4 +570,247 @@ fn parse_win_prebuilt_html() {
         atwpb!("3.5.0-b1", "3.5.0", "3.5.0b1"),
     ];
     assert_eq!(parsed, expected);
+}
+
+#[allow(clippy::cognitive_complexity)]
+#[test]
+fn merge_html_fixtures_available_toolchains() {
+    let parsed_src: Vec<AvailableToolchainFromSource> =
+        parse_source_index_html(SOURCE_INDEX_HTML).unwrap();
+    assert_eq!(parsed_src.len(), 217);
+    let parsed_wpb: Vec<AvailableToolchainWindowsPreBuilt> =
+        parse_win_pre_built_index_html(WIN_PREBUILT_INDEX_HTML).unwrap();
+    assert_eq!(parsed_wpb.len(), 82);
+
+    let merged_available_toolchains = merge_available_toolchains(parsed_src, parsed_wpb);
+
+    #[rustfmt::skip]
+    let expected = vec![
+        at!("3.9.0-a2", "3.9.0", "3.9.0a2", source = true, prebuilt = true),
+        at!("3.9.0-a1", "3.9.0", "3.9.0a1", source = true, prebuilt = true),
+        at!("3.8.1", "3.8.1", "3.8.1", source = true, prebuilt = true),
+        at!("3.8.1-rc1", "3.8.1", "3.8.1rc1", source = true, prebuilt = true),
+        at!("3.8.0", "3.8.0", "3.8.0", source = true, prebuilt = true),
+        at!("3.8.0-rc1", "3.8.0", "3.8.0rc1", source = true, prebuilt = true),
+        at!("3.8.0-b4", "3.8.0", "3.8.0b4", source = true, prebuilt = true),
+        at!("3.8.0-b3", "3.8.0", "3.8.0b3", source = true, prebuilt = true),
+        at!("3.8.0-b2", "3.8.0", "3.8.0b2", source = true, prebuilt = true),
+        at!("3.8.0-b1", "3.8.0", "3.8.0b1", source = true, prebuilt = true),
+        at!("3.8.0-a4", "3.8.0", "3.8.0a4", source = true, prebuilt = true),
+        at!("3.8.0-a3", "3.8.0", "3.8.0a3", source = true, prebuilt = true),
+        at!("3.8.0-a2", "3.8.0", "3.8.0a2", source = true, prebuilt = true),
+        at!("3.8.0-a1", "3.8.0", "3.8.0a1", source = true, prebuilt = true),
+        at!("3.7.6", "3.7.6", "3.7.6", source = true, prebuilt = true),
+        at!("3.7.6-rc1", "3.7.6", "3.7.6rc1", source = true, prebuilt = true),
+        at!("3.7.5", "3.7.5", "3.7.5", source = true, prebuilt = true),
+        at!("3.7.5-rc1", "3.7.5", "3.7.5rc1", source = true, prebuilt = true),
+        at!("3.7.4", "3.7.4", "3.7.4", source = true, prebuilt = true),
+        at!("3.7.4-rc1", "3.7.4", "3.7.4rc1", source = true, prebuilt = true),
+        at!("3.7.3", "3.7.3", "3.7.3", source = true, prebuilt = true),
+        at!("3.7.3-rc1", "3.7.3", "3.7.3rc1", source = true, prebuilt = true),
+        AvailableToolchain {
+            version: Version::new(3,7,2),
+            base_url: "https://www.python.org/ftp/python/3.7.2"
+                .parse()
+                .unwrap(),
+            source_tar_gz: Some("Python-3.7.2.tgz".into()),
+            win_pre_built: Some("python-3.7.2.post1-embed-amd64.zip".into())
+        },
+        at!("3.7.2-rc1", "3.7.2", "3.7.2rc1", source = true, prebuilt = true),
+        at!("3.7.1", "3.7.1", "3.7.1", source = true, prebuilt = true),
+        at!("3.7.1-rc2", "3.7.1", "3.7.1rc2", source = true, prebuilt = true),
+        at!("3.7.1-rc1", "3.7.1", "3.7.1rc1", source = true, prebuilt = true),
+        at!("3.7.0", "3.7.0", "3.7.0", source = true, prebuilt = true),
+        at!("3.7.0-rc1", "3.7.0", "3.7.0rc1", source = true, prebuilt = true),
+        at!("3.7.0-b5", "3.7.0", "3.7.0b5", source = true, prebuilt = true),
+        at!("3.7.0-b2", "3.7.0", "3.7.0b2", source = true, prebuilt = true),
+        at!("3.7.0-b1", "3.7.0", "3.7.0b1", source = true, prebuilt = true),
+        at!("3.7.0-a4", "3.7.0", "3.7.0a4", source = true, prebuilt = true),
+        at!("3.7.0-a3", "3.7.0", "3.7.0a3", source = true, prebuilt = true),
+        at!("3.7.0-a2", "3.7.0", "3.7.0a2", source = true, prebuilt = true),
+        at!("3.7.0-a1", "3.7.0", "3.7.0a1", source = true, prebuilt = true),
+        at!("3.6.10", "3.6.10", "3.6.10", source = true, prebuilt = false),
+        at!("3.6.10-rc1", "3.6.10", "3.6.10rc1", source = true, prebuilt = false),
+        at!("3.6.9", "3.6.9", "3.6.9", source = true, prebuilt = false),
+        at!("3.6.9-rc1", "3.6.9", "3.6.9rc1", source = true, prebuilt = false),
+        at!("3.6.8", "3.6.8", "3.6.8", source = true, prebuilt = true),
+        at!("3.6.8-rc1", "3.6.8", "3.6.8rc1", source = true, prebuilt = true),
+        at!("3.6.7", "3.6.7", "3.6.7", source = true, prebuilt = true),
+        at!("3.6.7-rc2", "3.6.7", "3.6.7rc2", source = true, prebuilt = true),
+        at!("3.6.7-rc1", "3.6.7", "3.6.7rc1", source = true, prebuilt = true),
+        at!("3.6.6", "3.6.6", "3.6.6", source = true, prebuilt = true),
+        at!("3.6.6-rc1", "3.6.6", "3.6.6rc1", source = true, prebuilt = true),
+        at!("3.6.5", "3.6.5", "3.6.5", source = true, prebuilt = true),
+        at!("3.6.5-rc1", "3.6.5", "3.6.5rc1", source = true, prebuilt = true),
+        at!("3.6.4", "3.6.4", "3.6.4", source = true, prebuilt = true),
+        at!("3.6.4-rc1", "3.6.4", "3.6.4rc1", source = true, prebuilt = true),
+        at!("3.6.3", "3.6.3", "3.6.3", source = true, prebuilt = true),
+        at!("3.6.3-rc1", "3.6.3", "3.6.3rc1", source = true, prebuilt = true),
+        at!("3.6.2", "3.6.2", "3.6.2", source = true, prebuilt = true),
+        at!("3.6.2-rc2", "3.6.2", "3.6.2rc2", source = true, prebuilt = true),
+        at!("3.6.2-rc1", "3.6.2", "3.6.2rc1", source = true, prebuilt = true),
+        at!("3.6.1", "3.6.1", "3.6.1", source = true, prebuilt = true),
+        at!("3.6.1-rc1", "3.6.1", "3.6.1rc1", source = true, prebuilt = true),
+        at!("3.6.0", "3.6.0", "3.6.0", source = true, prebuilt = true),
+        at!("3.6.0-rc2", "3.6.0", "3.6.0rc2", source = true, prebuilt = true),
+        at!("3.6.0-rc1", "3.6.0", "3.6.0rc1", source = true, prebuilt = true),
+        at!("3.6.0-b4", "3.6.0", "3.6.0b4", source = true, prebuilt = true),
+        at!("3.6.0-b3", "3.6.0", "3.6.0b3", source = true, prebuilt = true),
+        at!("3.6.0-b2", "3.6.0", "3.6.0b2", source = true, prebuilt = true),
+        at!("3.6.0-b1", "3.6.0", "3.6.0b1", source = true, prebuilt = true),
+        at!("3.6.0-a4", "3.6.0", "3.6.0a4", source = true, prebuilt = true),
+        at!("3.6.0-a3", "3.6.0", "3.6.0a3", source = true, prebuilt = true),
+        at!("3.6.0-a2", "3.6.0", "3.6.0a2", source = true, prebuilt = true),
+        at!("3.6.0-a1", "3.6.0", "3.6.0a1", source = true, prebuilt = true),
+        at!("3.5.9", "3.5.9", "3.5.9", source = true, prebuilt = false),
+        at!("3.5.8", "3.5.8", "3.5.8", source = true, prebuilt = false),
+        at!("3.5.8-rc2", "3.5.8", "3.5.8rc2", source = true, prebuilt = false),
+        at!("3.5.8-rc1", "3.5.8", "3.5.8rc1", source = true, prebuilt = false),
+        at!("3.5.7", "3.5.7", "3.5.7", source = true, prebuilt = false),
+        at!("3.5.7-rc1", "3.5.7", "3.5.7rc1", source = true, prebuilt = false),
+        at!("3.5.6", "3.5.6", "3.5.6", source = true, prebuilt = false),
+        at!("3.5.6-rc1", "3.5.6", "3.5.6rc1", source = true, prebuilt = false),
+        at!("3.5.5", "3.5.5", "3.5.5", source = true, prebuilt = false),
+        at!("3.5.5-rc1", "3.5.5", "3.5.5rc1", source = true, prebuilt = false),
+        at!("3.5.4", "3.5.4", "3.5.4", source = true, prebuilt = true),
+        at!("3.5.4-rc1", "3.5.4", "3.5.4rc1", source = true, prebuilt = true),
+        at!("3.5.3", "3.5.3", "3.5.3", source = true, prebuilt = true),
+        at!("3.5.3-rc1", "3.5.3", "3.5.3rc1", source = true, prebuilt = true),
+        at!("3.5.2", "3.5.2", "3.5.2", source = true, prebuilt = true),
+        at!("3.5.2-rc1", "3.5.2", "3.5.2rc1", source = true, prebuilt = true),
+        at!("3.5.1", "3.5.1", "3.5.1", source = true, prebuilt = true),
+        at!("3.5.1-rc1", "3.5.1", "3.5.1rc1", source = true, prebuilt = true),
+        at!("3.5.0", "3.5.0", "3.5.0", source = true, prebuilt = true),
+        at!("3.5.0-rc4", "3.5.0", "3.5.0rc4", source = true, prebuilt = true),
+        at!("3.5.0-rc3", "3.5.0", "3.5.0rc3", source = true, prebuilt = true),
+        at!("3.5.0-rc2", "3.5.0", "3.5.0rc2", source = true, prebuilt = true),
+        at!("3.5.0-rc1", "3.5.0", "3.5.0rc1", source = true, prebuilt = true),
+        at!("3.5.0-b4", "3.5.0", "3.5.0b4", source = true, prebuilt = true),
+        at!("3.5.0-b3", "3.5.0", "3.5.0b3", source = true, prebuilt = true),
+        at!("3.5.0-b2", "3.5.0", "3.5.0b2", source = true, prebuilt = true),
+        at!("3.5.0-b1", "3.5.0", "3.5.0b1", source = true, prebuilt = true),
+        at!("3.5.0-a4", "3.5.0", "3.5.0a4", source = true, prebuilt = false),
+        at!("3.5.0-a3", "3.5.0", "3.5.0a3", source = true, prebuilt = false),
+        at!("3.5.0-a2", "3.5.0", "3.5.0a2", source = true, prebuilt = false),
+        at!("3.5.0-a1", "3.5.0", "3.5.0a1", source = true, prebuilt = false),
+        at!("3.4.10", "3.4.10", "3.4.10", source = true, prebuilt = false),
+        at!("3.4.10-rc1", "3.4.10", "3.4.10rc1", source = true, prebuilt = false),
+        at!("3.4.9", "3.4.9", "3.4.9", source = true, prebuilt = false),
+        at!("3.4.9-rc1", "3.4.9", "3.4.9rc1", source = true, prebuilt = false),
+        at!("3.4.8", "3.4.8", "3.4.8", source = true, prebuilt = false),
+        at!("3.4.8-rc1", "3.4.8", "3.4.8rc1", source = true, prebuilt = false),
+        at!("3.4.7", "3.4.7", "3.4.7", source = true, prebuilt = false),
+        at!("3.4.7-rc1", "3.4.7", "3.4.7rc1", source = true, prebuilt = false),
+        at!("3.4.6", "3.4.6", "3.4.6", source = true, prebuilt = false),
+        at!("3.4.6-rc1", "3.4.6", "3.4.6rc1", source = true, prebuilt = false),
+        at!("3.4.5", "3.4.5", "3.4.5", source = true, prebuilt = false),
+        at!("3.4.5-rc1", "3.4.5", "3.4.5rc1", source = true, prebuilt = false),
+        at!("3.4.4", "3.4.4", "3.4.4", source = true, prebuilt = false),
+        at!("3.4.4-rc1", "3.4.4", "3.4.4rc1", source = true, prebuilt = false),
+        at!("3.4.3", "3.4.3", "3.4.3", source = true, prebuilt = false),
+        at!("3.4.3-rc1", "3.4.3", "3.4.3rc1", source = true, prebuilt = false),
+        at!("3.4.2", "3.4.2", "3.4.2", source = true, prebuilt = false),
+        at!("3.4.2-rc1", "3.4.2", "3.4.2rc1", source = true, prebuilt = false),
+        at!("3.4.1", "3.4.1", "3.4.1", source = true, prebuilt = false),
+        at!("3.4.1-rc1", "3.4.1", "3.4.1rc1", source = true, prebuilt = false),
+        at!("3.4.0", "3.4.0", "3.4.0", source = true, prebuilt = false),
+        at!("3.4.0-rc3", "3.4.0", "3.4.0rc3", source = true, prebuilt = false),
+        at!("3.3.7", "3.3.7", "3.3.7", source = true, prebuilt = false),
+        at!("3.3.7-rc1", "3.3.7", "3.3.7rc1", source = true, prebuilt = false),
+        at!("3.3.6", "3.3.6", "3.3.6", source = true, prebuilt = false),
+        at!("3.3.6-rc1", "3.3.6", "3.3.6rc1", source = true, prebuilt = false),
+        at!("3.3.5", "3.3.5", "3.3.5", source = true, prebuilt = false),
+        at!("3.3.5-rc2", "3.3.5", "3.3.5rc2", source = true, prebuilt = false),
+        at!("3.3.5-rc1", "3.3.5", "3.3.5rc1", source = true, prebuilt = false),
+        at!("3.3.5-rc1", "3.3.5", "3.3.5rc1", source = true, prebuilt = false),
+        at!("3.3.4", "3.3.4", "3.3.4", source = true, prebuilt = false),
+        at!("3.3.3", "3.3.3", "3.3.3", source = true, prebuilt = false),
+        at!("3.3.2", "3.3.2", "3.3.2", source = true, prebuilt = false),
+        at!("3.3.1", "3.3.1", "3.3.1", source = true, prebuilt = false),
+        at!("3.3.0", "3.3.0", "3.3.0", source = true, prebuilt = false),
+        at!("3.2.6", "3.2.6", "3.2.6", source = true, prebuilt = false),
+        at!("3.2.6-rc1", "3.2.6", "3.2.6rc1", source = true, prebuilt = false),
+        at!("3.2.5", "3.2.5", "3.2.5", source = true, prebuilt = false),
+        at!("3.2.4", "3.2.4", "3.2.4", source = true, prebuilt = false),
+        at!("3.2.3", "3.2.3", "3.2.3", source = true, prebuilt = false),
+        at!("3.2.2", "3.2.2", "3.2.2", source = true, prebuilt = false),
+        at!("3.2.1", "3.2.1", "3.2.1", source = true, prebuilt = false),
+        at!("3.2.0", "3.2", "3.2", source = true, prebuilt = false),
+        at!("3.1.5", "3.1.5", "3.1.5", source = true, prebuilt = false),
+        at!("3.1.4", "3.1.4", "3.1.4", source = true, prebuilt = false),
+        at!("3.1.3", "3.1.3", "3.1.3", source = true, prebuilt = false),
+        at!("3.1.2", "3.1.2", "3.1.2", source = true, prebuilt = false),
+        at!("3.1.1", "3.1.1", "3.1.1", source = true, prebuilt = false),
+        at!("3.1.0", "3.1", "3.1", source = true, prebuilt = false),
+        at!("3.0.1", "3.0.1", "3.0.1", source = true, prebuilt = false),
+        at!("3.0.0", "3.0", "3.0", source = true, prebuilt = false),
+        at!("2.7.17", "2.7.17", "2.7.17", source = true, prebuilt = false),
+        at!("2.7.17-rc1", "2.7.17", "2.7.17rc1", source = true, prebuilt = false),
+        at!("2.7.16", "2.7.16", "2.7.16", source = true, prebuilt = false),
+        at!("2.7.16-rc1", "2.7.16", "2.7.16rc1", source = true, prebuilt = false),
+        at!("2.7.15", "2.7.15", "2.7.15", source = true, prebuilt = false),
+        at!("2.7.15-rc1", "2.7.15", "2.7.15rc1", source = true, prebuilt = false),
+        at!("2.7.14", "2.7.14", "2.7.14", source = true, prebuilt = false),
+        at!("2.7.14-rc1", "2.7.14", "2.7.14rc1", source = true, prebuilt = false),
+        at!("2.7.13", "2.7.13", "2.7.13", source = true, prebuilt = false),
+        at!("2.7.13-rc1", "2.7.13", "2.7.13rc1", source = true, prebuilt = false),
+        at!("2.7.12", "2.7.12", "2.7.12", source = true, prebuilt = false),
+        at!("2.7.12-rc1", "2.7.12", "2.7.12rc1", source = true, prebuilt = false),
+        at!("2.7.11", "2.7.11", "2.7.11", source = true, prebuilt = false),
+        at!("2.7.11-rc1", "2.7.11", "2.7.11rc1", source = true, prebuilt = false),
+        at!("2.7.10", "2.7.10", "2.7.10", source = true, prebuilt = false),
+        at!("2.7.10-rc1", "2.7.10", "2.7.10rc1", source = true, prebuilt = false),
+        at!("2.7.9", "2.7.9", "2.7.9", source = true, prebuilt = false),
+        at!("2.7.9-rc1", "2.7.9", "2.7.9rc1", source = true, prebuilt = false),
+        at!("2.7.8", "2.7.8", "2.7.8", source = true, prebuilt = false),
+        at!("2.7.7", "2.7.7", "2.7.7", source = true, prebuilt = false),
+        at!("2.7.7-rc1", "2.7.7", "2.7.7rc1", source = true, prebuilt = false),
+        at!("2.7.6", "2.7.6", "2.7.6", source = true, prebuilt = false),
+        at!("2.7.5", "2.7.5", "2.7.5", source = true, prebuilt = false),
+        at!("2.7.4", "2.7.4", "2.7.4", source = true, prebuilt = false),
+        at!("2.7.3", "2.7.3", "2.7.3", source = true, prebuilt = false),
+        at!("2.7.2", "2.7.2", "2.7.2", source = true, prebuilt = false),
+        at!("2.7.1", "2.7.1", "2.7.1", source = true, prebuilt = false),
+        at!("2.7.0", "2.7", "2.7", source = true, prebuilt = false),
+        at!("2.6.9", "2.6.9", "2.6.9", source = true, prebuilt = false),
+        at!("2.6.8", "2.6.8", "2.6.8", source = true, prebuilt = false),
+        at!("2.6.7", "2.6.7", "2.6.7", source = true, prebuilt = false),
+        at!("2.6.6", "2.6.6", "2.6.6", source = true, prebuilt = false),
+        at!("2.6.5", "2.6.5", "2.6.5", source = true, prebuilt = false),
+        at!("2.6.4", "2.6.4", "2.6.4", source = true, prebuilt = false),
+        at!("2.6.3", "2.6.3", "2.6.3", source = true, prebuilt = false),
+        at!("2.6.2", "2.6.2", "2.6.2", source = true, prebuilt = false),
+        at!("2.6.1", "2.6.1", "2.6.1", source = true, prebuilt = false),
+        at!("2.6.0", "2.6", "2.6", source = true, prebuilt = false),
+        at!("2.5.6", "2.5.6", "2.5.6", source = true, prebuilt = false),
+        at!("2.5.5", "2.5.5", "2.5.5", source = true, prebuilt = false),
+        at!("2.5.4", "2.5.4", "2.5.4", source = true, prebuilt = false),
+        at!("2.5.3", "2.5.3", "2.5.3", source = true, prebuilt = false),
+        at!("2.5.2", "2.5.2", "2.5.2", source = true, prebuilt = false),
+        at!("2.5.1", "2.5.1", "2.5.1", source = true, prebuilt = false),
+        at!("2.5.0", "2.5", "2.5", source = true, prebuilt = false),
+        at!("2.4.6", "2.4.6", "2.4.6", source = true, prebuilt = false),
+        at!("2.4.5", "2.4.5", "2.4.5", source = true, prebuilt = false),
+        at!("2.4.4", "2.4.4", "2.4.4", source = true, prebuilt = false),
+        at!("2.4.3", "2.4.3", "2.4.3", source = true, prebuilt = false),
+        at!("2.4.2", "2.4.2", "2.4.2", source = true, prebuilt = false),
+        at!("2.4.1", "2.4.1", "2.4.1", source = true, prebuilt = false),
+        at!("2.4.0", "2.4", "2.4", source = true, prebuilt = false),
+        at!("2.3.7", "2.3.7", "2.3.7", source = true, prebuilt = false),
+        at!("2.3.6", "2.3.6", "2.3.6", source = true, prebuilt = false),
+        at!("2.3.5", "2.3.5", "2.3.5", source = true, prebuilt = false),
+        at!("2.3.4", "2.3.4", "2.3.4", source = true, prebuilt = false),
+        at!("2.3.3", "2.3.3", "2.3.3", source = true, prebuilt = false),
+        at!("2.3.2", "2.3.2", "2.3.2", source = true, prebuilt = false),
+        at!("2.3.1", "2.3.1", "2.3.1", source = true, prebuilt = false),
+        at!("2.3.0", "2.3", "2.3", source = true, prebuilt = false),
+        at!("2.2.3", "2.2.3", "2.2.3", source = true, prebuilt = false),
+        at!("2.2.2", "2.2.2", "2.2.2", source = true, prebuilt = false),
+        at!("2.2.1", "2.2.1", "2.2.1", source = true, prebuilt = false),
+        at!("2.2.0", "2.2", "2.2", source = true, prebuilt = false),
+        at!("2.1.3", "2.1.3", "2.1.3", source = true, prebuilt = false),
+        at!("2.0.1", "2.0.1", "2.0.1", source = true, prebuilt = false),
+    ];
+
+    assert_eq!(merged_available_toolchains, expected);
 }
