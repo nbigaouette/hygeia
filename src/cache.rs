@@ -50,21 +50,27 @@ impl ToolchainsCacheFetch for ToolchainsCacheFetchOnline {
     }
 }
 
-pub type AvailableToolchain = AvailableToolchainFromSource;
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct AvailableToolchain {
+    pub version: Version,
+    pub base_url: Url,
+    pub source_tar_gz: Option<String>,
+    pub win_pre_built: Option<String>,
+}
 
 trait AvailableToolchainTrait {
     fn new(version: Version, base_url: Url, filename: String) -> Self;
     fn version(&self) -> &Version;
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq)]
 pub struct AvailableToolchainFromSource {
     pub version: Version,
     pub base_url: Url,
     pub source_tar_gz: String,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq)]
 pub struct AvailableToolchainWindowsPreBuilt {
     pub version: Version,
     pub base_url: Url,
@@ -97,25 +103,29 @@ impl AvailableToolchainTrait for AvailableToolchainWindowsPreBuilt {
     }
 }
 
-impl AvailableToolchainFromSource {
+impl AvailableToolchain {
     #[cfg_attr(windows, allow(dead_code))]
-    pub fn source_url(&self) -> Url {
-        let mut new_url = self.base_url.clone();
-        new_url
-            .path_segments_mut()
-            .unwrap()
-            .extend(&[&self.source_tar_gz]);
-        new_url
+    pub fn source_url(&self) -> Option<Url> {
+        self.source_tar_gz.as_ref().map(|source_tar_gz| {
+            let mut new_url = self.base_url.clone();
+            new_url
+                .path_segments_mut()
+                .unwrap()
+                .extend(&[source_tar_gz]);
+            new_url
+        })
     }
 
     #[cfg_attr(not(windows), allow(dead_code))]
-    pub fn windows_pre_built_url(&self) -> Url {
-        let mut new_url = self.base_url.clone();
-        new_url
-            .path_segments_mut()
-            .unwrap()
-            .extend(&[&format!("python-{}-embed-amd64.zip", self.version)]);
-        new_url
+    pub fn windows_pre_built_url(&self) -> Option<Url> {
+        self.win_pre_built.as_ref().map(|win_pre_built| {
+            let mut new_url = self.base_url.clone();
+            new_url
+                .path_segments_mut()
+                .unwrap()
+                .extend(&[win_pre_built]);
+            new_url
+        })
     }
 }
 
@@ -220,7 +230,12 @@ impl AvailableToolchainsCache {
         self.last_updated = Utc::now();
         let index_html: String = downloader.get()?;
 
-        self.available = parse_source_index_html(&index_html)?;
+        let available_toolchains_source = parse_source_index_html(&index_html)?;
+        let available_toolchains_win_prebuilt = parse_win_pre_built_index_html(&index_html)?;
+        self.available = merge_available_toolchains(
+            available_toolchains_source,
+            available_toolchains_win_prebuilt,
+        );
 
         let cache_json = serde_json::to_string(&self)?;
         let cache_file = paths_provider.available_toolchains_cache_file();
@@ -245,6 +260,76 @@ impl AvailableToolchainsCache {
             .copied()
             .ok_or_else(|| CacheError::NoCompatibleVersionFound.into())
     }
+}
+
+fn merge_available_toolchains(
+    available_toolchains_source: Vec<AvailableToolchainFromSource>,
+    available_toolchains_win_prebuilt: Vec<AvailableToolchainWindowsPreBuilt>,
+) -> Vec<AvailableToolchain> {
+    let mut result = Vec::with_capacity(
+        available_toolchains_source.len() + available_toolchains_win_prebuilt.len(),
+    );
+
+    let mut source_iter = available_toolchains_source.into_iter();
+    let mut pre_built_iter = available_toolchains_win_prebuilt.into_iter();
+
+    let mut next_source: Option<AvailableToolchainFromSource> = source_iter.next();
+    let mut next_pre_built: Option<AvailableToolchainWindowsPreBuilt> = pre_built_iter.next();
+    loop {
+        match (&mut next_source, &mut next_pre_built) {
+            (None, None) => break,
+            (Some(source), None) => {
+                result.push(AvailableToolchain {
+                    version: source.version.clone(),
+                    base_url: source.base_url.clone(),
+                    source_tar_gz: Some(source.source_tar_gz.clone()),
+                    win_pre_built: None,
+                });
+                next_source = source_iter.next();
+            }
+            (None, Some(pre_built)) => {
+                result.push(AvailableToolchain {
+                    version: pre_built.version.clone(),
+                    base_url: pre_built.base_url.clone(),
+                    source_tar_gz: None,
+                    win_pre_built: Some(pre_built.win_pre_built.clone()),
+                });
+                next_pre_built = pre_built_iter.next();
+            }
+            (Some(source), Some(pre_built)) => match source.version.cmp(&pre_built.version) {
+                std::cmp::Ordering::Greater => {
+                    result.push(AvailableToolchain {
+                        version: source.version.clone(),
+                        base_url: source.base_url.clone(),
+                        source_tar_gz: Some(source.source_tar_gz.clone()),
+                        win_pre_built: None,
+                    });
+                    next_source = source_iter.next();
+                }
+                std::cmp::Ordering::Less => {
+                    result.push(AvailableToolchain {
+                        version: pre_built.version.clone(),
+                        base_url: pre_built.base_url.clone(),
+                        source_tar_gz: None,
+                        win_pre_built: Some(pre_built.win_pre_built.clone()),
+                    });
+                    next_pre_built = pre_built_iter.next();
+                }
+                std::cmp::Ordering::Equal => {
+                    result.push(AvailableToolchain {
+                        version: pre_built.version.clone(),
+                        base_url: pre_built.base_url.clone(),
+                        source_tar_gz: Some(source.source_tar_gz.clone()),
+                        win_pre_built: Some(pre_built.win_pre_built.clone()),
+                    });
+                    next_source = source_iter.next();
+                    next_pre_built = pre_built_iter.next();
+                }
+            },
+        }
+    }
+
+    result
 }
 
 fn parse_index_html<A>(index_html: &str, end_of_file: &str) -> Result<Vec<A>>
