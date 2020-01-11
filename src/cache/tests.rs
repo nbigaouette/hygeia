@@ -11,8 +11,6 @@ use mockall::predicate::*;
 const SOURCE_INDEX_HTML: &str = include_str!("../../tests/fixtures/html/source/index.html");
 const WIN_PREBUILT_INDEX_HTML: &str = include_str!("../../tests/fixtures/html/windows/index.html");
 
-use pretty_assertions::assert_eq;
-
 macro_rules! atwfs {
     ($version:expr, $version_url:expr, $version_archive:expr) => {{
         AvailableToolchainFromSource {
