@@ -5,7 +5,10 @@ use std::{
 
 use anyhow::Result;
 use chrono::{DateTime, Utc};
-use regex::{Regex, RegexBuilder};
+use select::{
+    document::Document,
+    predicate::{Class, Name, Predicate},
+};
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use serde_json;
@@ -194,47 +197,59 @@ impl AvailableToolchainsCache {
     }
 }
 
-fn parse_source_index_html(index_html: &str) -> Result<Vec<AvailableToolchain>> {
-    let re: Regex = RegexBuilder::new(
-        r#"<a href="/downloads/release/python-[^/]*/">Python (?P<version>[2-3].[0-9]+.[0-9]+[^ ]*)? - .*<a href="(?P<url>[^"]*)">Gzipped source tar"#
-    )
-    .dot_matches_new_line(true)  // (s)
-    .swap_greed(true)  // (U)
-        .build()?;
+fn parse_source_index_html(index_html: &str) -> Result<Vec<AvailableToolchainFromSource>> {
+    let mut toolchains: Vec<AvailableToolchainFromSource> = Vec::new();
 
-    let mut toolchains: Vec<AvailableToolchain> = re
-        .captures_iter(index_html)
-        .filter_map(|caps| match (caps.name("version"), caps.name("url")) {
-            (Some(version), Some(url)) => Some((version.as_str(), url.as_str())),
-            (Some(version), None) => {
-                log::error!("Failed to extract url for version {}", version.as_str());
-                None
+    let document = Document::from(index_html);
+    let node = document.find(Class("text")).next().unwrap();
+    // Iterate over columns (Release, Pre-Release)
+    for column in node.find(Class("column")) {
+        for version_found in column.find(Name("ul").descendant(Name("li").descendant(Name("ul")))) {
+            // println!("########### version_found: {:?}", version_found);
+            let version_string = version_found
+                .parent()
+                .unwrap()
+                .text()
+                .trim()
+                .split(' ')
+                .nth(1)
+                .unwrap()
+                .to_string();
+            // println!("##### version_string: {}", version_string);
+            // println!("version_found: {:?}", version_found);
+
+            for links in version_found.find(Name("li").descendant(Name("a"))) {
+                if let Some(url) = links.attr("href") {
+                    if url.ends_with(".tgz") {
+                        // println!("        found our node!  links: {:?}", links);
+
+                        let version = Version::parse(
+                            &version_string
+                                .replace("rc", "-rc") // release candidates
+                                .replace("a", "-a") // alpha
+                                .replace("b", "-b"), // beta
+                        )
+                        .unwrap();
+                        let mut url = Url::parse(url).unwrap();
+                        let source_tar_gz =
+                            url.path_segments().unwrap().last().unwrap().to_string();
+                        url.path_segments_mut().unwrap().pop();
+                        url.set_scheme("https").unwrap(); // 3.3.4, 3.3.5 has "http" instead of "https"
+                        toolchains.push(AvailableToolchainFromSource {
+                            version,
+                            base_url: url,
+                            source_tar_gz,
+                        })
+                    }
+                }
             }
-            (None, Some(url)) => {
-                log::error!("Failed to extract version for url {}", url.as_str());
-                None
-            }
-            (None, None) => None,
-        })
-        .map(|(version, url)| {
-            let version = Version::parse(
-                &version
-                    .replace("rc", "-rc") // release candidates
-                    .replace("a", "-a") // alpha
-                    .replace("b", "-b"), // beta
-            )
-            .unwrap();
-            let mut url = Url::parse(url).unwrap();
-            let source_tar_gz = url.path_segments().unwrap().last().unwrap().to_string();
-            url.path_segments_mut().unwrap().pop();
-            url.set_scheme("https").unwrap(); // 3.3.4, 3.3.5 has "http" instead of "https"
-            AvailableToolchain {
-                version,
-                base_url: url,
-                source_tar_gz,
-            }
-        })
-        .collect();
+        }
+    }
+
+    // Sort the versions vector (in reverse order)
+    toolchains.sort_unstable_by(|a, b| b.version.cmp(&a.version));
+    Ok(toolchains)
+}
 
     // Sort the versions vector (in reverse order)
     toolchains.sort_unstable_by(|a, b| b.version.cmp(&a.version));
