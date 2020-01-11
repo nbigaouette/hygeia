@@ -9,6 +9,7 @@ use pycors_test_helpers::create_test_temp_dir;
 use mockall::predicate::*;
 
 const SOURCE_INDEX_HTML: &str = include_str!("../../tests/fixtures/html/source/index.html");
+const WIN_PREBUILT_INDEX_HTML: &str = include_str!("../../tests/fixtures/html/windows/index.html");
 
 macro_rules! atwfs {
     ($version:expr, $version_url:expr, $version_archive:expr) => {{
@@ -18,6 +19,18 @@ macro_rules! atwfs {
                 .parse()
                 .unwrap(),
             source_tar_gz: concat!("Python-", $version_archive, ".tgz").into(),
+        }
+    }};
+}
+
+macro_rules! atwpb {
+    ($version:expr, $version_url:expr, $version_archive:expr) => {{
+        AvailableToolchainWindowsPreBuilt {
+            version: $version.parse().unwrap(),
+            base_url: concat!("https://www.python.org/ftp/python/", $version_url)
+                .parse()
+                .unwrap(),
+            win_pre_built: concat!("python-", $version_archive, "-embed-amd64.zip").into(),
         }
     }};
 }
@@ -434,6 +447,99 @@ fn parse_source_html() {
     ];
     assert_eq!(parsed, expected);
 }
+
+#[test]
+fn parse_win_prebuilt_html() {
+    pycors_test_helpers::init_logger();
+
+    let parsed: Vec<AvailableToolchainWindowsPreBuilt> =
+        parse_win_pre_built_index_html(WIN_PREBUILT_INDEX_HTML).unwrap();
+    assert_eq!(parsed.len(), 82);
+
+    // #[rustfmt::skip]
+    let expected: Vec<AvailableToolchainWindowsPreBuilt> = vec![
+        atwpb!("3.9.0-a2", "3.9.0", "3.9.0a2"),
+        atwpb!("3.9.0-a1", "3.9.0", "3.9.0a1"),
+        atwpb!("3.8.1", "3.8.1", "3.8.1"),
+        atwpb!("3.8.1-rc1", "3.8.1", "3.8.1rc1"),
+        atwpb!("3.8.0", "3.8.0", "3.8.0"),
+        atwpb!("3.8.0-rc1", "3.8.0", "3.8.0rc1"),
+        atwpb!("3.8.0-b4", "3.8.0", "3.8.0b4"),
+        atwpb!("3.8.0-b3", "3.8.0", "3.8.0b3"),
+        atwpb!("3.8.0-b2", "3.8.0", "3.8.0b2"),
+        atwpb!("3.8.0-b1", "3.8.0", "3.8.0b1"),
+        atwpb!("3.8.0-a4", "3.8.0", "3.8.0a4"),
+        atwpb!("3.8.0-a3", "3.8.0", "3.8.0a3"),
+        atwpb!("3.8.0-a2", "3.8.0", "3.8.0a2"),
+        atwpb!("3.8.0-a1", "3.8.0", "3.8.0a1"),
+        atwpb!("3.7.6", "3.7.6", "3.7.6"),
+        atwpb!("3.7.6-rc1", "3.7.6", "3.7.6rc1"),
+        atwpb!("3.7.5", "3.7.5", "3.7.5"),
+        atwpb!("3.7.5-rc1", "3.7.5", "3.7.5rc1"),
+        atwpb!("3.7.4", "3.7.4", "3.7.4"),
+        atwpb!("3.7.4-rc1", "3.7.4", "3.7.4rc1"),
+        atwpb!("3.7.3", "3.7.3", "3.7.3"),
+        atwpb!("3.7.3-rc1", "3.7.3", "3.7.3rc1"),
+        atwpb!("3.7.2", "3.7.2", "3.7.2.post1"),
+        atwpb!("3.7.2-rc1", "3.7.2", "3.7.2rc1"),
+        atwpb!("3.7.1", "3.7.1", "3.7.1"),
+        atwpb!("3.7.1-rc2", "3.7.1", "3.7.1rc2"),
+        atwpb!("3.7.1-rc1", "3.7.1", "3.7.1rc1"),
+        atwpb!("3.7.0", "3.7.0", "3.7.0"),
+        atwpb!("3.7.0-rc1", "3.7.0", "3.7.0rc1"),
+        atwpb!("3.7.0-b5", "3.7.0", "3.7.0b5"),
+        atwpb!("3.7.0-b2", "3.7.0", "3.7.0b2"),
+        atwpb!("3.7.0-b1", "3.7.0", "3.7.0b1"),
+        atwpb!("3.7.0-a4", "3.7.0", "3.7.0a4"),
+        atwpb!("3.7.0-a3", "3.7.0", "3.7.0a3"),
+        atwpb!("3.7.0-a2", "3.7.0", "3.7.0a2"),
+        atwpb!("3.7.0-a1", "3.7.0", "3.7.0a1"),
+        atwpb!("3.6.8", "3.6.8", "3.6.8"),
+        atwpb!("3.6.8-rc1", "3.6.8", "3.6.8rc1"),
+        atwpb!("3.6.7", "3.6.7", "3.6.7"),
+        atwpb!("3.6.7-rc2", "3.6.7", "3.6.7rc2"),
+        atwpb!("3.6.7-rc1", "3.6.7", "3.6.7rc1"),
+        atwpb!("3.6.6", "3.6.6", "3.6.6"),
+        atwpb!("3.6.6-rc1", "3.6.6", "3.6.6rc1"),
+        atwpb!("3.6.5", "3.6.5", "3.6.5"),
+        atwpb!("3.6.5-rc1", "3.6.5", "3.6.5rc1"),
+        atwpb!("3.6.4", "3.6.4", "3.6.4"),
+        atwpb!("3.6.4-rc1", "3.6.4", "3.6.4rc1"),
+        atwpb!("3.6.3", "3.6.3", "3.6.3"),
+        atwpb!("3.6.3-rc1", "3.6.3", "3.6.3rc1"),
+        atwpb!("3.6.2", "3.6.2", "3.6.2"),
+        atwpb!("3.6.2-rc2", "3.6.2", "3.6.2rc2"),
+        atwpb!("3.6.2-rc1", "3.6.2", "3.6.2rc1"),
+        atwpb!("3.6.1", "3.6.1", "3.6.1"),
+        atwpb!("3.6.1-rc1", "3.6.1", "3.6.1rc1"),
+        atwpb!("3.6.0", "3.6.0", "3.6.0"),
+        atwpb!("3.6.0-rc2", "3.6.0", "3.6.0rc2"),
+        atwpb!("3.6.0-rc1", "3.6.0", "3.6.0rc1"),
+        atwpb!("3.6.0-b4", "3.6.0", "3.6.0b4"),
+        atwpb!("3.6.0-b3", "3.6.0", "3.6.0b3"),
+        atwpb!("3.6.0-b2", "3.6.0", "3.6.0b2"),
+        atwpb!("3.6.0-b1", "3.6.0", "3.6.0b1"),
+        atwpb!("3.6.0-a4", "3.6.0", "3.6.0a4"),
+        atwpb!("3.6.0-a3", "3.6.0", "3.6.0a3"),
+        atwpb!("3.6.0-a2", "3.6.0", "3.6.0a2"),
+        atwpb!("3.6.0-a1", "3.6.0", "3.6.0a1"),
+        atwpb!("3.5.4", "3.5.4", "3.5.4"),
+        atwpb!("3.5.4-rc1", "3.5.4", "3.5.4rc1"),
+        atwpb!("3.5.3", "3.5.3", "3.5.3"),
+        atwpb!("3.5.3-rc1", "3.5.3", "3.5.3rc1"),
+        atwpb!("3.5.2", "3.5.2", "3.5.2"),
+        atwpb!("3.5.2-rc1", "3.5.2", "3.5.2rc1"),
+        atwpb!("3.5.1", "3.5.1", "3.5.1"),
+        atwpb!("3.5.1-rc1", "3.5.1", "3.5.1rc1"),
+        atwpb!("3.5.0", "3.5.0", "3.5.0"),
+        atwpb!("3.5.0-rc4", "3.5.0", "3.5.0rc4"),
+        atwpb!("3.5.0-rc3", "3.5.0", "3.5.0rc3"),
+        atwpb!("3.5.0-rc2", "3.5.0", "3.5.0rc2"),
+        atwpb!("3.5.0-rc1", "3.5.0", "3.5.0rc1"),
+        atwpb!("3.5.0-b4", "3.5.0", "3.5.0b4"),
+        atwpb!("3.5.0-b3", "3.5.0", "3.5.0b3"),
+        atwpb!("3.5.0-b2", "3.5.0", "3.5.0b2"),
+        atwpb!("3.5.0-b1", "3.5.0", "3.5.0b1"),
     ];
     assert_eq!(parsed, expected);
 }
