@@ -8,7 +8,7 @@ use pycors_test_helpers::create_test_temp_dir;
 
 use mockall::predicate::*;
 
-const INDEX_HTML: &str = include_str!("../../tests/fixtures/index.html");
+const INDEX_HTML: &str = include_str!("../../tests/fixtures/html/source/index.html");
 
 #[test]
 fn cache_new_empty() {
