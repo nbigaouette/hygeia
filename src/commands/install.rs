@@ -111,13 +111,11 @@ pub fn run(
             let mut rt = tokio::runtime::Runtime::new()?;
 
             #[cfg(windows)]
-            let download_url = requested_version
-                .windows_pre_built_url()
-                .ok_or_else(|| anyhow::anyhow!("Requested version should have a source url"))?;
+            let download_url = requested_version.windows_pre_built_url().ok_or_else(|| {
+                anyhow::anyhow!("Requested version should have a pre-built package url")
+            })?;
             #[cfg(not(windows))]
-            let download_url = requested_version
-                .source_url()
-                .ok_or_else(|| anyhow::anyhow!("Requested version should have a pre-built url"))?;
+            let download_url = requested_version.source_url();
 
             let mut downloader = HyperDownloader::new(download_url)?;
             let download_dir = PycorsPathsProviderFromEnv::new().downloaded();

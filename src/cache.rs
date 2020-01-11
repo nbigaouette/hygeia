@@ -54,7 +54,7 @@ impl ToolchainsCacheFetch for ToolchainsCacheFetchOnline {
 pub struct AvailableToolchain {
     pub version: Version,
     pub base_url: Url,
-    pub source_tar_gz: Option<String>,
+    pub source_tar_gz: String,
     pub win_pre_built: Option<String>,
 }
 
@@ -105,15 +105,13 @@ impl AvailableToolchainTrait for AvailableToolchainWindowsPreBuilt {
 
 impl AvailableToolchain {
     #[cfg_attr(windows, allow(dead_code))]
-    pub fn source_url(&self) -> Option<Url> {
-        self.source_tar_gz.as_ref().map(|source_tar_gz| {
-            let mut new_url = self.base_url.clone();
-            new_url
-                .path_segments_mut()
-                .unwrap()
-                .extend(&[source_tar_gz]);
-            new_url
-        })
+    pub fn source_url(&self) -> Url {
+        let mut new_url = self.base_url.clone();
+        new_url
+            .path_segments_mut()
+            .unwrap()
+            .extend(&[&self.source_tar_gz]);
+        new_url
     }
 
     #[cfg_attr(not(windows), allow(dead_code))]
@@ -282,44 +280,36 @@ fn merge_available_toolchains(
                 result.push(AvailableToolchain {
                     version: source.version.clone(),
                     base_url: source.base_url.clone(),
-                    source_tar_gz: Some(source.source_tar_gz.clone()),
+                    source_tar_gz: source.source_tar_gz.clone(),
                     win_pre_built: None,
                 });
                 next_source = source_iter.next();
             }
-            (None, Some(pre_built)) => {
-                result.push(AvailableToolchain {
-                    version: pre_built.version.clone(),
-                    base_url: pre_built.base_url.clone(),
-                    source_tar_gz: None,
-                    win_pre_built: Some(pre_built.win_pre_built.clone()),
-                });
-                next_pre_built = pre_built_iter.next();
+            (None, Some(_pre_built)) => {
+                unreachable!(
+                    "We should not find a pre-built package without corresponding source archive."
+                );
             }
             (Some(source), Some(pre_built)) => match source.version.cmp(&pre_built.version) {
                 std::cmp::Ordering::Greater => {
                     result.push(AvailableToolchain {
                         version: source.version.clone(),
                         base_url: source.base_url.clone(),
-                        source_tar_gz: Some(source.source_tar_gz.clone()),
+                        source_tar_gz: source.source_tar_gz.clone(),
                         win_pre_built: None,
                     });
                     next_source = source_iter.next();
                 }
                 std::cmp::Ordering::Less => {
-                    result.push(AvailableToolchain {
-                        version: pre_built.version.clone(),
-                        base_url: pre_built.base_url.clone(),
-                        source_tar_gz: None,
-                        win_pre_built: Some(pre_built.win_pre_built.clone()),
-                    });
-                    next_pre_built = pre_built_iter.next();
+                    unreachable!(
+                        "We should not find a pre-built package without corresponding source archive."
+                    );
                 }
                 std::cmp::Ordering::Equal => {
                     result.push(AvailableToolchain {
                         version: pre_built.version.clone(),
                         base_url: pre_built.base_url.clone(),
-                        source_tar_gz: Some(source.source_tar_gz.clone()),
+                        source_tar_gz: source.source_tar_gz.clone(),
                         win_pre_built: Some(pre_built.win_pre_built.clone()),
                     });
                     next_source = source_iter.next();
