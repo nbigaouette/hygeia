@@ -52,6 +52,11 @@ impl ToolchainsCacheFetch for ToolchainsCacheFetchOnline {
 
 pub type AvailableToolchain = AvailableToolchainFromSource;
 
+trait AvailableToolchainTrait {
+    fn new(version: Version, base_url: Url, filename: String) -> Self;
+    fn version(&self) -> &Version;
+}
+
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct AvailableToolchainFromSource {
     pub version: Version,
@@ -64,6 +69,32 @@ pub struct AvailableToolchainWindowsPreBuilt {
     pub version: Version,
     pub base_url: Url,
     pub win_pre_built: String,
+}
+
+impl AvailableToolchainTrait for AvailableToolchainFromSource {
+    fn new(version: Version, base_url: Url, filename: String) -> Self {
+        AvailableToolchainFromSource {
+            version,
+            base_url,
+            source_tar_gz: filename,
+        }
+    }
+    fn version(&self) -> &Version {
+        &self.version
+    }
+}
+
+impl AvailableToolchainTrait for AvailableToolchainWindowsPreBuilt {
+    fn new(version: Version, base_url: Url, filename: String) -> Self {
+        AvailableToolchainWindowsPreBuilt {
+            version,
+            base_url,
+            win_pre_built: filename,
+        }
+    }
+    fn version(&self) -> &Version {
+        &self.version
+    }
 }
 
 impl AvailableToolchainFromSource {
@@ -216,15 +247,17 @@ impl AvailableToolchainsCache {
     }
 }
 
-fn parse_source_index_html(index_html: &str) -> Result<Vec<AvailableToolchainFromSource>> {
-    let mut toolchains: Vec<AvailableToolchainFromSource> = Vec::new();
+fn parse_index_html<A>(index_html: &str, end_of_file: &str) -> Result<Vec<A>>
+where
+    A: AvailableToolchainTrait,
+{
+    let mut toolchains: Vec<A> = Vec::new();
 
     let document = Document::from(index_html);
     let node = document.find(Class("text")).next().unwrap();
     // Iterate over columns (Release, Pre-Release)
     for column in node.find(Class("column")) {
         for version_found in column.find(Name("ul").descendant(Name("li").descendant(Name("ul")))) {
-            // println!("########### version_found: {:?}", version_found);
             let version_string = version_found
                 .parent()
                 .unwrap()
@@ -234,14 +267,10 @@ fn parse_source_index_html(index_html: &str) -> Result<Vec<AvailableToolchainFro
                 .nth(1)
                 .unwrap()
                 .to_string();
-            // println!("##### version_string: {}", version_string);
-            // println!("version_found: {:?}", version_found);
 
             for links in version_found.find(Name("li").descendant(Name("a"))) {
                 if let Some(url) = links.attr("href") {
-                    if url.ends_with(".tgz") {
-                        // println!("        found our node!  links: {:?}", links);
-
+                    if url.ends_with(end_of_file) {
                         let version = Version::parse(
                             &version_string
                                 .replace("rc", "-rc") // release candidates
@@ -250,15 +279,10 @@ fn parse_source_index_html(index_html: &str) -> Result<Vec<AvailableToolchainFro
                         )
                         .unwrap();
                         let mut url = Url::parse(url).unwrap();
-                        let source_tar_gz =
-                            url.path_segments().unwrap().last().unwrap().to_string();
+                        let filename = url.path_segments().unwrap().last().unwrap().to_string();
                         url.path_segments_mut().unwrap().pop();
                         url.set_scheme("https").unwrap(); // 3.3.4, 3.3.5 has "http" instead of "https"
-                        toolchains.push(AvailableToolchainFromSource {
-                            version,
-                            base_url: url,
-                            source_tar_gz,
-                        })
+                        toolchains.push(A::new(version, url, filename))
                     }
                 }
             }
@@ -266,63 +290,17 @@ fn parse_source_index_html(index_html: &str) -> Result<Vec<AvailableToolchainFro
     }
 
     // Sort the versions vector (in reverse order)
-    toolchains.sort_unstable_by(|a, b| b.version.cmp(&a.version));
+    toolchains.sort_unstable_by(|a, b| b.version().cmp(&a.version()));
     Ok(toolchains)
+}
+
+fn parse_source_index_html(index_html: &str) -> Result<Vec<AvailableToolchainFromSource>> {
+    parse_index_html::<AvailableToolchainFromSource>(index_html, ".tgz")
 }
 
 #[allow(dead_code)]
 fn parse_win_pre_built_index_html(
     index_html: &str,
 ) -> Result<Vec<AvailableToolchainWindowsPreBuilt>> {
-    let mut toolchains: Vec<AvailableToolchainWindowsPreBuilt> = Vec::new();
-
-    let document = Document::from(index_html);
-    let node = document.find(Class("text")).next().unwrap();
-    // Iterate over columns (Release, Pre-Release)
-    for column in node.find(Class("column")) {
-        for version_found in column.find(Name("ul").descendant(Name("li").descendant(Name("ul")))) {
-            // println!("########### version_found: {:?}", version_found);
-            let version_string = version_found
-                .parent()
-                .unwrap()
-                .text()
-                .trim()
-                .split(' ')
-                .nth(1)
-                .unwrap()
-                .to_string();
-            // println!("##### version_string: {}", version_string);
-            // println!("version_found: {:?}", version_found);
-
-            for links in version_found.find(Name("li").descendant(Name("a"))) {
-                if let Some(url) = links.attr("href") {
-                    if url.ends_with("-embed-amd64.zip") {
-                        // println!("        found our node!  links: {:?}", links);
-
-                        let version = Version::parse(
-                            &version_string
-                                .replace("rc", "-rc") // release candidates
-                                .replace("a", "-a") // alpha
-                                .replace("b", "-b"), // beta
-                        )
-                        .unwrap();
-                        let mut url = Url::parse(url).unwrap();
-                        let win_pre_built =
-                            url.path_segments().unwrap().last().unwrap().to_string();
-                        url.path_segments_mut().unwrap().pop();
-                        url.set_scheme("https").unwrap(); // 3.3.4, 3.3.5 has "http" instead of "https"
-                        toolchains.push(AvailableToolchainWindowsPreBuilt {
-                            version,
-                            base_url: url,
-                            win_pre_built,
-                        })
-                    }
-                }
-            }
-        }
-    }
-    // Sort the versions vector (in reverse order)
-    toolchains.sort_unstable_by(|a, b| b.version.cmp(&a.version));
-
-    Ok(toolchains)
+    parse_index_html::<AvailableToolchainWindowsPreBuilt>(index_html, "-embed-amd64.zip")
 }
