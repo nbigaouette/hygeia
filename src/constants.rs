@@ -63,6 +63,9 @@ pub const TOOLCHAIN_FILE: &str = ".python-version";
 // Note: Trailing '/' is required for proper parsing
 pub const PYTHON_SOURCE_INDEX_URL: &str = "https://www.python.org/downloads/source/";
 
+// Note: Trailing '/' is required for proper parsing
+pub const PYTHON_WINDOWS_INDEX_URL: &str = "https://www.python.org/downloads/windows/";
+
 pub const AVAILABLE_TOOLCHAIN_CACHE: &str = "available_toolchains.json";
 
 pub const SHIMS_DIRECTORY_IDENTIFIER_FILE: &str = "this_is_a_shims_directory.txt";
