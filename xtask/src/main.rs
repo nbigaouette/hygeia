@@ -24,12 +24,14 @@ enum Opt {
     /// Package the binary into a zip file meant for release
     PackageArtifacts {
         /// Build target (debug or release)
-        #[structopt(short, long)]
+        #[structopt(long)]
         target: Target,
         /// Target triple (f.e. x86_64-apple-darwin)
-        #[structopt(short, long)]
+        #[structopt(long)]
         target_triple: String,
     },
+    /// Run tests
+    Test(Tests),
 }
 
 #[derive(StructOpt, Debug)]
@@ -61,11 +63,28 @@ impl FromStr for Target {
     }
 }
 
+#[derive(StructOpt, Debug)]
+enum Tests {
+    /// Run unit tests
+    Unit,
+    /// Run integration tests
+    Integration(IntegrationTests),
+}
+
+#[derive(StructOpt, Debug)]
+enum IntegrationTests {
+    /// Run integration tests covering all commands
+    Commands,
+    /// Run integration tests that compile all Python 3 versions available
+    AllVersions,
+}
+
 fn main() {
     if let Err(e) = try_main() {
         eprintln!("{}", e);
         std::process::exit(-1);
     }
+    println!("cargo xtask success!")
 }
 
 fn try_main() -> Result<(), DynError> {
@@ -77,7 +96,51 @@ fn try_main() -> Result<(), DynError> {
             target,
             target_triple,
         } => package_artifacts(target, target_triple),
+        Opt::Test(tests_type) => run_tests(tests_type),
     }
+}
+
+fn run_tests(tests_type: Tests) -> Result<(), DynError> {
+    let result = match tests_type {
+        Tests::Unit => {
+            cargo(&[
+                "test",
+                "--color=always",
+                "--no-fail-fast",
+                "tests::",
+                "--",
+                "--color=always",
+                "--nocapture",
+            ])?;
+        }
+        Tests::Integration(integration_tests) => match integration_tests {
+            IntegrationTests::Commands => {
+                cargo(&[
+                    "test",
+                    "--color=always",
+                    "--no-fail-fast",
+                    "integration::",
+                    "--",
+                    "--color=always",
+                    "--nocapture",
+                ])?;
+            }
+            IntegrationTests::AllVersions => {
+                cargo(&[
+                    "test",
+                    "--color=always",
+                    "--no-fail-fast",
+                    "integration::install::all::",
+                    "--",
+                    "--color=always",
+                    "--nocapture",
+                    "--ignored",
+                ])?;
+            }
+        },
+    };
+
+    Ok(result)
 }
 
 fn release_url() -> Result<(), DynError> {
@@ -130,6 +193,29 @@ fn package_artifacts(target: Target, target_triple: String) -> Result<(), DynErr
     zip.finish()?;
 
     Ok(())
+}
+
+pub fn cargo(arguments: &[&str]) -> Result<(), DynError> {
+    let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
+
+    println!("Running:\n    {} {}", cargo, arguments.join(" "));
+
+    let mut child = Command::new(&cargo).args(arguments).spawn()?;
+
+    let exit_status = child.wait()?;
+    if exit_status.success() {
+        Ok(())
+    } else {
+        Err(Box::new(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            format!(
+                r#"Failed to run "{} {}". Error code: {:?}"#,
+                cargo,
+                arguments.join(" "),
+                exit_status.code()
+            ),
+        )))
+    }
 }
 
 pub fn git_describe() -> Result<String, DynError> {

@@ -138,8 +138,8 @@ macro_rules! function_path {
 }
 
 #[macro_export]
-macro_rules! create_test_temp_dir {
-    () => {{
+macro_rules! _create_test_temp_dir_impl {
+    ($directory:expr) => {{
         let dir = std::env::temp_dir()
             .join("pycors")
             .join("integration_tests");
@@ -155,6 +155,15 @@ macro_rules! create_test_temp_dir {
             dir.push(component);
         }
 
+        dir.push($directory);
+
+        let dir: std::path::PathBuf = dir
+            .components()
+            // Strip current directory from the path, mainly introduced by
+            // the macro create_test_temp_dir!() when called without argument.
+            .filter(|c| *c != std::path::Component::CurDir)
+            .collect();
+
         if dir.exists() {
             std::fs::remove_dir_all(&dir).unwrap();
         }
@@ -162,5 +171,15 @@ macro_rules! create_test_temp_dir {
         std::fs::create_dir_all(&dir).unwrap();
 
         dir
+    }};
+}
+
+#[macro_export]
+macro_rules! create_test_temp_dir {
+    ($subdirectory:ident) => {{
+        pycors_test_helpers::_create_test_temp_dir_impl!($subdirectory)
+    }};
+    () => {{
+        pycors_test_helpers::_create_test_temp_dir_impl!(".")
     }};
 }
