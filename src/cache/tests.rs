@@ -195,8 +195,8 @@ fn cache_outdated() {
 }
 
 #[test]
-fn parse_html() {
-    let parsed: Vec<AvailableToolchain> = parse_index_html(INDEX_HTML).unwrap();
+fn parse_source_html() {
+    let parsed: Vec<AvailableToolchain> = parse_source_index_html(INDEX_HTML).unwrap();
     assert_eq!(parsed.len(), 213);
 
     assert_eq!(

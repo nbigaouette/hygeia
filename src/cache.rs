@@ -165,7 +165,7 @@ impl AvailableToolchainsCache {
         self.last_updated = Utc::now();
         let index_html: String = downloader.get()?;
 
-        self.available = parse_index_html(&index_html)?;
+        self.available = parse_source_index_html(&index_html)?;
 
         let cache_json = serde_json::to_string(&self)?;
         let cache_file = paths_provider.available_toolchains_cache_file();
@@ -192,7 +192,7 @@ impl AvailableToolchainsCache {
     }
 }
 
-fn parse_index_html(index_html: &str) -> Result<Vec<AvailableToolchain>> {
+fn parse_source_index_html(index_html: &str) -> Result<Vec<AvailableToolchain>> {
     let re: Regex = RegexBuilder::new(
         r#"<a href="/downloads/release/python-[^/]*/">Python (?P<version>[2-3].[0-9]+.[0-9]+[^ ]*)? - .*<a href="(?P<url>[^"]*)">Gzipped source tar"#
     )
