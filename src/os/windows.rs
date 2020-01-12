@@ -1,14 +1,4 @@
-use semver::Version;
-
-use crate::{toolchain::installed::InstalledToolchain, utils, Result};
-
-#[cfg_attr(not(windows), allow(dead_code))]
-pub fn build_filename_zip(version: &Version) -> String {
-    format!(
-        "{}-embed-amd64.zip",
-        utils::build_basename(version).replace("Python", "python")
-    )
-}
+use crate::{toolchain::installed::InstalledToolchain, Result};
 
 #[cfg_attr(not(windows), allow(dead_code))]
 pub fn command_with_major_version(
@@ -33,21 +23,7 @@ mod tests {
     use super::*;
     use std::path::Path;
 
-    #[test]
-    fn build_filename_from_version_372() {
-        let version = Version::parse("3.7.2").unwrap();
-
-        let filename_exe = build_filename_zip(&version);
-        assert_eq!(&filename_exe, "python-3.7.2-embed-amd64.zip");
-    }
-
-    #[test]
-    fn build_filename_from_version_372rc1() {
-        let version = Version::parse("3.7.2-rc1").unwrap();
-
-        let filename_exe = build_filename_zip(&version);
-        assert_eq!(&filename_exe, "python-3.7.2rc1-embed-amd64.zip");
-    }
+    use semver::Version;
 
     #[test]
     fn append_version_to_command_no_extension_success() {

@@ -11,8 +11,8 @@ use semver::Version;
 use tar::Archive;
 
 use crate::{
+    cache::AvailableToolchain,
     commands::{self, install::pip::install_extra_pip_packages},
-    os::build_filename,
     utils::{self, directory::PycorsPathsProviderFromEnv, SpinnerMessage},
     Result,
 };
@@ -20,19 +20,23 @@ use crate::{
 #[cfg_attr(windows, allow(dead_code))]
 pub fn install_package(
     release: bool,
-    version_to_install: &Version,
+    available_toolchain: &AvailableToolchain,
     install_extra_packages: Option<&commands::InstallExtraPackagesOptions>,
 ) -> Result<()> {
-    extract_source(&version_to_install).with_context(|| "Failed to extract source")?;
-    compile_source(release, &version_to_install, install_extra_packages)
-        .with_context(|| "Failed to compile source")?;
+    extract_source(&available_toolchain).with_context(|| "Failed to extract source")?;
+    compile_source(
+        release,
+        &available_toolchain.version,
+        install_extra_packages,
+    )
+    .with_context(|| "Failed to compile source")?;
     Ok(())
 }
 
 #[cfg_attr(windows, allow(dead_code))]
-pub fn extract_source(version: &Version) -> Result<()> {
+pub fn extract_source(available_toolchain: &AvailableToolchain) -> Result<()> {
     let download_dir = PycorsPathsProviderFromEnv::new().downloaded();
-    let filename = build_filename(&version);
+    let filename = &available_toolchain.source_tar_gz;
     let file_path = download_dir.join(&filename);
     let extract_dir = PycorsPathsProviderFromEnv::new().extracted();
 
