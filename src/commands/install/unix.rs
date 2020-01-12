@@ -7,6 +7,7 @@ use std::{
 
 use anyhow::Context;
 use flate2::read::GzDecoder;
+#[cfg(target_os = "macos")]
 use semver::Version;
 use tar::Archive;
 
@@ -23,13 +24,9 @@ pub fn install_package(
     available_toolchain: &AvailableToolchain,
     install_extra_packages: Option<&commands::InstallExtraPackagesOptions>,
 ) -> Result<()> {
-    extract_source(&available_toolchain).with_context(|| "Failed to extract source")?;
-    compile_source(
-        release,
-        &available_toolchain.version,
-        install_extra_packages,
-    )
-    .with_context(|| "Failed to compile source")?;
+    extract_source(available_toolchain).with_context(|| "Failed to extract source")?;
+    compile_source(release, available_toolchain, install_extra_packages)
+        .with_context(|| "Failed to compile source")?;
     Ok(())
 }
 
@@ -70,10 +67,12 @@ pub fn extract_source(available_toolchain: &AvailableToolchain) -> Result<()> {
 #[cfg_attr(windows, allow(dead_code))]
 pub fn compile_source(
     release: bool,
-    version: &Version,
+    available_toolchain: &AvailableToolchain,
     install_extra_packages: Option<&commands::InstallExtraPackagesOptions>,
 ) -> Result<()> {
     // Compilation
+
+    let version = &available_toolchain.version;
 
     let install_dir = PycorsPathsProviderFromEnv::new().install_dir(version);
 
@@ -137,7 +136,7 @@ pub fn compile_source(
         ("LD_RUN_PATH", format!("{}/lib", install_dir.display())),
     ];
 
-    let basename = utils::build_basename(&version);
+    let basename = Path::new(&available_toolchain.source_tar_gz).with_extension("");
     let extract_dir = PycorsPathsProviderFromEnv::new()
         .extracted()
         .join(&basename);

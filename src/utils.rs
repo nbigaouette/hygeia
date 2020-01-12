@@ -65,23 +65,6 @@ pub fn extension_sep() -> &'static str {
     ""
 }
 
-pub fn build_basename(version: &Version) -> String {
-    // Starting with 3.3, the filename contains the full MAJOR.MINOR.PATCH-RC (f.e. "3.3.0" or "3.7.2-rc1").
-    // Before that, the filename only contained MAJOR.MINOR (without the patch, for example "3.2")
-    // See for example the difference between those versions:
-    //      https://www.python.org/ftp/python/3.2
-    //      https://www.python.org/ftp/python/3.3.0
-    // let version_string =
-    let version_file = if *version >= Version::new(3, 3, 0) {
-        format!("{}", version)
-    } else {
-        format!("{}.{}", version.major, version.minor)
-    }
-    .replace("-", "");
-
-    format!("Python-{}", version_file)
-}
-
 pub fn create_hard_link<P1, P2>(from: P1, to: P2) -> Result<()>
 where
     P1: AsRef<Path>,
@@ -535,23 +518,6 @@ mod tests {
     #[test]
     fn copy_file_overwrite() {
         copy_file("LICENSE-APACHE", "LICENSE-APACHE").unwrap_err();
-    }
-
-    #[test]
-    fn build_basename_from_version_372() {
-        let version = Version::parse("3.7.2").unwrap();
-
-        let filename = build_basename(&version);
-
-        assert_eq!(&filename, "Python-3.7.2");
-    }
-
-    #[test]
-    fn build_basename_from_version_372rc1() {
-        let version = Version::parse("3.7.2-rc1").unwrap();
-
-        let filename = build_basename(&version);
-        assert_eq!(&filename, "Python-3.7.2rc1");
     }
 
     #[test]
