@@ -161,8 +161,8 @@ fn assert_python_successfully_installed<P, S, T>(
     // case::version_312("3.1.2"),
     // case::version_311("3.1.1"),
     // case::version_310("3.1.0"),
-    // case::version_301("3.0.1"),
-    // case::version_300("3.0.0")
+    // case::version_301("3.0.1"), // Does not compile: clang: error: no such file or directory: 'directory"'
+    // case::version_300("3.0.0") // Does not compile: clang: error: no such file or directory: 'directory"'
 )]
 fn all(version: &str) {
     let home = create_test_temp_dir!(version);
