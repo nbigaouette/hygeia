@@ -143,7 +143,7 @@ fn assert_python_successfully_installed<P, S, T>(
     case::version_336("3.3.6"),
     case::version_335("3.3.5"),
     case::version_334("3.3.4"),
-    case::version_333("3.3.3"),
+    // case::version_333("3.3.3"), // Infinite recursion: python3 ./Parser/asdl_c.py -h Include ./Parser/Python.asdl
     case::version_332("3.3.2"),
     case::version_331("3.3.1"),
     case::version_330("3.3.0"),
