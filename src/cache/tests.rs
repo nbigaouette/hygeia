@@ -74,7 +74,7 @@ fn cache_new_empty() {
     let paths_provider = PycorsPathsProvider::from(mock);
 
     let mut mock = MockToolchainsCacheFetch::new();
-    mock.expect_get()
+    mock.expect_get_source()
         .times(1)
         .returning(|| Ok(SOURCE_INDEX_HTML.to_string()));
     let _cache = AvailableToolchainsCache::new(&paths_provider, &mock).unwrap();
@@ -125,7 +125,7 @@ fn cache_up_to_date() {
 
     // Let's create the cache for real
     let mut mock = MockToolchainsCacheFetch::new();
-    mock.expect_get()
+    mock.expect_get_source()
         .times(0) // Cache file is up to date, no download required.
         .returning(|| Ok(SOURCE_INDEX_HTML.to_string()));
     let _cache = AvailableToolchainsCache::new(&paths_provider, &mock).unwrap();
@@ -179,7 +179,7 @@ fn cache_corrupted() {
     let paths_provider = PycorsPathsProvider::from(mock);
 
     let mut mock = MockToolchainsCacheFetch::new();
-    mock.expect_get()
+    mock.expect_get_source()
         .times(1) // Cache file is corrupted, new download required.
         .returning(|| Ok(SOURCE_INDEX_HTML.to_string()));
     let _cache = AvailableToolchainsCache::new(&paths_provider, &mock).unwrap();
@@ -230,7 +230,7 @@ fn cache_outdated() {
     let paths_provider = PycorsPathsProvider::from(mock);
 
     let mut mock = MockToolchainsCacheFetch::new();
-    mock.expect_get()
+    mock.expect_get_source()
         .times(1) // Cache file is outdated, new download required.
         .returning(|| Ok(SOURCE_INDEX_HTML.to_string()));
     let _cache = AvailableToolchainsCache::new(&paths_provider, &mock).unwrap();

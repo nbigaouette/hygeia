@@ -32,13 +32,13 @@ pub enum CacheError {
 
 #[cfg_attr(test, mockall::automock)]
 pub trait ToolchainsCacheFetch {
-    fn get(&self) -> Result<String>;
+    fn get_source(&self) -> Result<String>;
 }
 
 pub struct ToolchainsCacheFetchOnline;
 
 impl ToolchainsCacheFetch for ToolchainsCacheFetchOnline {
-    fn get(&self) -> Result<String> {
+    fn get_source(&self) -> Result<String> {
         let mut downloader = HyperDownloader::new(PYTHON_SOURCE_INDEX_URL)?;
         // HTML file is too small to bother with a prog
         let with_progress_bar = false;
@@ -214,10 +214,10 @@ impl AvailableToolchainsCache {
         D: ToolchainsCacheFetch,
     {
         self.last_updated = Utc::now();
-        let index_html: String = downloader.get()?;
+        let index_html_source: String = downloader.get_source()?;
 
-        let available_toolchains_source = parse_source_index_html(&index_html)?;
-        let available_toolchains_win_prebuilt = parse_win_pre_built_index_html(&index_html)?;
+        let available_toolchains_source = parse_source_index_html(&index_html_source)?;
+        let available_toolchains_win_prebuilt = parse_win_pre_built_index_html(&index_html_source)?;
         self.available = merge_available_toolchains(
             available_toolchains_source,
             available_toolchains_win_prebuilt,
