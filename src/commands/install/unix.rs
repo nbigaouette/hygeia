@@ -7,7 +7,6 @@ use std::{
 
 use anyhow::Context;
 use flate2::read::GzDecoder;
-#[cfg(target_os = "macos")]
 use semver::Version;
 use tar::Archive;
 
@@ -84,8 +83,28 @@ pub fn compile_source(
                 anyhow::anyhow!("Error converting install dir {:?} to `str`", install_dir)
             })?
             .to_string(),
-        "--enable-shared".to_string(),
     ];
+    if *version >= Version::new(3, 3, 0) {
+        configure_args.push("--enable-shared".to_string());
+    } else {
+        log::warn!("Python <3.3.0 seems to have issue compiling with '--enable-shared'.");
+        log::warn!(
+            "As such, version {} will not be compiled with shared library support",
+            version
+        );
+        log::warn!(
+            "and 'libpython{}.{}{}.{}' will not be available.",
+            version.major,
+            version.minor,
+            if release { "" } else { "m" },
+            if cfg!(target_os = "macos") {
+                "dylib"
+            } else {
+                "so"
+            }
+        );
+        log::warn!("See https://github.com/nbigaouette/pycors/issues/122 for more information.")
+    }
     if release {
         configure_args.push("--enable-optimizations".to_string());
     }
