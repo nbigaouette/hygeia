@@ -84,9 +84,9 @@ pub fn run(
                 requested_version.version
             );
             log::warn!(
-                "Compatible version found: {} (in {:?})",
+                "Compatible version found: {} (in {})",
                 matching_installed_version.version,
-                matching_installed_version.location,
+                matching_installed_version.location.display(),
             );
         }
         (_, true) | (None, _) => {
