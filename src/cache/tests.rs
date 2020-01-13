@@ -77,6 +77,9 @@ fn cache_new_empty() {
     mock.expect_get_source()
         .times(1)
         .returning(|| Ok(SOURCE_INDEX_HTML.to_string()));
+    mock.expect_get_win_prebuilt()
+        .times(1) // Cache file is corrupted, new download required.
+        .returning(|| Ok(WIN_PREBUILT_INDEX_HTML.to_string()));
     let _cache = AvailableToolchainsCache::new(&paths_provider, &mock).unwrap();
 }
 
@@ -128,6 +131,9 @@ fn cache_up_to_date() {
     mock.expect_get_source()
         .times(0) // Cache file is up to date, no download required.
         .returning(|| Ok(SOURCE_INDEX_HTML.to_string()));
+    mock.expect_get_win_prebuilt()
+        .times(0) // Cache file is corrupted, new download required.
+        .returning(|| Ok(WIN_PREBUILT_INDEX_HTML.to_string()));
     let _cache = AvailableToolchainsCache::new(&paths_provider, &mock).unwrap();
 }
 
@@ -182,6 +188,9 @@ fn cache_corrupted() {
     mock.expect_get_source()
         .times(1) // Cache file is corrupted, new download required.
         .returning(|| Ok(SOURCE_INDEX_HTML.to_string()));
+    mock.expect_get_win_prebuilt()
+        .times(1) // Cache file is corrupted, new download required.
+        .returning(|| Ok(WIN_PREBUILT_INDEX_HTML.to_string()));
     let _cache = AvailableToolchainsCache::new(&paths_provider, &mock).unwrap();
 }
 
@@ -233,6 +242,9 @@ fn cache_outdated() {
     mock.expect_get_source()
         .times(1) // Cache file is outdated, new download required.
         .returning(|| Ok(SOURCE_INDEX_HTML.to_string()));
+    mock.expect_get_win_prebuilt()
+        .times(1) // Cache file is corrupted, new download required.
+        .returning(|| Ok(WIN_PREBUILT_INDEX_HTML.to_string()));
     let _cache = AvailableToolchainsCache::new(&paths_provider, &mock).unwrap();
 }
 
