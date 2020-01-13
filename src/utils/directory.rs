@@ -88,10 +88,6 @@ where
         match config_home_from_env {
             Some(config_home_from_env) => config_home_from_env,
             None => {
-                log::debug!(
-                    "Cannot get project's home directory from environment variable {:?}",
-                    constants::project_home_env_variable(),
-                );
                 self.home()
                     .map(|p| p.join(DEFAULT_DOT_DIR))
                     .unwrap_or_else(|| {
