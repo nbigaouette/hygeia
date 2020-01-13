@@ -127,18 +127,6 @@ impl AvailableToolchain {
     }
 }
 
-impl AvailableToolchainWindowsPreBuilt {
-    #[cfg_attr(not(windows), allow(dead_code))]
-    pub fn windows_pre_built_url(&self) -> Url {
-        let mut new_url = self.base_url.clone();
-        new_url
-            .path_segments_mut()
-            .unwrap()
-            .extend(&[&self.win_pre_built]);
-        new_url
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AvailableToolchainsCache {
     last_updated: DateTime<Utc>,
