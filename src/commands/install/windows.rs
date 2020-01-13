@@ -4,12 +4,11 @@ use std::{
 };
 
 use anyhow::Context;
-use semver::Version;
 
 use crate::{
+    cache::AvailableToolchain,
     commands::{self, install::pip::install_extra_pip_packages},
     download::{download_to_path, HyperDownloader},
-    os::windows::build_filename_zip,
     utils::{self, directory::PycorsPathsProviderFromEnv},
     Result,
 };
@@ -18,13 +17,18 @@ const GET_PIP_URL: &str = "https://bootstrap.pypa.io/get-pip.py";
 
 #[cfg_attr(not(windows), allow(dead_code))]
 pub fn install_package(
-    version: &Version,
+    available_toolchain: &AvailableToolchain,
     install_extra_packages: Option<&commands::InstallExtraPackagesOptions>,
 ) -> Result<()> {
+    let version = &available_toolchain.version;
     let install_dir = PycorsPathsProviderFromEnv::new().install_dir(version);
 
     let cwd = PycorsPathsProviderFromEnv::new().downloaded();
-    let archive = build_filename_zip(version);
+    let archive = available_toolchain.win_pre_built.as_ref().ok_or_else(|| {
+        anyhow::anyhow!(
+            "Installing a Windows pre-built requires a prebuilt archive being available"
+        )
+    })?;
     let archive_path = cwd.join(archive);
 
     let file = BufReader::new(

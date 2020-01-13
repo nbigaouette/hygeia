@@ -11,8 +11,8 @@ use semver::Version;
 use tar::Archive;
 
 use crate::{
+    cache::AvailableToolchain,
     commands::{self, install::pip::install_extra_pip_packages},
-    os::build_filename,
     utils::{self, directory::PycorsPathsProviderFromEnv, SpinnerMessage},
     Result,
 };
@@ -20,19 +20,19 @@ use crate::{
 #[cfg_attr(windows, allow(dead_code))]
 pub fn install_package(
     release: bool,
-    version_to_install: &Version,
+    available_toolchain: &AvailableToolchain,
     install_extra_packages: Option<&commands::InstallExtraPackagesOptions>,
 ) -> Result<()> {
-    extract_source(&version_to_install).with_context(|| "Failed to extract source")?;
-    compile_source(release, &version_to_install, install_extra_packages)
+    extract_source(available_toolchain).with_context(|| "Failed to extract source")?;
+    compile_source(release, available_toolchain, install_extra_packages)
         .with_context(|| "Failed to compile source")?;
     Ok(())
 }
 
 #[cfg_attr(windows, allow(dead_code))]
-pub fn extract_source(version: &Version) -> Result<()> {
+pub fn extract_source(available_toolchain: &AvailableToolchain) -> Result<()> {
     let download_dir = PycorsPathsProviderFromEnv::new().downloaded();
-    let filename = build_filename(&version);
+    let filename = &available_toolchain.source_tar_gz;
     let file_path = download_dir.join(&filename);
     let extract_dir = PycorsPathsProviderFromEnv::new().extracted();
 
@@ -66,10 +66,12 @@ pub fn extract_source(version: &Version) -> Result<()> {
 #[cfg_attr(windows, allow(dead_code))]
 pub fn compile_source(
     release: bool,
-    version: &Version,
+    available_toolchain: &AvailableToolchain,
     install_extra_packages: Option<&commands::InstallExtraPackagesOptions>,
 ) -> Result<()> {
     // Compilation
+
+    let version = &available_toolchain.version;
 
     let install_dir = PycorsPathsProviderFromEnv::new().install_dir(version);
 
@@ -81,8 +83,28 @@ pub fn compile_source(
                 anyhow::anyhow!("Error converting install dir {:?} to `str`", install_dir)
             })?
             .to_string(),
-        "--enable-shared".to_string(),
     ];
+    if *version >= Version::new(3, 3, 0) {
+        configure_args.push("--enable-shared".to_string());
+    } else {
+        log::warn!("Python <3.3.0 seems to have issue compiling with '--enable-shared'.");
+        log::warn!(
+            "As such, version {} will not be compiled with shared library support",
+            version
+        );
+        log::warn!(
+            "and 'libpython{}.{}{}.{}' will not be available.",
+            version.major,
+            version.minor,
+            if release { "" } else { "m" },
+            if cfg!(target_os = "macos") {
+                "dylib"
+            } else {
+                "so"
+            }
+        );
+        log::warn!("See https://github.com/nbigaouette/pycors/issues/122 for more information.")
+    }
     if release {
         configure_args.push("--enable-optimizations".to_string());
     }
@@ -133,7 +155,7 @@ pub fn compile_source(
         ("LD_RUN_PATH", format!("{}/lib", install_dir.display())),
     ];
 
-    let basename = utils::build_basename(&version);
+    let basename = Path::new(&available_toolchain.source_tar_gz).with_extension("");
     let extract_dir = PycorsPathsProviderFromEnv::new()
         .extracted()
         .join(&basename);

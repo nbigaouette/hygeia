@@ -46,9 +46,15 @@ fn assert_python_successfully_installed<P, S, T>(
     let assert_output = output.assert();
 
     let predicate_empty = predicate::str::is_empty().trim();
-    let predicate_version = predicate::str::similar(format!("Python {}", version))
-        .trim()
-        .normalize();
+    let predicate_version = if version < Version::new(3, 3, 0) && version.patch == 0 {
+        predicate::str::similar(format!("Python {}.{}", version.major, version.minor))
+            .trim()
+            .normalize()
+    } else {
+        predicate::str::similar(format!("Python {}", version))
+            .trim()
+            .normalize()
+    };
     let predicate_prefix = predicate::str::similar(format!(
         "{}",
         paths_provider.install_dir(&version).display()
@@ -137,26 +143,25 @@ fn assert_python_successfully_installed<P, S, T>(
     case::version_336("3.3.6"),
     case::version_335("3.3.5"),
     case::version_334("3.3.4"),
-    case::version_333("3.3.3"),
+    // case::version_333("3.3.3"), // Infinite recursion: python3 ./Parser/asdl_c.py -h Include ./Parser/Python.asdl
     case::version_332("3.3.2"),
     case::version_331("3.3.1"),
     case::version_330("3.3.0"),
-    // FIXME: Those version are currently failing to install/validate
-    // case::version_326("3.2.6"),
-    // case::version_325("3.2.5"),
-    // case::version_324("3.2.4"),
-    // case::version_323("3.2.3"),
-    // case::version_322("3.2.2"),
-    // case::version_321("3.2.1"),
-    // case::version_320("3.2.0"),
-    // case::version_315("3.1.5"),
-    // case::version_314("3.1.4"),
-    // case::version_313("3.1.3"),
-    // case::version_312("3.1.2"),
-    // case::version_311("3.1.1"),
-    // case::version_310("3.1.0"),
-    // case::version_301("3.0.1"),
-    // case::version_300("3.0.0")
+    case::version_326("3.2.6"),
+    case::version_325("3.2.5"),
+    case::version_324("3.2.4"),
+    case::version_323("3.2.3"),
+    case::version_322("3.2.2"),
+    case::version_321("3.2.1"),
+    case::version_320("3.2.0"),
+    case::version_315("3.1.5"),
+    case::version_314("3.1.4"),
+    case::version_313("3.1.3"),
+    case::version_312("3.1.2"),
+    case::version_311("3.1.1"),
+    case::version_310("3.1.0"),
+    // case::version_301("3.0.1"), // Does not compile: clang: error: no such file or directory: 'directory"'
+    // case::version_300("3.0.0") // Does not compile: clang: error: no such file or directory: 'directory"'
 )]
 fn all(version: &str) {
     let home = create_test_temp_dir!(version);

@@ -5,11 +5,11 @@ use std::{
 };
 
 use anyhow::{anyhow, Result};
-use semver::{Version, VersionReq};
+use semver::VersionReq;
 use thiserror::Error;
 
 use crate::{
-    cache::{AvailableToolchainsCache, ToolchainsCacheFetchOnline},
+    cache::{AvailableToolchain, AvailableToolchainsCache, ToolchainsCacheFetchOnline},
     commands,
     constants::{EXECUTABLE_NAME, TOOLCHAIN_FILE},
     download::{download_to_path, HyperDownloader},
@@ -84,9 +84,9 @@ pub fn run(
                 requested_version.version
             );
             log::warn!(
-                "Compatible version found: {} (in {:?})",
+                "Compatible version found: {} (in {})",
                 matching_installed_version.version,
-                matching_installed_version.location,
+                matching_installed_version.location.display(),
             );
         }
         (_, true) | (None, _) => {
@@ -111,7 +111,9 @@ pub fn run(
             let mut rt = tokio::runtime::Runtime::new()?;
 
             #[cfg(windows)]
-            let download_url = requested_version.windows_pre_built_url();
+            let download_url = requested_version.windows_pre_built_url().ok_or_else(|| {
+                anyhow::anyhow!("Requested version should have a pre-built package url")
+            })?;
             #[cfg(not(windows))]
             let download_url = requested_version.source_url();
 
@@ -124,7 +126,7 @@ pub fn run(
             ))?;
             // FIXME: Validate downloaded package with checksum
             // FIXME: Validate downloaded package with signature
-            install_package(release, &requested_version.version, install_extra_packages)?;
+            install_package(release, &requested_version, install_extra_packages)?;
         }
     }
 
@@ -161,16 +163,16 @@ pub fn run(
 
 fn install_package(
     #[cfg_attr(windows, allow(unused_variables))] release: bool,
-    version_to_install: &Version,
+    available_toolchain: &AvailableToolchain,
     install_extra_packages: Option<&commands::InstallExtraPackagesOptions>,
 ) -> Result<()> {
     #[cfg(not(target_os = "windows"))]
     {
-        unix::install_package(release, &version_to_install, install_extra_packages)?;
+        unix::install_package(release, &available_toolchain, install_extra_packages)?;
     }
     #[cfg(target_os = "windows")]
     {
-        windows::install_package(&version_to_install, install_extra_packages)?;
+        windows::install_package(&available_toolchain, install_extra_packages)?;
     }
 
     Ok(())
