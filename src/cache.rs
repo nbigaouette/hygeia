@@ -16,7 +16,7 @@ use thiserror::Error;
 use url::Url;
 
 use crate::{
-    constants::PYTHON_SOURCE_INDEX_URL,
+    constants::{PYTHON_SOURCE_INDEX_URL, PYTHON_WINDOWS_INDEX_URL},
     download::{download_to_string, HyperDownloader},
     utils::directory::{PycorsHomeProviderTrait, PycorsPathsProvider},
 };
@@ -33,6 +33,7 @@ pub enum CacheError {
 #[cfg_attr(test, mockall::automock)]
 pub trait ToolchainsCacheFetch {
     fn get_source(&self) -> Result<String>;
+    fn get_win_prebuilt(&self) -> Result<String>;
 }
 
 pub struct ToolchainsCacheFetchOnline;
@@ -40,7 +41,17 @@ pub struct ToolchainsCacheFetchOnline;
 impl ToolchainsCacheFetch for ToolchainsCacheFetchOnline {
     fn get_source(&self) -> Result<String> {
         let mut downloader = HyperDownloader::new(PYTHON_SOURCE_INDEX_URL)?;
-        // HTML file is too small to bother with a prog
+        // HTML file is too small to bother with a progress bar
+        let with_progress_bar = false;
+        let mut rt = tokio::runtime::Runtime::new()?;
+        let index_html: String =
+            rt.block_on(download_to_string(&mut downloader, with_progress_bar))?;
+
+        Ok(index_html)
+    }
+    fn get_win_prebuilt(&self) -> Result<String> {
+        let mut downloader = HyperDownloader::new(PYTHON_WINDOWS_INDEX_URL)?;
+        // HTML file is too small to bother with a progress bar
         let with_progress_bar = false;
         let mut rt = tokio::runtime::Runtime::new()?;
         let index_html: String =
@@ -215,9 +226,11 @@ impl AvailableToolchainsCache {
     {
         self.last_updated = Utc::now();
         let index_html_source: String = downloader.get_source()?;
+        let index_html_win_prebuilt: String = downloader.get_win_prebuilt()?;
 
         let available_toolchains_source = parse_source_index_html(&index_html_source)?;
-        let available_toolchains_win_prebuilt = parse_win_pre_built_index_html(&index_html_source)?;
+        let available_toolchains_win_prebuilt =
+            parse_win_pre_built_index_html(&index_html_win_prebuilt)?;
         self.available = merge_available_toolchains(
             available_toolchains_source,
             available_toolchains_win_prebuilt,
