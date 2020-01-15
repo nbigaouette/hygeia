@@ -39,7 +39,11 @@ fn simple_install_from_scratch_success() {
         let assert_output = output.assert();
         assert_output
             .success()
-            .stdout(predicate::str::is_empty().trim())
+            .stdout(
+                predicate::str::contains("🐍 Python 3.7.5 successfully installed!")
+                    .normalize()
+                    .trim(),
+            )
             .stderr(predicate::str::is_empty().trim());
 
         // Make sure pip was installed successfully
@@ -108,7 +112,11 @@ fn simple_install_from_scratch_select_success() {
         let assert_output = output.assert();
         assert_output
             .success()
-            .stdout(predicate::str::is_empty().trim())
+            .stdout(
+                predicate::str::contains("🐍 Python 3.7.5 successfully installed!")
+                    .normalize()
+                    .trim(),
+            )
             .stderr(predicate::str::is_empty().trim());
 
         // Make sure pip was installed successfully
@@ -162,7 +170,11 @@ fn install_twice_noop() {
         let assert_output = output.assert();
         assert_output
             .success()
-            .stdout(predicate::str::is_empty().trim())
+            .stdout(
+                predicate::str::contains("🐍 Python 3.7.5 successfully installed!")
+                    .normalize()
+                    .trim(),
+            )
             .stderr(predicate::str::is_empty().trim());
 
         // Make sure pip was installed successfully
@@ -180,7 +192,11 @@ fn install_twice_noop() {
         let assert_output = output.assert();
         assert_output
             .success()
-            .stdout(predicate::str::is_empty().trim())
+            .stdout(
+                predicate::str::contains("🐍 Python 3.7.5 successfully installed!")
+                    .normalize()
+                    .trim(),
+            )
             .stderr(predicates::str::contains(
                 "Python version 3.7.5 already installed!",
             ));
@@ -220,14 +236,17 @@ fn install_twice_forced() {
             .env(project_home_env_variable(), &pycors_home)
             .env(home_overwrite_env_variable(), &home)
             .env("PATH", env::join_paths(paths.iter()).unwrap())
-            // .env("RUST_LOG", "pycors=debug")
             .env("RUST_LOG", "")
             .current_dir(&cwd)
             .unwrap();
         let assert_output = output.assert();
         assert_output
             .success()
-            .stdout(predicate::str::is_empty().trim())
+            .stdout(
+                predicate::str::contains("🐍 Python 3.7.5 successfully installed!")
+                    .normalize()
+                    .trim(),
+            )
             .stderr(predicate::str::is_empty().trim());
 
         // Make sure pip was installed successfully
@@ -241,13 +260,17 @@ fn install_twice_forced() {
             .env(project_home_env_variable(), &pycors_home)
             .env(home_overwrite_env_variable(), &home)
             .env("PATH", env::join_paths(paths.iter()).unwrap())
-            .env("RUST_LOG", "pycors=debug")
+            .env("RUST_LOG", "")
             .current_dir(&cwd)
             .unwrap();
         let assert_output = output.assert();
         assert_output
             .success()
-            .stdout(predicate::str::is_empty().trim())
+            .stdout(
+                predicate::str::contains("🐍 Python 3.7.5 successfully installed!")
+                    .normalize()
+                    .trim(),
+            )
             .stderr(
                 predicates::str::contains("skipped: file get-pip.py already downloaded.")
                     .and(predicates::str::contains("Installing 3.7.5 succeeded!")),
