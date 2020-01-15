@@ -23,7 +23,11 @@ fn setup_bash_success_from_scratch() {
     let assert_output = output.assert();
     assert_output
         .success()
-        .stdout(predicate::str::is_empty().trim())
+        .stdout(
+            predicate::str::contains("BASH successfully configured!")
+                .normalize()
+                .trim(),
+        )
         .stderr(predicate::str::is_empty().trim());
 
     let expected_bashrc = format!(
@@ -110,7 +114,11 @@ source {}
     let assert_output = output.assert();
     assert_output
         .success()
-        .stdout(predicate::str::is_empty().trim())
+        .stdout(
+            predicate::str::contains("BASH successfully configured!")
+                .normalize()
+                .trim(),
+        )
         .stderr(predicate::str::is_empty().trim());
 
     let bashrc_content = fs::read_to_string(home.join(".bashrc")).unwrap();
@@ -148,7 +156,11 @@ source {}
     let assert_output = output.assert();
     assert_output
         .success()
-        .stdout(predicate::str::is_empty().trim())
+        .stdout(
+            predicate::str::contains("BASH successfully configured!")
+                .normalize()
+                .trim(),
+        )
         .stderr(predicate::str::is_empty().trim());
 
     // After a second 'pycors setup bash', the extra lines should be above since

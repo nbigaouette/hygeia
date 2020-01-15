@@ -116,9 +116,30 @@ pub fn run(shell: Shell) -> Result<()> {
         "Writing list of default packages to install to {:?}",
         output_filename
     );
-    let mut file = fs::File::create(output_filename)?;
+
+    let mut file = fs::File::create(&output_filename)?;
     file.write_all(extra_packages_file_default_content.as_bytes())?;
 
-    log::info!("Done!");
+    println!();
+    println!("{} successfully configured!", shell);
+    println!();
+    println!("📦 The file {}", output_filename.display());
+    println!("   contains a list of packages that will automatically be \"pip install\"ed");
+    println!("   when installing a Python toolchain with");
+    println!("   the -e/--extra or -f/--extra-from command line flags.");
+    println!(
+        "   You can modify this file to your liking. Note that future \"{} setup --extra\" command",
+        EXECUTABLE_NAME
+    );
+    println!(
+        "   will overwrite that file. Copy the file and use --extra-from to keep your changes."
+    );
+    println!();
+    println!("🐍 To install a new toolchain, use the 'install' command. For example:");
+    println!("      {} install --extra ~3.8", EXECUTABLE_NAME);
+    println!("   will install the latest 3.8 release and install the extra pip packages");
+    println!("   provided in the file above.");
+    println!();
+
     Ok(())
 }
