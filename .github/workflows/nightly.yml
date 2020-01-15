@@ -19,7 +19,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v1
 
-      - uses: actions-rs/toolchain@v1
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: ${{ matrix.rust }}
@@ -31,12 +32,15 @@ jobs:
           rustc --version
           cargo --version
           echo CARGO_HOME=${CARGO_HOME}
+          which cargo
+          which rustc
+          which rustup
 
         # See https://github.com/embarkstudios/cargo-deny
       - name: Install 'cargo-deny'
         run: |
           curl -L "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.5.2/cargo-deny-0.5.2-x86_64-unknown-linux-musl.tar.gz" | tar -zxv
-          mv *-x86_64-*/cargo-* $CARGO_HOME/bin/
+          mv *-x86_64-*/cargo-* ~/.cargo/bin/
           rm -fr *-x86_64-*
           cargo deny --help
 
