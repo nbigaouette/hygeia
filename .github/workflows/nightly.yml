@@ -10,10 +10,27 @@ jobs:
     name: "Nightly audit"
 
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - 1.40.0
 
     steps:
       - name: Checkout
         uses: actions/checkout@v1
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+
+      - name: Print Rust version
+        run: |
+          rustup --version
+          rustc --version
+          cargo --version
+          echo CARGO_HOME=${CARGO_HOME}
 
         # See https://github.com/embarkstudios/cargo-deny
       - name: Install 'cargo-deny'
