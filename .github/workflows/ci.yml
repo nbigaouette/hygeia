@@ -8,7 +8,7 @@
 
 on: [push]
 
-name: CI
+name: Build and Test
 
 env:
   RUST_BACKTRACE: 1
@@ -188,6 +188,44 @@ jobs:
         with:
           command: clippy
           args: -- -D warnings
+
+  audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - 1.40.0
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+
+      - name: Print Rust versions
+        run: |
+          rustup --version
+          rustc --version
+          cargo --version
+      - name: Install 'cargo-deny'
+        # See https://github.com/embarkstudios/cargo-deny
+        run: |
+          curl -L "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.5.2/cargo-deny-0.5.2-x86_64-unknown-linux-musl.tar.gz" | tar -zxv
+          mv *-x86_64-*/cargo-* ~/.cargo/bin/
+          rm -fr *-x86_64-*
+          cargo deny --help
+
+      - name: Print licenses
+        run: cargo deny list
+
+      - name: Verify security advisories
+        run: cargo deny check advisories
 
   coverage:
     name: Code coverage
