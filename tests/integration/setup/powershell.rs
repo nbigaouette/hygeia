@@ -34,7 +34,11 @@ fn setup_powershell_success_from_scratch() {
     let assert_output = output.assert();
     assert_output
         .success()
-        .stdout(predicate::str::is_empty().trim())
+        .stdout(
+            predicate::str::contains("POWERSHELL successfully configured!")
+                .normalize()
+                .trim(),
+        )
         .stderr(predicate::str::is_empty().trim());
 
     let expected_ps_profile = format!(
