@@ -107,7 +107,7 @@ where
     }
 
     pub fn installed(&self) -> PathBuf {
-        self.project_home().join("installed")
+        self.project_home().join("installed").join("cpython")
     }
 
     pub fn logs(&self) -> PathBuf {
@@ -385,7 +385,7 @@ pub mod tests {
             let mocked_home = Some(home);
             let mocked_pycors_home = Some(pycors_home.clone());
 
-            let expected = pycors_home.join("installed");
+            let expected = pycors_home.join("installed").join("cpython");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
@@ -406,7 +406,7 @@ pub mod tests {
             let mocked_home = Some(home);
             let mocked_pycors_home = Some(pycors_home.clone());
 
-            let expected = pycors_home.join("installed");
+            let expected = pycors_home.join("installed").join("cpython");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
@@ -640,7 +640,10 @@ pub mod tests {
             let version_str = "3.7.5";
             let version = Version::parse(version_str).unwrap();
 
-            let expected = pycors_home.join("installed").join(version_str);
+            let expected = pycors_home
+                .join("installed")
+                .join("cpython")
+                .join(version_str);
 
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
@@ -664,7 +667,10 @@ pub mod tests {
             let version_str = "3.7.5";
             let version = Version::parse(version_str).unwrap();
 
-            let expected = pycors_home.join("installed").join(version_str);
+            let expected = pycors_home
+                .join("installed")
+                .join("cpython")
+                .join(version_str);
 
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
@@ -689,9 +695,16 @@ pub mod tests {
             let mocked_pycors_home = Some(pycors_home.clone());
 
             #[cfg(not(windows))]
-            let expected = pycors_home.join("installed").join(version_str).join("bin");
+            let expected = pycors_home
+                .join("installed")
+                .join("cpython")
+                .join(version_str)
+                .join("bin");
             #[cfg(windows)]
-            let expected = pycors_home.join("installed").join(version_str);
+            let expected = pycors_home
+                .join("installed")
+                .join("cpython")
+                .join(version_str);
 
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
@@ -716,9 +729,16 @@ pub mod tests {
             let version = Version::parse(version_str).unwrap();
 
             #[cfg(not(windows))]
-            let expected = pycors_home.join("installed").join(version_str).join("bin");
+            let expected = pycors_home
+                .join("installed")
+                .join("cpython")
+                .join(version_str)
+                .join("bin");
             #[cfg(windows)]
-            let expected = pycors_home.join("installed").join(version_str);
+            let expected = pycors_home
+                .join("installed")
+                .join("cpython")
+                .join(version_str);
 
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
