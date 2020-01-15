@@ -982,11 +982,19 @@ fn find_compatible_toolchain_multiple() {
             version: Version::parse("3.7.5").unwrap(),
         },
         InstalledToolchain {
-            location: pycors_home.join("installed").join("3.7.4").join("bin"),
+            location: pycors_home
+                .join("installed")
+                .join("cpython")
+                .join("3.7.4")
+                .join("bin"),
             version: Version::parse("3.7.4").unwrap(),
         },
         InstalledToolchain {
-            location: pycors_home.join("installed").join("3.8.0").join("bin"),
+            location: pycors_home
+                .join("installed")
+                .join("cpython")
+                .join("3.8.0")
+                .join("bin"),
             version: Version::parse("3.8.0").unwrap(),
         },
         InstalledToolchain {
@@ -1063,11 +1071,19 @@ fn find_compatible_toolchain_same_system_custom() {
             version: Version::parse("3.7.5").unwrap(),
         },
         InstalledToolchain {
-            location: pycors_home.join("installed").join("3.7.5").join("bin"),
+            location: pycors_home
+                .join("installed")
+                .join("cpython")
+                .join("3.7.5")
+                .join("bin"),
             version: Version::parse("3.7.5").unwrap(),
         },
         InstalledToolchain {
-            location: pycors_home.join("installed").join("4.0.0").join("bin"),
+            location: pycors_home
+                .join("installed")
+                .join("cpython")
+                .join("4.0.0")
+                .join("bin"),
             version: Version::parse("4.0.0").unwrap(),
         },
         InstalledToolchain {

@@ -50,7 +50,7 @@ fn select(version: &str, cwd: &Path) {
 }
 
 fn installed(pycors_home: &Path, version: &str, installed_by_us: bool) -> Result<String> {
-    let installed_dir = pycors_home.join("installed");
+    let installed_dir = pycors_home.join("installed").join("cpython");
     let installation_dir = installed_dir.join(version);
 
     #[cfg(windows)]
