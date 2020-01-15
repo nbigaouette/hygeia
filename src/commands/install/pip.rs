@@ -82,7 +82,7 @@ pub fn install_extra_pip_packages(
             .show_defaults()
             .confirm()
         {
-            let install_dir = PycorsPathsProviderFromEnv::new().install_dir(version);
+            let install_dir = PycorsPathsProviderFromEnv::new().bin_dir(version);
             let python_major_bin = install_dir.join(format!(
                 "python{}{}{}",
                 version.major,
