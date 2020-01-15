@@ -1,4 +1,4 @@
-name: "Nightly audit"
+name: "Nightly Security Audit"
 
 on:
   schedule:

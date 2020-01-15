@@ -1,6 +1,7 @@
 # pycors
 
-[![Build Status](https://github.com/nbigaouette/pycors/workflows/CI/badge.svg?branch=master)](https://github.com/nbigaouette/pycors/actions)
+[![Build Status](https://github.com/nbigaouette/pycors/workflows/Build%20and%20Test/badge.svg?branch=master)](https://github.com/nbigaouette/pycors/actions)
+[![Security Audit](https://github.com/nbigaouette/pycors/workflows/Nightly%20Security%20Audit/badge.svg?branch=master)](https://github.com/nbigaouette/pycors/actions)
 [![Coverage Status](https://codecov.io/gh/nbigaouette/pycors/branch/master/graph/badge.svg)](https://codecov.io/gh/nbigaouette/pycors)
 
 `pycors` is a **Py**thon interpreter **co**ntroller built using **R**u**s**t. It's goal is to allow

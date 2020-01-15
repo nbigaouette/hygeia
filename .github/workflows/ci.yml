@@ -8,7 +8,7 @@
 
 on: [push]
 
-name: CI
+name: Build and Test
 
 env:
   RUST_BACKTRACE: 1
