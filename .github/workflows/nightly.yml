@@ -1,9 +1,8 @@
 name: "Nightly audit"
 
-on: [push]
-# on:
-#   schedule:
-#     - cron:  '0 0 * * *'
+on:
+  schedule:
+    - cron: "0 0 * * *"
 
 jobs:
   nightly-audit:
@@ -26,15 +25,11 @@ jobs:
           toolchain: ${{ matrix.rust }}
           override: true
 
-      - name: Print Rust version
+      - name: Print Rust versions
         run: |
           rustup --version
           rustc --version
           cargo --version
-          echo CARGO_HOME=${CARGO_HOME}
-          which cargo
-          which rustc
-          which rustup
 
         # See https://github.com/embarkstudios/cargo-deny
       - name: Install 'cargo-deny'
@@ -44,8 +39,8 @@ jobs:
           rm -fr *-x86_64-*
           cargo deny --help
 
-      - name: Print licenses (cargo deny)
+      - name: Print licenses
         run: cargo deny list
 
-      - name: Verify advisories (cargo deny)
+      - name: Verify security advisories
         run: cargo deny check advisories
