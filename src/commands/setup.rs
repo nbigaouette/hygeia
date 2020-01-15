@@ -140,6 +140,10 @@ pub fn run(shell: Shell) -> Result<()> {
     println!("   will install the latest 3.8 release and install the extra pip packages");
     println!("   provided in the file above.");
     println!();
+    println!("❔ Run");
+    println!("      {} --help", EXECUTABLE_NAME);
+    println!("   for more information.");
+    println!();
 
     Ok(())
 }
