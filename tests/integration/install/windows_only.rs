@@ -260,7 +260,7 @@ fn install_twice_forced() {
             .env(project_home_env_variable(), &pycors_home)
             .env(home_overwrite_env_variable(), &home)
             .env("PATH", env::join_paths(paths.iter()).unwrap())
-            .env("RUST_LOG", "")
+            .env("RUST_LOG", "pycors=info")
             .current_dir(&cwd)
             .unwrap();
         let assert_output = output.assert();
@@ -271,9 +271,8 @@ fn install_twice_forced() {
                     .normalize()
                     .trim(),
             )
-            .stderr(
-                predicates::str::contains("skipped: file get-pip.py already downloaded.")
-                    .and(predicates::str::contains("Installing 3.7.5 succeeded!")),
-            );
+            .stderr(predicates::str::contains(
+                "skipped: file get-pip.py already downloaded.",
+            ));
     }
 }
