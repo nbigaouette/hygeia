@@ -38,7 +38,11 @@ fn simple_install_from_scratch_success() {
         let assert_output = output.assert();
         assert_output
             .success()
-            .stdout(predicate::str::is_empty().trim())
+            .stdout(
+                predicate::str::contains("🐍 Python 3.7.5 successfully installed!")
+                    .normalize()
+                    .trim(),
+            )
             .stderr(predicate::str::is_empty().trim());
 
         // Make sure installation worked
@@ -85,7 +89,11 @@ fn simple_install_from_scratch_select_success() {
         let assert_output = output.assert();
         assert_output
             .success()
-            .stdout(predicate::str::is_empty().trim())
+            .stdout(
+                predicate::str::contains("🐍 Python 3.7.5 successfully installed!")
+                    .normalize()
+                    .trim(),
+            )
             .stderr(predicate::str::is_empty().trim());
 
         // Make sure installation worked
@@ -135,7 +143,11 @@ fn install_twice_noop() {
         let assert_output = output.assert();
         assert_output
             .success()
-            .stdout(predicate::str::is_empty().trim())
+            .stdout(
+                predicate::str::contains("🐍 Python 3.7.5 successfully installed!")
+                    .normalize()
+                    .trim(),
+            )
             .stderr(predicate::str::is_empty().trim());
 
         // Make sure installation worked
@@ -152,7 +164,11 @@ fn install_twice_noop() {
         let assert_output = output.assert();
         assert_output
             .success()
-            .stdout(predicate::str::is_empty().trim())
+            .stdout(
+                predicate::str::contains("🐍 Python 3.7.5 successfully installed!")
+                    .normalize()
+                    .trim(),
+            )
             .stderr(predicates::str::contains(
                 "Python version 3.7.5 already installed!",
             ));
@@ -194,7 +210,11 @@ fn install_twice_forced() {
         let assert_output = output.assert();
         assert_output
             .success()
-            .stdout(predicate::str::is_empty().trim())
+            .stdout(
+                predicate::str::contains("🐍 Python 3.7.5 successfully installed!")
+                    .normalize()
+                    .trim(),
+            )
             .stderr(predicate::str::is_empty().trim());
 
         // Make sure installation worked
@@ -221,7 +241,11 @@ fn install_twice_forced() {
         let assert_output = output.assert();
         assert_output
             .success()
-            .stdout(predicate::str::is_empty().trim())
+            .stdout(
+                predicate::str::contains("🐍 Python 3.7.5 successfully installed!")
+                    .normalize()
+                    .trim(),
+            )
             .stderr(predicate::str::is_empty().trim());
 
         // Make sure installation worked

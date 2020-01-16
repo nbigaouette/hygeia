@@ -140,19 +140,22 @@ pub fn run(
         output.write_all(b"\n")?;
     }
 
-    log::info!("Installing {} succeeded!", requested_version.version);
+    println!(
+        "🐍 Python {} successfully installed!",
+        requested_version.version
+    );
     if select {
-        log::info!(
-            "Version {} is selected and will be used in current directory.",
+        println!(
+            "   Version {} is selected and will be used in current directory.",
             requested_version.version
         );
     } else {
-        log::info!(
-            "Version {} was installed but is not selected. Select it with:",
+        println!(
+            "   Version {} was installed but is not selected. Select it with:",
             requested_version.version
         );
-        log::info!(
-            "    {} select {}",
+        println!(
+            "      {} select {}",
             EXECUTABLE_NAME,
             VersionReq::exact(&requested_version.version)
         );

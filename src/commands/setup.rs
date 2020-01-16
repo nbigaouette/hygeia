@@ -121,7 +121,7 @@ pub fn run(shell: Shell) -> Result<()> {
     file.write_all(extra_packages_file_default_content.as_bytes())?;
 
     println!();
-    println!("{} successfully configured!", shell);
+    println!("🐚 {} successfully configured!", shell);
     println!();
     println!("📦 The file {}", output_filename.display());
     println!("   contains a list of packages that will automatically be \"pip install\"ed");
