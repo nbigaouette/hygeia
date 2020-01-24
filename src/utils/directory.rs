@@ -244,6 +244,30 @@ pub mod tests {
         );
     }
 
+    #[test]
+    fn zsh_dir_relative() {
+        assert_eq!(
+            shell::zsh::config::dir_relative(),
+            Path::new("shell").join("zsh")
+        );
+    }
+
+    #[test]
+    fn zsh_file_path() {
+        assert_eq!(
+            shell::zsh::config::file_path(),
+            Path::new("shell").join("zsh").join("config.sh")
+        );
+    }
+
+    #[test]
+    fn zsh_autocomplete() {
+        assert_eq!(
+            shell::zsh::config::autocomplete(),
+            Path::new("shell").join("zsh").join("_pycors")
+        );
+    }
+
     mod pycors_paths_trait {
         use super::*;
         use crate::constants::project_home_env_variable;
