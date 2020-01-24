@@ -183,6 +183,23 @@ pub mod shell {
             }
         }
     }
+    pub mod zsh {
+        pub mod config {
+            use std::path::{Path, PathBuf};
+
+            pub fn dir_relative() -> PathBuf {
+                Path::new("shell").join("zsh")
+            }
+
+            pub fn file_path() -> PathBuf {
+                dir_relative().join("config.sh")
+            }
+
+            pub fn autocomplete() -> PathBuf {
+                dir_relative().join(format!("_{}", crate::constants::EXECUTABLE_NAME))
+            }
+        }
+    }
 }
 
 #[cfg(test)]
