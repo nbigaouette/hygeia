@@ -157,7 +157,7 @@ pub fn run(
         println!(
             "      {} select {}",
             EXECUTABLE_NAME,
-            VersionReq::exact(&requested_version.version)
+            format!("{}", VersionReq::exact(&requested_version.version)).replace(" ", "")
         );
     }
 

@@ -47,7 +47,7 @@ pub enum Command {
     /// Select specified Python versions to use
     ///
     /// The specified Python version will _not_ be installed if not already installed.
-    /// Use `pycors install` for this.
+    /// Use 'pycors install' for this.
     ///
     /// For example:
     ///   pycors select 3.6
@@ -58,7 +58,7 @@ pub enum Command {
     #[structopt(name = "select")]
     Select(VersionOrPath),
 
-    /// Install version, either from the provided version or from `.python-version`
+    /// Install version, either from the provided version or from '.python-version'
     #[structopt(name = "install")]
     Install {
         /// Specified version to install
@@ -72,7 +72,7 @@ pub enum Command {
         #[structopt(long)]
         force: bool,
 
-        /// Write installed version to `.python-version`
+        /// Write installed version to '.python-version'
         #[structopt(long = "select", short = "s")]
         select: bool,
 
@@ -80,7 +80,7 @@ pub enum Command {
         install_extra_packages: InstallExtraPackagesOptions,
     },
 
-    /// Run a binary from the installed `.python-version`
+    /// Run a binary from the installed '.python-version'
     ///
     /// For example:
     ///     pycors run "python -v"
@@ -96,8 +96,8 @@ pub enum Command {
 
     /// Setup the shim
     ///
-    /// This will install pycor's binary to `~/.pycors/bin` and add the
-    /// directory to the `$PATH` environment variable (through `~/.profile`).
+    /// This will install pycor's binary to '~/.pycors/bin' and add the
+    /// directory to the '$PATH' environment variable (through '~/.profile').
     ///
     /// Supported shells: Bash, Fish, Zsh, PowerShell and Elvish.
     #[structopt(name = "setup")]
@@ -107,7 +107,7 @@ pub enum Command {
 #[derive(StructOpt, Debug)]
 pub struct InstallExtraPackagesOptions {
     /// Install extra Python packages from file at default location
-    /// (`${PYCORS_HOME}/extra-packages-to-install.txt`)
+    /// ('${PYCORS_HOME}/extra-packages-to-install.txt')
     #[structopt(long = "extra", short = "e")]
     install_extra_packages: bool,
 

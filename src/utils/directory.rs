@@ -183,6 +183,23 @@ pub mod shell {
             }
         }
     }
+    pub mod zsh {
+        pub mod config {
+            use std::path::{Path, PathBuf};
+
+            pub fn dir_relative() -> PathBuf {
+                Path::new("shell").join("zsh")
+            }
+
+            pub fn file_path() -> PathBuf {
+                dir_relative().join("config.sh")
+            }
+
+            pub fn autocomplete() -> PathBuf {
+                dir_relative().join(format!("_{}", crate::constants::EXECUTABLE_NAME))
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -224,6 +241,30 @@ pub mod tests {
         assert_eq!(
             shell::bash::config::autocomplete(),
             Path::new("shell").join("bash").join("completion.sh")
+        );
+    }
+
+    #[test]
+    fn zsh_dir_relative() {
+        assert_eq!(
+            shell::zsh::config::dir_relative(),
+            Path::new("shell").join("zsh")
+        );
+    }
+
+    #[test]
+    fn zsh_file_path() {
+        assert_eq!(
+            shell::zsh::config::file_path(),
+            Path::new("shell").join("zsh").join("config.sh")
+        );
+    }
+
+    #[test]
+    fn zsh_autocomplete() {
+        assert_eq!(
+            shell::zsh::config::autocomplete(),
+            Path::new("shell").join("zsh").join("_pycors")
         );
     }
 
