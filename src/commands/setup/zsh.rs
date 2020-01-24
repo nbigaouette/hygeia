@@ -275,7 +275,7 @@ mod tests {
 
         write_config_to(&mut writer, &lines_to_append, &autocomplete_file).unwrap();
 
-        let expected = "# Line to append\nsource \"foo.sh\"\n";
+        let expected = "# Line to append\nfpath=(foo.sh $fpath)\ncompinit\n";
         let written = String::from_utf8(writer).unwrap();
 
         assert_eq!(written, expected);
