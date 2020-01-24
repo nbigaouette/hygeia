@@ -9,8 +9,8 @@ use crate::{
 };
 
 pub mod bash;
-pub mod zsh;
 pub mod powershell;
+pub mod zsh;
 
 pub fn run(shell: Shell) -> Result<()> {
     log::info!("Setting up the shim...");
