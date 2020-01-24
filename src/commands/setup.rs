@@ -9,6 +9,7 @@ use crate::{
 };
 
 pub mod bash;
+pub mod zsh;
 pub mod powershell;
 
 pub fn run(shell: Shell) -> Result<()> {
@@ -25,6 +26,9 @@ pub fn run(shell: Shell) -> Result<()> {
         paths_provider
             .project_home()
             .join(utils::directory::shell::bash::config::dir_relative()),
+        paths_provider
+            .project_home()
+            .join(utils::directory::shell::zsh::config::dir_relative()),
         paths_provider
             .project_home()
             .join(utils::directory::shell::powershell::config::dir_relative()),
@@ -51,6 +55,7 @@ pub fn run(shell: Shell) -> Result<()> {
     // Add ~/.EXECUTABLE_NAME/shims to $PATH in ~/.bashrc and ~/.bash_profile and install autocomplete
     match shell {
         Shell::Bash => bash::setup_bash(&paths_provider),
+        Shell::Zsh => zsh::setup_zsh(&paths_provider),
         Shell::PowerShell => powershell::setup_powershell(&paths_provider),
         _ => anyhow::bail!("Unsupported shell: {}", shell),
     }?;
