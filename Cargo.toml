@@ -1,9 +1,9 @@
 [package]
-name = "pycors"
+name = "hygeia"
 version = "0.2.2"
 authors = ["Nicolas Bigaouette <nbigaouette@gmail.com>"]
-homepage = "https://github.com/nbigaouette/pycors"
-repository = "https://github.com/nbigaouette/pycors"
+homepage = "https://github.com/nbigaouette/hygeia"
+repository = "https://github.com/nbigaouette/hygeia"
 edition = "2018"
 
 [workspace]
