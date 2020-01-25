@@ -41,7 +41,7 @@ fn setup_bash_success_from_scratch() {
 # WARNING: Those lines _need_ to be at the end of the file: {} needs to
 #          appear as soon as possible in the $PATH environment variable to
 #          to function properly.
-export PYCORS_HOME="{}"
+export HYGEIA_HOME="{}"
 source {}
 # End of pycors config block.
 #############################################################################
@@ -51,7 +51,7 @@ source {}
         EXECUTABLE_NAME,
         EXECUTABLE_NAME,
         pycors_home.display(),
-        Path::new("${PYCORS_HOME}")
+        Path::new("${HYGEIA_HOME}")
             .join("shell")
             .join("bash")
             .join("config.sh")
@@ -84,7 +84,7 @@ fn setup_bash_success_twice() {
 # WARNING: Those lines _need_ to be at the end of the file: {} needs to
 #          appear as soon as possible in the $PATH environment variable to
 #          to function properly.
-export PYCORS_HOME="{}"
+export HYGEIA_HOME="{}"
 source {}
 # End of pycors config block.
 #############################################################################
@@ -94,7 +94,7 @@ source {}
         EXECUTABLE_NAME,
         EXECUTABLE_NAME,
         pycors_home.display(),
-        Path::new("${PYCORS_HOME}")
+        Path::new("${HYGEIA_HOME}")
             .join("shell")
             .join("bash")
             .join("config.sh")

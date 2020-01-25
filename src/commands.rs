@@ -107,7 +107,7 @@ pub enum Command {
 #[derive(StructOpt, Debug)]
 pub struct InstallExtraPackagesOptions {
     /// Install extra Python packages from file at default location
-    /// ('${PYCORS_HOME}/extra-packages-to-install.txt')
+    /// ('${HYGEIA_HOME}/extra-packages-to-install.txt')
     #[structopt(long = "extra", short = "e")]
     install_extra_packages: bool,
 
