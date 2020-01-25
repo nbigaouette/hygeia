@@ -61,11 +61,11 @@ fn _mock_executable(
     }
 
     let stdout_filepath = executable_location.join(format!(
-        "{}{}_pycors_tests_to_print_stdout.txt",
+        "{}{}_hygeia_tests_to_print_stdout.txt",
         executable_name, EXECUTABLE_EXTENSION
     ));
     let stderr_filepath = executable_location.join(format!(
-        "{}{}_pycors_tests_to_print_stderr.txt",
+        "{}{}_hygeia_tests_to_print_stderr.txt",
         executable_name, EXECUTABLE_EXTENSION
     ));
 
@@ -141,7 +141,7 @@ macro_rules! function_path {
 macro_rules! _create_test_temp_dir_impl {
     ($directory:expr) => {{
         let dir = std::env::temp_dir()
-            .join("pycors")
+            .join("hygeia")
             .join("integration_tests");
 
         if !dir.exists() {
@@ -149,7 +149,7 @@ macro_rules! _create_test_temp_dir_impl {
         }
         let mut dir = dir.canonicalize().unwrap();
 
-        let function_path = pycors_test_helpers::function_path!();
+        let function_path = hygeia_test_helpers::function_path!();
 
         for component in function_path.split("::").skip(1) {
             dir.push(component);
@@ -177,9 +177,9 @@ macro_rules! _create_test_temp_dir_impl {
 #[macro_export]
 macro_rules! create_test_temp_dir {
     ($subdirectory:ident) => {{
-        pycors_test_helpers::_create_test_temp_dir_impl!($subdirectory)
+        hygeia_test_helpers::_create_test_temp_dir_impl!($subdirectory)
     }};
     () => {{
-        pycors_test_helpers::_create_test_temp_dir_impl!(".")
+        hygeia_test_helpers::_create_test_temp_dir_impl!(".")
     }};
 }

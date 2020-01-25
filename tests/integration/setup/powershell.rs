@@ -1,5 +1,5 @@
 use super::*;
-use pycors::{
+use hygeia::{
     constants::document_overwrite_env_variable,
     utils::directory::{
         shell::{Powershell, ShellPathProvider},
@@ -11,14 +11,14 @@ use pycors::{
 #[test]
 fn setup_powershell_success_from_scratch() {
     let home = create_test_temp_dir!();
-    let pycors_home = home.join(".pycors");
+    let hygeia_home = home.join(".hygeia");
     let document = home.join("Documents");
     let cwd = home.join("current_dir");
     fs::create_dir_all(&cwd).unwrap();
 
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_home().return_const(home.clone());
-    mock.expect_project_home().return_const(pycors_home.clone());
+    mock.expect_project_home().return_const(hygeia_home.clone());
     mock.expect_document().return_const(document.clone());
 
     let paths_provider = PycorsPathsProvider::from(mock);
@@ -27,10 +27,10 @@ fn setup_powershell_success_from_scratch() {
     let output = cmd
         .arg("setup")
         .arg("powershell")
-        .env(project_home_env_variable(), &pycors_home)
+        .env(project_home_env_variable(), &hygeia_home)
         .env(home_overwrite_env_variable(), &home)
         .env(document_overwrite_env_variable(), &document)
-        .env("PATH", pycors_home.join("usr_bin"))
+        .env("PATH", hygeia_home.join("usr_bin"))
         .env("RUST_LOG", "")
         .current_dir(&cwd)
         .unwrap();

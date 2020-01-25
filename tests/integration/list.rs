@@ -3,14 +3,14 @@ use super::*;
 #[test]
 fn with_empty_dir() {
     let home = create_test_temp_dir!();
-    let pycors_home = home.join(".pycors");
+    let hygeia_home = home.join(".hygeia");
     let cwd = home.join("current_dir");
     let _ = fs::create_dir_all(&cwd);
     let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
     let output = cmd
         .arg("list")
-        .env(project_home_env_variable(), &pycors_home)
-        .env("PATH", pycors_home.join("usr_bin"))
+        .env(project_home_env_variable(), &hygeia_home)
+        .env("PATH", hygeia_home.join("usr_bin"))
         .current_dir(&cwd) // Change to a clean directory without a '.python-version'
         .unwrap();
     let assert_output = output.assert();
@@ -18,7 +18,7 @@ fn with_empty_dir() {
             .success()
             .stdout(predicate::str::similar(indoc!("
                 +--------+---------+---------------------+----------+
-                | Active | Version | Installed by pycors | Location |
+                | Active | Version | Installed by hygeia | Location |
                 +--------+---------+---------------------+----------+"
             )).trim().normalize()
             )
@@ -29,12 +29,12 @@ fn with_empty_dir() {
 #[test]
 fn two_custom_no_system() {
     let home = create_test_temp_dir!();
-    let pycors_home = home.join(".pycors");
+    let hygeia_home = home.join(".hygeia");
     let cwd = home.join("current_dir");
     select("=3.7.5", &cwd);
-    let location_380_dir = installed(&pycors_home, "3.8.0", false).unwrap();
-    let location_375_dir = installed(&pycors_home, "3.7.5", true).unwrap();
-    let location_374_dir = installed(&pycors_home, "3.7.4", true).unwrap();
+    let location_380_dir = installed(&hygeia_home, "3.8.0", false).unwrap();
+    let location_375_dir = installed(&hygeia_home, "3.7.5", true).unwrap();
+    let location_374_dir = installed(&hygeia_home, "3.7.4", true).unwrap();
 
     // The 'Location' column expands to the path
     let dashes = "-".repeat(location_380_dir.len());
@@ -43,8 +43,8 @@ fn two_custom_no_system() {
     let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
     let output = cmd
         .arg("list")
-        .env(project_home_env_variable(), &pycors_home)
-        .env("PATH", pycors_home.join("usr_bin"))
+        .env(project_home_env_variable(), &hygeia_home)
+        .env("PATH", hygeia_home.join("usr_bin"))
         .current_dir(&cwd)
         .unwrap();
     let assert_output = output.assert();
@@ -52,7 +52,7 @@ fn two_custom_no_system() {
             .success()
             .stdout(predicate::str::similar(format!(
 "+--------+---------+---------------------+-{}-+
-| Active | Version | Installed by pycors | Location {} |
+| Active | Version | Installed by hygeia | Location {} |
 +--------+---------+---------------------+-{}-+
 |        |  3.8.0  |                     | {} |
 +--------+---------+---------------------+-{}-+
@@ -79,15 +79,15 @@ fn two_custom_no_system() {
 #[test]
 fn selected_but_not_installed() {
     let home = create_test_temp_dir!();
-    let pycors_home = home.join(".pycors");
+    let hygeia_home = home.join(".hygeia");
     let cwd = home.join("current_dir");
     select("=3.7.5", &cwd);
 
     let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
     let output = cmd
         .arg("list")
-        .env(project_home_env_variable(), &pycors_home)
-        .env("PATH", pycors_home.join("usr_bin"))
+        .env(project_home_env_variable(), &hygeia_home)
+        .env("PATH", hygeia_home.join("usr_bin"))
         .current_dir(&cwd)
         .unwrap();
     let assert_output = output.assert();
@@ -95,7 +95,7 @@ fn selected_but_not_installed() {
             .success()
             .stdout(predicate::str::similar(indoc!("
                 +--------+---------+---------------------+----------+
-                | Active | Version | Installed by pycors | Location |
+                | Active | Version | Installed by hygeia | Location |
                 +--------+---------+---------------------+----------+
                 |   ✗    |  3.7.5  |                     |          |
                 +--------+---------+---------------------+----------+"

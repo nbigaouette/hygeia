@@ -14,12 +14,12 @@ fn simple_install_from_scratch_success() {
     #[allow(unreachable_code)]
     {
         let home = create_test_temp_dir!();
-        let pycors_home = home.join(".pycors");
+        let hygeia_home = home.join(".hygeia");
         let paths = vec![home.join("usr_bin"), home.join("usr_local_bin")];
 
         let mut mock = MockPycorsHomeProviderTrait::new();
         mock.expect_home().return_const(home.clone());
-        mock.expect_project_home().return_const(pycors_home.clone());
+        mock.expect_project_home().return_const(hygeia_home.clone());
         mock.expect_paths().return_const(paths.clone());
         let paths_provider = PycorsPathsProvider::from(mock);
 
@@ -30,7 +30,7 @@ fn simple_install_from_scratch_success() {
         let output = cmd
             .arg("install")
             .arg("=3.7.5")
-            .env(project_home_env_variable(), &pycors_home)
+            .env(project_home_env_variable(), &hygeia_home)
             .env(home_overwrite_env_variable(), &home)
             .env("PATH", env::join_paths(paths.iter()).unwrap())
             .env("RUST_LOG", "")
@@ -59,7 +59,7 @@ fn simple_install_from_scratch_success() {
             .arg("--version")
             .arg("=3.7.5")
             .arg("python --version")
-            .env(project_home_env_variable(), &pycors_home)
+            .env(project_home_env_variable(), &hygeia_home)
             .env("PATH", env::join_paths(paths.iter()).unwrap())
             .env("RUST_LOG", "")
             .current_dir(&cwd)
@@ -86,12 +86,12 @@ fn simple_install_from_scratch_select_success() {
     #[allow(unreachable_code)]
     {
         let home = create_test_temp_dir!();
-        let pycors_home = home.join(".pycors");
+        let hygeia_home = home.join(".hygeia");
         let paths = vec![home.join("usr_bin"), home.join("usr_local_bin")];
 
         let mut mock = MockPycorsHomeProviderTrait::new();
         mock.expect_home().return_const(home.clone());
-        mock.expect_project_home().return_const(pycors_home.clone());
+        mock.expect_project_home().return_const(hygeia_home.clone());
         mock.expect_paths().return_const(paths.clone());
         let paths_provider = PycorsPathsProvider::from(mock);
 
@@ -103,7 +103,7 @@ fn simple_install_from_scratch_select_success() {
             .arg("install")
             .arg("=3.7.5")
             .arg("--select")
-            .env(project_home_env_variable(), &pycors_home)
+            .env(project_home_env_variable(), &hygeia_home)
             .env(home_overwrite_env_variable(), &home)
             .env("PATH", env::join_paths(paths.iter()).unwrap())
             .env("RUST_LOG", "")
@@ -145,12 +145,12 @@ fn install_twice_noop() {
     #[allow(unreachable_code)]
     {
         let home = create_test_temp_dir!();
-        let pycors_home = home.join(".pycors");
+        let hygeia_home = home.join(".hygeia");
         let paths = vec![home.join("usr_bin"), home.join("usr_local_bin")];
 
         let mut mock = MockPycorsHomeProviderTrait::new();
         mock.expect_home().return_const(home.clone());
-        mock.expect_project_home().return_const(pycors_home.clone());
+        mock.expect_project_home().return_const(hygeia_home.clone());
         mock.expect_paths().return_const(paths.clone());
         let paths_provider = PycorsPathsProvider::from(mock);
 
@@ -161,7 +161,7 @@ fn install_twice_noop() {
         let output = cmd
             .arg("install")
             .arg("=3.7.5")
-            .env(project_home_env_variable(), &pycors_home)
+            .env(project_home_env_variable(), &hygeia_home)
             .env(home_overwrite_env_variable(), &home)
             .env("PATH", env::join_paths(paths.iter()).unwrap())
             .env("RUST_LOG", "")
@@ -184,7 +184,7 @@ fn install_twice_noop() {
         let output = cmd
             .arg("install")
             .arg("=3.7.5")
-            .env(project_home_env_variable(), &pycors_home)
+            .env(project_home_env_variable(), &hygeia_home)
             .env(home_overwrite_env_variable(), &home)
             .env("PATH", env::join_paths(paths.iter()).unwrap())
             .current_dir(&cwd)
@@ -217,12 +217,12 @@ fn install_twice_forced() {
     #[allow(unreachable_code)]
     {
         let home = create_test_temp_dir!();
-        let pycors_home = home.join(".pycors");
+        let hygeia_home = home.join(".hygeia");
         let paths = vec![home.join("usr_bin"), home.join("usr_local_bin")];
 
         let mut mock = MockPycorsHomeProviderTrait::new();
         mock.expect_home().return_const(home.clone());
-        mock.expect_project_home().return_const(pycors_home.clone());
+        mock.expect_project_home().return_const(hygeia_home.clone());
         mock.expect_paths().return_const(paths.clone());
         let paths_provider = PycorsPathsProvider::from(mock);
 
@@ -233,7 +233,7 @@ fn install_twice_forced() {
         let output = cmd
             .arg("install")
             .arg("=3.7.5")
-            .env(project_home_env_variable(), &pycors_home)
+            .env(project_home_env_variable(), &hygeia_home)
             .env(home_overwrite_env_variable(), &home)
             .env("PATH", env::join_paths(paths.iter()).unwrap())
             .env("RUST_LOG", "")
@@ -257,10 +257,10 @@ fn install_twice_forced() {
             .arg("install")
             .arg("=3.7.5")
             .arg("--force")
-            .env(project_home_env_variable(), &pycors_home)
+            .env(project_home_env_variable(), &hygeia_home)
             .env(home_overwrite_env_variable(), &home)
             .env("PATH", env::join_paths(paths.iter()).unwrap())
-            .env("RUST_LOG", "pycors=info")
+            .env("RUST_LOG", "hygeia=info")
             .current_dir(&cwd)
             .unwrap();
         let assert_output = output.assert();

@@ -4,7 +4,7 @@ use chrono::Duration;
 
 use super::*;
 use crate::utils::directory::MockPycorsHomeProviderTrait;
-use pycors_test_helpers::create_test_temp_dir;
+use hygeia_test_helpers::create_test_temp_dir;
 
 use mockall::predicate::*;
 
@@ -55,7 +55,7 @@ macro_rules! at {
 #[test]
 fn cache_new_empty() {
     let home = create_test_temp_dir!();
-    let project_home = home.join(".pycors");
+    let project_home = home.join(".hygeia");
 
     let mocked_home = Some(home);
     let mocked_project_home = Some(project_home.clone());
@@ -86,7 +86,7 @@ fn cache_new_empty() {
 #[test]
 fn cache_up_to_date() {
     let home = create_test_temp_dir!();
-    let project_home = home.join(".pycors");
+    let project_home = home.join(".hygeia");
 
     let mocked_home1 = Some(home.clone());
     let mocked_home2 = Some(home);
@@ -140,7 +140,7 @@ fn cache_up_to_date() {
 #[test]
 fn cache_corrupted() {
     let home = create_test_temp_dir!();
-    let project_home = home.join(".pycors");
+    let project_home = home.join(".hygeia");
 
     let mocked_home1 = Some(home.clone());
     let mocked_home2 = Some(home);
@@ -197,7 +197,7 @@ fn cache_corrupted() {
 #[test]
 fn cache_outdated() {
     let home = create_test_temp_dir!();
-    let project_home = home.join(".pycors");
+    let project_home = home.join(".hygeia");
 
     let mocked_home1 = Some(home.clone());
     let mocked_home2 = Some(home);

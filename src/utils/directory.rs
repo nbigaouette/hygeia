@@ -237,10 +237,10 @@ pub mod tests {
 
     use crate::utils::directory::shell::ShellPathProvider;
 
-    use pycors_test_helpers::create_test_temp_dir;
+    use hygeia_test_helpers::create_test_temp_dir;
 
     #[test]
-    fn pycors_paths_from_env() {
+    fn hygeia_paths_from_env() {
         // Playing an env variables is subject to race conditions
         // since tests are run in parallel. Simply call the constructor
         // and the function.
@@ -293,11 +293,11 @@ pub mod tests {
     fn zsh_autocomplete() {
         assert_eq!(
             shell::Zsh::new().autocomplete(),
-            Path::new("shell").join("zsh").join("_pycors")
+            Path::new("shell").join("zsh").join("_hygeia")
         );
     }
 
-    mod pycors_paths_trait {
+    mod hygeia_paths_trait {
         use super::*;
         use crate::constants::project_home_env_variable;
 
@@ -324,17 +324,17 @@ pub mod tests {
         #[test]
         fn config_home_from_default() {
             let home = default_home_full_path();
-            let pycors_home = default_dot_full_path();
+            let hygeia_home = default_dot_full_path();
 
             let mocked_home = Some(home);
-            let mocked_pycors_home = Some(pycors_home.clone());
+            let mocked_hygeia_home = Some(hygeia_home.clone());
 
-            let expected = pycors_home;
+            let expected = hygeia_home;
 
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
                 .times(1)
-                .return_const(mocked_pycors_home);
+                .return_const(mocked_hygeia_home);
             mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
@@ -345,17 +345,17 @@ pub mod tests {
         #[test]
         fn config_home_from_env_variable() {
             let home = default_home_full_path();
-            let pycors_home = create_test_temp_dir!().join(".pycors");
+            let hygeia_home = create_test_temp_dir!().join(".hygeia");
 
             let mocked_home = Some(home);
-            let mocked_pycors_home = Some(pycors_home.clone());
+            let mocked_hygeia_home = Some(hygeia_home.clone());
 
-            let expected = pycors_home;
+            let expected = hygeia_home;
 
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
                 .times(1)
-                .return_const(mocked_pycors_home);
+                .return_const(mocked_hygeia_home);
             mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
@@ -366,17 +366,17 @@ pub mod tests {
         #[test]
         fn default_extra_package_file_from_default() {
             let home = default_home_full_path();
-            let pycors_home = default_dot_full_path();
+            let hygeia_home = default_dot_full_path();
 
             let mocked_home = Some(home);
-            let mocked_pycors_home = Some(pycors_home.clone());
+            let mocked_hygeia_home = Some(hygeia_home.clone());
 
-            let expected = pycors_home.join(EXTRA_PACKAGES_FILENAME);
+            let expected = hygeia_home.join(EXTRA_PACKAGES_FILENAME);
 
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
                 .times(1)
-                .return_const(mocked_pycors_home);
+                .return_const(mocked_hygeia_home);
             mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
@@ -387,17 +387,17 @@ pub mod tests {
         #[test]
         fn default_extra_package_file_from_env_variable() {
             let home = default_home_full_path();
-            let pycors_home = create_test_temp_dir!().join(".pycors");
+            let hygeia_home = create_test_temp_dir!().join(".hygeia");
 
             let mocked_home = Some(home);
-            let mocked_pycors_home = Some(pycors_home.clone());
+            let mocked_hygeia_home = Some(hygeia_home.clone());
 
-            let expected = pycors_home.join(EXTRA_PACKAGES_FILENAME);
+            let expected = hygeia_home.join(EXTRA_PACKAGES_FILENAME);
 
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
                 .times(1)
-                .return_const(mocked_pycors_home);
+                .return_const(mocked_hygeia_home);
             mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
@@ -408,17 +408,17 @@ pub mod tests {
         #[test]
         fn cache_from_default() {
             let home = default_home_full_path();
-            let pycors_home = default_dot_full_path();
+            let hygeia_home = default_dot_full_path();
 
             let mocked_home = Some(home);
-            let mocked_pycors_home = Some(pycors_home.clone());
+            let mocked_hygeia_home = Some(hygeia_home.clone());
 
-            let expected = pycors_home.join("cache");
+            let expected = hygeia_home.join("cache");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
                 .times(1)
-                .return_const(mocked_pycors_home);
+                .return_const(mocked_hygeia_home);
             mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
@@ -429,17 +429,17 @@ pub mod tests {
         #[test]
         fn cache_from_env_variable() {
             let home = default_home_full_path();
-            let pycors_home = create_test_temp_dir!().join(".pycors");
+            let hygeia_home = create_test_temp_dir!().join(".hygeia");
 
             let mocked_home = Some(home);
-            let mocked_pycors_home = Some(pycors_home.clone());
+            let mocked_hygeia_home = Some(hygeia_home.clone());
 
-            let expected = pycors_home.join("cache");
+            let expected = hygeia_home.join("cache");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
                 .times(1)
-                .return_const(mocked_pycors_home);
+                .return_const(mocked_hygeia_home);
             mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
@@ -450,17 +450,17 @@ pub mod tests {
         #[test]
         fn installed_from_default() {
             let home = default_home_full_path();
-            let pycors_home = default_dot_full_path();
+            let hygeia_home = default_dot_full_path();
 
             let mocked_home = Some(home);
-            let mocked_pycors_home = Some(pycors_home.clone());
+            let mocked_hygeia_home = Some(hygeia_home.clone());
 
-            let expected = pycors_home.join("installed").join("cpython");
+            let expected = hygeia_home.join("installed").join("cpython");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
                 .times(1)
-                .return_const(mocked_pycors_home);
+                .return_const(mocked_hygeia_home);
             mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
@@ -471,17 +471,17 @@ pub mod tests {
         #[test]
         fn installed_from_env_variable() {
             let home = default_home_full_path();
-            let pycors_home = create_test_temp_dir!().join(".pycors");
+            let hygeia_home = create_test_temp_dir!().join(".hygeia");
 
             let mocked_home = Some(home);
-            let mocked_pycors_home = Some(pycors_home.clone());
+            let mocked_hygeia_home = Some(hygeia_home.clone());
 
-            let expected = pycors_home.join("installed").join("cpython");
+            let expected = hygeia_home.join("installed").join("cpython");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
                 .times(1)
-                .return_const(mocked_pycors_home);
+                .return_const(mocked_hygeia_home);
             mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
@@ -492,17 +492,17 @@ pub mod tests {
         #[test]
         fn logs_from_default() {
             let home = default_home_full_path();
-            let pycors_home = default_dot_full_path();
+            let hygeia_home = default_dot_full_path();
 
             let mocked_home = Some(home);
-            let mocked_pycors_home = Some(pycors_home.clone());
+            let mocked_hygeia_home = Some(hygeia_home.clone());
 
-            let expected = pycors_home.join("logs");
+            let expected = hygeia_home.join("logs");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
                 .times(1)
-                .return_const(mocked_pycors_home);
+                .return_const(mocked_hygeia_home);
             mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
@@ -513,17 +513,17 @@ pub mod tests {
         #[test]
         fn logs_from_env_variable() {
             let home = default_home_full_path();
-            let pycors_home = create_test_temp_dir!().join(".pycors");
+            let hygeia_home = create_test_temp_dir!().join(".hygeia");
 
             let mocked_home = Some(home);
-            let mocked_pycors_home = Some(pycors_home.clone());
+            let mocked_hygeia_home = Some(hygeia_home.clone());
 
-            let expected = pycors_home.join("logs");
+            let expected = hygeia_home.join("logs");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
                 .times(1)
-                .return_const(mocked_pycors_home);
+                .return_const(mocked_hygeia_home);
             mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
@@ -534,17 +534,17 @@ pub mod tests {
         #[test]
         fn shims_from_default() {
             let home = default_home_full_path();
-            let pycors_home = default_dot_full_path();
+            let hygeia_home = default_dot_full_path();
 
             let mocked_home = Some(home);
-            let mocked_pycors_home = Some(pycors_home.clone());
+            let mocked_hygeia_home = Some(hygeia_home.clone());
 
-            let expected = pycors_home.join("shims");
+            let expected = hygeia_home.join("shims");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
                 .times(1)
-                .return_const(mocked_pycors_home);
+                .return_const(mocked_hygeia_home);
             mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
@@ -555,17 +555,17 @@ pub mod tests {
         #[test]
         fn shims_from_env_variable() {
             let home = create_test_temp_dir!();
-            let pycors_home = home.join(".pycors");
+            let hygeia_home = home.join(".hygeia");
 
             let mocked_home = Some(home);
-            let mocked_pycors_home = Some(pycors_home.clone());
+            let mocked_hygeia_home = Some(hygeia_home.clone());
 
-            let expected = pycors_home.join("shims");
+            let expected = hygeia_home.join("shims");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
                 .times(1)
-                .return_const(mocked_pycors_home);
+                .return_const(mocked_hygeia_home);
             mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
@@ -576,17 +576,17 @@ pub mod tests {
         #[test]
         fn downloaded_from_default() {
             let home = default_home_full_path();
-            let pycors_home = default_dot_full_path();
+            let hygeia_home = default_dot_full_path();
 
             let mocked_home = Some(home);
-            let mocked_pycors_home = Some(pycors_home.clone());
+            let mocked_hygeia_home = Some(hygeia_home.clone());
 
-            let expected = pycors_home.join("cache").join("downloaded");
+            let expected = hygeia_home.join("cache").join("downloaded");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
                 .times(1)
-                .return_const(mocked_pycors_home);
+                .return_const(mocked_hygeia_home);
             mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
@@ -597,17 +597,17 @@ pub mod tests {
         #[test]
         fn downloaded_from_env_variable() {
             let home = create_test_temp_dir!();
-            let pycors_home = home.join(".pycors");
+            let hygeia_home = home.join(".hygeia");
 
             let mocked_home = Some(home);
-            let mocked_pycors_home = Some(pycors_home.clone());
+            let mocked_hygeia_home = Some(hygeia_home.clone());
 
-            let expected = pycors_home.join("cache").join("downloaded");
+            let expected = hygeia_home.join("cache").join("downloaded");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
                 .times(1)
-                .return_const(mocked_pycors_home);
+                .return_const(mocked_hygeia_home);
             mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
@@ -618,17 +618,17 @@ pub mod tests {
         #[test]
         fn available_toolchain_from_default() {
             let home = default_home_full_path();
-            let pycors_home = default_dot_full_path();
+            let hygeia_home = default_dot_full_path();
 
             let mocked_home = Some(home);
-            let mocked_pycors_home = Some(pycors_home.clone());
+            let mocked_hygeia_home = Some(hygeia_home.clone());
 
-            let expected = pycors_home.join("cache").join(AVAILABLE_TOOLCHAIN_CACHE);
+            let expected = hygeia_home.join("cache").join(AVAILABLE_TOOLCHAIN_CACHE);
 
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
                 .times(1)
-                .return_const(mocked_pycors_home);
+                .return_const(mocked_hygeia_home);
             mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
@@ -639,17 +639,17 @@ pub mod tests {
         #[test]
         fn available_toolchain_from_env_variable() {
             let home = create_test_temp_dir!();
-            let pycors_home = home.join(".pycors");
+            let hygeia_home = home.join(".hygeia");
 
             let mocked_home = Some(home);
-            let mocked_pycors_home = Some(pycors_home.clone());
+            let mocked_hygeia_home = Some(hygeia_home.clone());
 
-            let expected = pycors_home.join("cache").join(AVAILABLE_TOOLCHAIN_CACHE);
+            let expected = hygeia_home.join("cache").join(AVAILABLE_TOOLCHAIN_CACHE);
 
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
                 .times(1)
-                .return_const(mocked_pycors_home);
+                .return_const(mocked_hygeia_home);
             mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
@@ -660,17 +660,17 @@ pub mod tests {
         #[test]
         fn extracted_from_default() {
             let home = default_home_full_path();
-            let pycors_home = default_dot_full_path();
+            let hygeia_home = default_dot_full_path();
 
             let mocked_home = Some(home);
-            let mocked_pycors_home = Some(pycors_home.clone());
+            let mocked_hygeia_home = Some(hygeia_home.clone());
 
-            let expected = pycors_home.join("cache").join("extracted");
+            let expected = hygeia_home.join("cache").join("extracted");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
                 .times(1)
-                .return_const(mocked_pycors_home);
+                .return_const(mocked_hygeia_home);
             mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
@@ -681,17 +681,17 @@ pub mod tests {
         #[test]
         fn extracted_from_env_variable() {
             let home = create_test_temp_dir!();
-            let pycors_home = home.join(".pycors");
+            let hygeia_home = home.join(".hygeia");
 
             let mocked_home = Some(home);
-            let mocked_pycors_home = Some(pycors_home.clone());
+            let mocked_hygeia_home = Some(hygeia_home.clone());
 
-            let expected = pycors_home.join("cache").join("extracted");
+            let expected = hygeia_home.join("cache").join("extracted");
 
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
                 .times(1)
-                .return_const(mocked_pycors_home);
+                .return_const(mocked_hygeia_home);
             mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
@@ -702,15 +702,15 @@ pub mod tests {
         #[test]
         fn install_dir_from_default() {
             let home = default_home_full_path();
-            let pycors_home = default_dot_full_path();
+            let hygeia_home = default_dot_full_path();
 
             let mocked_home = Some(home);
-            let mocked_pycors_home = Some(pycors_home.clone());
+            let mocked_hygeia_home = Some(hygeia_home.clone());
 
             let version_str = "3.7.5";
             let version = Version::parse(version_str).unwrap();
 
-            let expected = pycors_home
+            let expected = hygeia_home
                 .join("installed")
                 .join("cpython")
                 .join(version_str);
@@ -718,7 +718,7 @@ pub mod tests {
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
                 .times(1)
-                .return_const(mocked_pycors_home);
+                .return_const(mocked_hygeia_home);
             mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
@@ -729,15 +729,15 @@ pub mod tests {
         #[test]
         fn install_dir_from_env_variable() {
             let home = create_test_temp_dir!();
-            let pycors_home = home.join(".pycors");
+            let hygeia_home = home.join(".hygeia");
 
             let mocked_home = Some(home);
-            let mocked_pycors_home = Some(pycors_home.clone());
+            let mocked_hygeia_home = Some(hygeia_home.clone());
 
             let version_str = "3.7.5";
             let version = Version::parse(version_str).unwrap();
 
-            let expected = pycors_home
+            let expected = hygeia_home
                 .join("installed")
                 .join("cpython")
                 .join(version_str);
@@ -745,7 +745,7 @@ pub mod tests {
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
                 .times(1)
-                .return_const(mocked_pycors_home);
+                .return_const(mocked_hygeia_home);
             mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
@@ -756,22 +756,22 @@ pub mod tests {
         #[test]
         fn bin_dir_from_default() {
             let home = default_home_full_path();
-            let pycors_home = default_dot_full_path();
+            let hygeia_home = default_dot_full_path();
 
             let version_str = "3.7.5";
             let version = Version::parse(version_str).unwrap();
 
             let mocked_home = Some(home);
-            let mocked_pycors_home = Some(pycors_home.clone());
+            let mocked_hygeia_home = Some(hygeia_home.clone());
 
             #[cfg(not(windows))]
-            let expected = pycors_home
+            let expected = hygeia_home
                 .join("installed")
                 .join("cpython")
                 .join(version_str)
                 .join("bin");
             #[cfg(windows)]
-            let expected = pycors_home
+            let expected = hygeia_home
                 .join("installed")
                 .join("cpython")
                 .join(version_str);
@@ -779,7 +779,7 @@ pub mod tests {
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
                 .times(1)
-                .return_const(mocked_pycors_home);
+                .return_const(mocked_hygeia_home);
             mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);
@@ -790,22 +790,22 @@ pub mod tests {
         #[test]
         fn bin_dir_from_env_variable() {
             let home = create_test_temp_dir!();
-            let pycors_home = home.join(".pycors");
+            let hygeia_home = home.join(".hygeia");
 
             let mocked_home = Some(home);
-            let mocked_pycors_home = Some(pycors_home.clone());
+            let mocked_hygeia_home = Some(hygeia_home.clone());
 
             let version_str = "3.7.5";
             let version = Version::parse(version_str).unwrap();
 
             #[cfg(not(windows))]
-            let expected = pycors_home
+            let expected = hygeia_home
                 .join("installed")
                 .join("cpython")
                 .join(version_str)
                 .join("bin");
             #[cfg(windows)]
-            let expected = pycors_home
+            let expected = hygeia_home
                 .join("installed")
                 .join("cpython")
                 .join(version_str);
@@ -813,7 +813,7 @@ pub mod tests {
             let mut mock = MockPycorsHomeProviderTrait::new();
             mock.expect_project_home()
                 .times(1)
-                .return_const(mocked_pycors_home);
+                .return_const(mocked_hygeia_home);
             mock.expect_home().times(0).return_const(mocked_home);
 
             let paths_provider = PycorsPathsProvider::from(mock);

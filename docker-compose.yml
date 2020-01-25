@@ -16,9 +16,9 @@
 #
 # Install a toolchain and transfer it back:
 #   docker-compose up -d ${SERVICE_NAME}
-#   docker-compose exec ${SERVICE_NAME} mkdir .pycors/cache
-#   docker-compose exec ${SERVICE_NAME} pycors install ~3.7 --extra
-#   docker-compose exec ${SERVICE_NAME} sh -c 'cp -r ${HOME}/.pycors/installed artifacts/'
+#   docker-compose exec ${SERVICE_NAME} mkdir .hygeia/cache
+#   docker-compose exec ${SERVICE_NAME} hygeia install ~3.7 --extra
+#   docker-compose exec ${SERVICE_NAME} sh -c 'cp -r ${HOME}/.hygeia/installed artifacts/'
 #
 # Delete **all** containers (loosing any built toolchains)
 #   docker-compose down
@@ -28,18 +28,18 @@
 #   export OS_NAME="ubuntu"
 #   export OS_VERSION="16.04"
 #   export RUST_VERSION="1.40.0"
-#   docker build --build-arg OS_NAME=${OS_NAME} --build-arg OS_VERSION=${OS_VERSION} --build-arg DOCKER_GID=`id --group` --build-arg DOCKER_UID=`id --user` --build-arg RUST_VERSION=${RUST_VERSION} --tag pycors_${OS_NAME} --file docker/${OS_NAME}/Dockerfile .
-#   docker run --rm --detach --name pycors_${OS_NAME} --volume `pwd`/docker/${OS_NAME}/artifacts:/home/pycors/artifacts pycors_${OS_NAME} sleep 9999999
-#   docker exec -it pycors_${OS_NAME} pycors install ~3.7 --extra
-#   docker exec -it pycors_${OS_NAME} sh -c 'cp -r ${HOME}/.pycors/installed artifacts/'
-#   docker stop pycors_${OS_NAME}
-#   docker kill pycors_${OS_NAME}
+#   docker build --build-arg OS_NAME=${OS_NAME} --build-arg OS_VERSION=${OS_VERSION} --build-arg DOCKER_GID=`id --group` --build-arg DOCKER_UID=`id --user` --build-arg RUST_VERSION=${RUST_VERSION} --tag hygeia_${OS_NAME} --file docker/${OS_NAME}/Dockerfile .
+#   docker run --rm --detach --name hygeia_${OS_NAME} --volume `pwd`/docker/${OS_NAME}/artifacts:/home/hygeia/artifacts hygeia_${OS_NAME} sleep 9999999
+#   docker exec -it hygeia_${OS_NAME} hygeia install ~3.7 --extra
+#   docker exec -it hygeia_${OS_NAME} sh -c 'cp -r ${HOME}/.hygeia/installed artifacts/'
+#   docker stop hygeia_${OS_NAME}
+#   docker kill hygeia_${OS_NAME}
 
 version: "3.7"
 
 services:
   ubuntu:
-    image: pycors_ubuntu
+    image: hygeia_ubuntu
     build:
       context: .
       dockerfile: docker/ubuntu/Dockerfile
@@ -48,13 +48,13 @@ services:
         OS_VERSION: "16.04"
         RUST_VERSION: "1.40.0"
     environment:
-      RUST_LOG: pycors=debug
+      RUST_LOG: hygeia=debug
     stdin_open: true
     tty: true
     volumes:
-      - ./docker/ubuntu/artifacts:/home/pycors/artifacts
+      - ./docker/ubuntu/artifacts:/home/hygeia/artifacts
   fedora:
-    image: pycors_fedora
+    image: hygeia_fedora
     build:
       context: .
       dockerfile: docker/fedora/Dockerfile
@@ -63,13 +63,13 @@ services:
         OS_VERSION: "31"
         RUST_VERSION: "1.40.0"
     environment:
-      RUST_LOG: pycors=debug
+      RUST_LOG: hygeia=debug
     stdin_open: true
     tty: true
     volumes:
-      - ./docker/fedora/artifacts:/home/pycors/artifacts
+      - ./docker/fedora/artifacts:/home/hygeia/artifacts
   alpine:
-    image: pycors_alpine
+    image: hygeia_alpine
     build:
       context: .
       dockerfile: docker/alpine/Dockerfile
@@ -80,8 +80,8 @@ services:
         # See https://github.com/rust-lang/rust/issues/59302
         RUSTFLAGS: -C target-feature=-crt-static
     environment:
-      RUST_LOG: pycors=debug
+      RUST_LOG: hygeia=debug
     stdin_open: true
     tty: true
     volumes:
-      - ./docker/alpine/artifacts:/home/pycors/artifacts
+      - ./docker/alpine/artifacts:/home/hygeia/artifacts

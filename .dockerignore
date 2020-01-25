@@ -4,7 +4,7 @@
 *.tar.gz
 *.tgz
 *.asc
-.pycors
+.hygeia
 cobertura.xml
 venv_pycobertura
 coverage/tarpaulin.html

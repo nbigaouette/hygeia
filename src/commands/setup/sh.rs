@@ -68,7 +68,7 @@ where
         ),
         format!(r#"    export {}_INITIALIZED=1"#, exec_name_capital),
         String::from(r#"else"#),
-        String::from(r#"    # Shell already setup for pycors."#),
+        String::from(r#"    # Shell already setup for hygeia."#),
         String::from(r#"    # Disable in case we enter a 'poetry shell'"#),
         String::from(r#"    if [ -z ${POETRY_ACTIVE+x} ]; then"#),
         String::from(r#"        # Not in a 'poetry shell', activating."#),

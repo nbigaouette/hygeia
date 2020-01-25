@@ -13,7 +13,7 @@ use std::{
     process::{ExitStatus, Output},
 };
 
-use pycors_test_helpers::{create_test_temp_dir, mock_executable, MockedOutput};
+use hygeia_test_helpers::{create_test_temp_dir, mock_executable, MockedOutput};
 
 use crate::{constants::INFO_FILE, utils::directory::MockPycorsHomeProviderTrait};
 
@@ -414,19 +414,19 @@ fn selected_toolchain_not_installed_toolchain_same_location_none_false() {
 }
 
 #[test]
-fn get_python_versions_from_path_pycors_home_dir_absent() {
+fn get_python_versions_from_path_hygeia_home_dir_absent() {
     let home = create_test_temp_dir!();
-    let pycors_home = home.join(".pycors");
+    let hygeia_home = home.join(".hygeia");
 
-    let mocked_pycors_home = Some(pycors_home.clone());
+    let mocked_hygeia_home = Some(hygeia_home.clone());
 
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()
         .times(0)
-        .return_const(mocked_pycors_home);
+        .return_const(mocked_hygeia_home);
     let paths_provider = PycorsPathsProvider::from(mock);
 
-    let python_versions = get_python_versions_from_path(&pycors_home, &paths_provider);
+    let python_versions = get_python_versions_from_path(&hygeia_home, &paths_provider);
 
     assert!(python_versions.is_empty());
 }
@@ -434,20 +434,20 @@ fn get_python_versions_from_path_pycors_home_dir_absent() {
 #[test]
 fn get_python_versions_from_path_shim_dir_absent() {
     let home = create_test_temp_dir!();
-    let pycors_home = home.join(".pycors");
-    fs::create_dir_all(&pycors_home).unwrap();
+    let hygeia_home = home.join(".hygeia");
+    fs::create_dir_all(&hygeia_home).unwrap();
 
     let mocked_home = Some(home);
-    let mocked_pycors_home = Some(pycors_home.clone());
+    let mocked_hygeia_home = Some(hygeia_home.clone());
 
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()
         .times(1)
-        .return_const(mocked_pycors_home);
+        .return_const(mocked_hygeia_home);
     mock.expect_home().times(0).return_const(mocked_home);
     let paths_provider = PycorsPathsProvider::from(mock);
 
-    let python_versions = get_python_versions_from_path(&pycors_home, &paths_provider);
+    let python_versions = get_python_versions_from_path(&hygeia_home, &paths_provider);
 
     assert!(python_versions.is_empty());
 }
@@ -455,15 +455,15 @@ fn get_python_versions_from_path_shim_dir_absent() {
 #[test]
 fn get_python_versions_from_path_shim_skipped() {
     let home = create_test_temp_dir!();
-    let pycors_home = home.join(".pycors");
+    let hygeia_home = home.join(".hygeia");
 
     let mocked_home = Some(home);
-    let mocked_pycors_home = Some(pycors_home);
+    let mocked_hygeia_home = Some(hygeia_home);
 
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()
         .times(2) // We need the shim dir to call function, hence +1
-        .return_const(mocked_pycors_home);
+        .return_const(mocked_hygeia_home);
     mock.expect_home().times(0).return_const(mocked_home);
     let paths_provider = PycorsPathsProvider::from(mock);
 
@@ -478,15 +478,15 @@ fn get_python_versions_from_path_shim_skipped() {
 #[test]
 fn get_python_versions_from_path_2717_and_374_and_375() {
     let home = create_test_temp_dir!();
-    let pycors_home = home.join(".pycors");
+    let hygeia_home = home.join(".hygeia");
 
     let mocked_home = Some(home);
-    let mocked_pycors_home = Some(pycors_home.clone());
+    let mocked_hygeia_home = Some(hygeia_home.clone());
 
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()
         .times(2)
-        .return_const(mocked_pycors_home);
+        .return_const(mocked_hygeia_home);
     mock.expect_home().times(0).return_const(mocked_home);
     let paths_provider = PycorsPathsProvider::from(mock);
 
@@ -494,7 +494,7 @@ fn get_python_versions_from_path_2717_and_374_and_375() {
     fs::create_dir_all(&shims_dir).unwrap();
 
     mock_executable(
-        &pycors_home,
+        &hygeia_home,
         "python3",
         MockedOutput {
             out: Some("Python 3.7.5"),
@@ -504,7 +504,7 @@ fn get_python_versions_from_path_2717_and_374_and_375() {
     .unwrap();
 
     mock_executable(
-        &pycors_home,
+        &hygeia_home,
         "python",
         MockedOutput {
             out: Some("Python 3.7.4"),
@@ -515,7 +515,7 @@ fn get_python_versions_from_path_2717_and_374_and_375() {
 
     // NOTE: Python 2 prints its version to stderr, not stdout.
     mock_executable(
-        &pycors_home,
+        &hygeia_home,
         "python2",
         MockedOutput {
             out: None,
@@ -524,12 +524,12 @@ fn get_python_versions_from_path_2717_and_374_and_375() {
     )
     .unwrap();
 
-    let python_versions = get_python_versions_from_path(&pycors_home, &paths_provider);
+    let python_versions = get_python_versions_from_path(&hygeia_home, &paths_provider);
 
     let expected_versions: HashMap<Version, PathBuf> = [
-        (Version::parse("3.7.4").unwrap(), pycors_home.clone()),
-        (Version::parse("3.7.5").unwrap(), pycors_home.clone()),
-        (Version::parse("2.7.17").unwrap(), pycors_home),
+        (Version::parse("3.7.4").unwrap(), hygeia_home.clone()),
+        (Version::parse("3.7.5").unwrap(), hygeia_home.clone()),
+        (Version::parse("2.7.17").unwrap(), hygeia_home),
     ]
     .iter()
     .cloned()
@@ -541,15 +541,15 @@ fn get_python_versions_from_path_2717_and_374_and_375() {
 #[test]
 fn get_python_versions_from_path_single_word_wont_parse() {
     let home = create_test_temp_dir!();
-    let pycors_home = home.join(".pycors");
+    let hygeia_home = home.join(".hygeia");
 
     let mocked_home = Some(home);
-    let mocked_pycors_home = Some(pycors_home.clone());
+    let mocked_hygeia_home = Some(hygeia_home.clone());
 
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()
         .times(2)
-        .return_const(mocked_pycors_home);
+        .return_const(mocked_hygeia_home);
     mock.expect_home().times(0).return_const(mocked_home);
     let paths_provider = PycorsPathsProvider::from(mock);
 
@@ -557,7 +557,7 @@ fn get_python_versions_from_path_single_word_wont_parse() {
     fs::create_dir_all(&shims_dir).unwrap();
 
     mock_executable(
-        &pycors_home,
+        &hygeia_home,
         "python",
         MockedOutput {
             out: Some("single_word_wont_parse"),
@@ -566,7 +566,7 @@ fn get_python_versions_from_path_single_word_wont_parse() {
     )
     .unwrap();
 
-    let python_versions = get_python_versions_from_path(&pycors_home, &paths_provider);
+    let python_versions = get_python_versions_from_path(&hygeia_home, &paths_provider);
 
     assert!(python_versions.is_empty());
 }
@@ -574,15 +574,15 @@ fn get_python_versions_from_path_single_word_wont_parse() {
 #[test]
 fn get_python_versions_from_path_non_version_wont_parse() {
     let home = create_test_temp_dir!();
-    let pycors_home = home.join(".pycors");
+    let hygeia_home = home.join(".hygeia");
 
     let mocked_home = Some(home);
-    let mocked_pycors_home = Some(pycors_home.clone());
+    let mocked_hygeia_home = Some(hygeia_home.clone());
 
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()
         .times(2)
-        .return_const(mocked_pycors_home);
+        .return_const(mocked_hygeia_home);
     mock.expect_home().times(0).return_const(mocked_home);
     let paths_provider = PycorsPathsProvider::from(mock);
 
@@ -590,7 +590,7 @@ fn get_python_versions_from_path_non_version_wont_parse() {
     fs::create_dir_all(&shims_dir).unwrap();
 
     mock_executable(
-        &pycors_home,
+        &hygeia_home,
         "python",
         MockedOutput {
             out: Some("Python not_a_version"),
@@ -599,7 +599,7 @@ fn get_python_versions_from_path_non_version_wont_parse() {
     )
     .unwrap();
 
-    let python_versions = get_python_versions_from_path(&pycors_home, &paths_provider);
+    let python_versions = get_python_versions_from_path(&hygeia_home, &paths_provider);
 
     assert!(python_versions.is_empty());
 }
@@ -616,23 +616,23 @@ fn get_python_versions_from_path_failure_to_run() {
     #[cfg(not(windows))]
     {
         let home = create_test_temp_dir!();
-        let pycors_home = home.join(".pycors");
-        fs::create_dir_all(&pycors_home).unwrap();
+        let hygeia_home = home.join(".hygeia");
+        fs::create_dir_all(&hygeia_home).unwrap();
 
         let mocked_home = Some(home);
-        let mocked_pycors_home = Some(pycors_home.clone());
+        let mocked_hygeia_home = Some(hygeia_home.clone());
 
         let mut mock = MockPycorsHomeProviderTrait::new();
         mock.expect_project_home()
             .times(2)
-            .return_const(mocked_pycors_home);
+            .return_const(mocked_hygeia_home);
         mock.expect_home().times(0).return_const(mocked_home);
         let paths_provider = PycorsPathsProvider::from(mock);
 
         let shims_dir = paths_provider.shims();
         fs::create_dir_all(&shims_dir).unwrap();
 
-        let filename_to_print = pycors_home.join("python");
+        let filename_to_print = hygeia_home.join("python");
         let mut f = File::create(filename_to_print).unwrap();
         f.write_all(b"This is not an executable.").unwrap();
         // Make file executable
@@ -640,7 +640,7 @@ fn get_python_versions_from_path_failure_to_run() {
         f.set_permissions(permissions).unwrap();
         std::mem::drop(f);
 
-        let python_versions = get_python_versions_from_path(&pycors_home, &paths_provider);
+        let python_versions = get_python_versions_from_path(&hygeia_home, &paths_provider);
 
         assert!(python_versions.is_empty());
     }
@@ -649,15 +649,15 @@ fn get_python_versions_from_path_failure_to_run() {
 #[test]
 fn get_python_versions_from_path_python_2715_plus_should_parse_issue_102() {
     let home = create_test_temp_dir!();
-    let pycors_home = home.join(".pycors");
+    let hygeia_home = home.join(".hygeia");
 
     let mocked_home = Some(home);
-    let mocked_pycors_home = Some(pycors_home.clone());
+    let mocked_hygeia_home = Some(hygeia_home.clone());
 
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()
         .times(2)
-        .return_const(mocked_pycors_home);
+        .return_const(mocked_hygeia_home);
     mock.expect_home().times(0).return_const(mocked_home);
     let paths_provider = PycorsPathsProvider::from(mock);
 
@@ -665,7 +665,7 @@ fn get_python_versions_from_path_python_2715_plus_should_parse_issue_102() {
     fs::create_dir_all(&shims_dir).unwrap();
 
     mock_executable(
-        &pycors_home,
+        &hygeia_home,
         "python",
         MockedOutput {
             out: Some("Python 2.7.15+"),
@@ -674,10 +674,10 @@ fn get_python_versions_from_path_python_2715_plus_should_parse_issue_102() {
     )
     .unwrap();
 
-    let python_versions = get_python_versions_from_path(&pycors_home, &paths_provider);
+    let python_versions = get_python_versions_from_path(&hygeia_home, &paths_provider);
 
     let expected_versions: HashMap<Version, PathBuf> =
-        [(Version::parse("2.7.15").unwrap(), pycors_home)]
+        [(Version::parse("2.7.15").unwrap(), hygeia_home)]
             .iter()
             .cloned()
             .collect();
@@ -704,10 +704,10 @@ fn is_a_custom_install_false() {
 #[test]
 fn find_installed_toolchains_absent_dir() {
     let home = create_test_temp_dir!();
-    let pycors_home = home.join(".pycors");
+    let hygeia_home = home.join(".hygeia");
 
     let mocked_home = Some(home.clone());
-    let mocked_pycors_home = Some(pycors_home);
+    let mocked_hygeia_home = Some(hygeia_home);
 
     let mocked_usr_bin = home.join("usr_bin");
     let mocked_usr_local_bin = home.join("usr_local_bin");
@@ -719,7 +719,7 @@ fn find_installed_toolchains_absent_dir() {
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()
         .times(1)
-        .return_const(mocked_pycors_home);
+        .return_const(mocked_hygeia_home);
     mock.expect_home().times(0).return_const(mocked_home);
     mock.expect_paths().times(1).return_const(mocked_paths);
     let paths_provider = PycorsPathsProvider::from(mock);
@@ -732,10 +732,10 @@ fn find_installed_toolchains_absent_dir() {
 #[test]
 fn find_installed_toolchains_empty_installed_dir() {
     let home = create_test_temp_dir!();
-    let pycors_home = home.join(".pycors");
+    let hygeia_home = home.join(".hygeia");
 
     let mocked_home = Some(home.clone());
-    let mocked_pycors_home = Some(pycors_home);
+    let mocked_hygeia_home = Some(hygeia_home);
 
     let mocked_usr_bin = home.join("usr_bin");
     let mocked_usr_local_bin = home.join("usr_local_bin");
@@ -747,7 +747,7 @@ fn find_installed_toolchains_empty_installed_dir() {
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()
         .times(2)
-        .return_const(mocked_pycors_home);
+        .return_const(mocked_hygeia_home);
     mock.expect_home().times(0).return_const(mocked_home);
     mock.expect_paths().times(1).return_const(mocked_paths);
     let paths_provider = PycorsPathsProvider::from(mock);
@@ -763,10 +763,10 @@ fn find_installed_toolchains_empty_installed_dir() {
 #[test]
 fn find_installed_toolchains_dummy_custom_installs() {
     let home = create_test_temp_dir!();
-    let pycors_home = home.join(".pycors");
+    let hygeia_home = home.join(".hygeia");
 
     let mocked_home = Some(home.clone());
-    let mocked_pycors_home = Some(pycors_home);
+    let mocked_hygeia_home = Some(hygeia_home);
 
     let mocked_usr_bin = home.join("usr_bin");
     let mocked_usr_local_bin = home.join("usr_local_bin");
@@ -778,7 +778,7 @@ fn find_installed_toolchains_dummy_custom_installs() {
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()
         .times(4)
-        .return_const(mocked_pycors_home);
+        .return_const(mocked_hygeia_home);
     mock.expect_home().times(0).return_const(mocked_home);
     mock.expect_paths().times(1).return_const(mocked_paths);
     let paths_provider = PycorsPathsProvider::from(mock);
@@ -840,10 +840,10 @@ fn find_installed_toolchains_dummy_custom_installs() {
 #[test]
 fn find_installed_toolchains_dummy_system_installs() {
     let home = create_test_temp_dir!();
-    let pycors_home = home.join(".pycors");
+    let hygeia_home = home.join(".hygeia");
 
     let mocked_home = Some(home.clone());
-    let mocked_pycors_home = Some(pycors_home);
+    let mocked_hygeia_home = Some(hygeia_home);
 
     let mocked_usr_bin = home.join("usr_bin");
     let mocked_usr_local_bin = home.join("usr_local_bin");
@@ -855,7 +855,7 @@ fn find_installed_toolchains_dummy_system_installs() {
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()
         .times(4)
-        .return_const(mocked_pycors_home);
+        .return_const(mocked_hygeia_home);
     mock.expect_home().times(0).return_const(mocked_home);
     mock.expect_paths().times(1).return_const(mocked_paths);
     let paths_provider = PycorsPathsProvider::from(mock);
@@ -974,7 +974,7 @@ fn find_compatible_toolchain_macos_default() {
 #[test]
 fn find_compatible_toolchain_multiple() {
     let home = create_test_temp_dir!();
-    let pycors_home = home.join(".pycors");
+    let hygeia_home = home.join(".hygeia");
 
     let installed_toolchains: &[InstalledToolchain] = &[
         InstalledToolchain {
@@ -982,7 +982,7 @@ fn find_compatible_toolchain_multiple() {
             version: Version::parse("3.7.5").unwrap(),
         },
         InstalledToolchain {
-            location: pycors_home
+            location: hygeia_home
                 .join("installed")
                 .join("cpython")
                 .join("3.7.4")
@@ -990,7 +990,7 @@ fn find_compatible_toolchain_multiple() {
             version: Version::parse("3.7.4").unwrap(),
         },
         InstalledToolchain {
-            location: pycors_home
+            location: hygeia_home
                 .join("installed")
                 .join("cpython")
                 .join("3.8.0")
@@ -1063,7 +1063,7 @@ fn find_compatible_toolchain_multiple() {
 #[test]
 fn find_compatible_toolchain_same_system_custom() {
     let home = create_test_temp_dir!();
-    let pycors_home = home.join(".pycors");
+    let hygeia_home = home.join(".hygeia");
 
     let installed_toolchains: &[InstalledToolchain] = &[
         InstalledToolchain {
@@ -1071,7 +1071,7 @@ fn find_compatible_toolchain_same_system_custom() {
             version: Version::parse("3.7.5").unwrap(),
         },
         InstalledToolchain {
-            location: pycors_home
+            location: hygeia_home
                 .join("installed")
                 .join("cpython")
                 .join("3.7.5")
@@ -1079,7 +1079,7 @@ fn find_compatible_toolchain_same_system_custom() {
             version: Version::parse("3.7.5").unwrap(),
         },
         InstalledToolchain {
-            location: pycors_home
+            location: hygeia_home
                 .join("installed")
                 .join("cpython")
                 .join("4.0.0")
@@ -1129,10 +1129,10 @@ fn find_compatible_toolchain_same_system_custom() {
 #[test]
 fn compatible_toolchain_builder_load_from_string() {
     let home = create_test_temp_dir!();
-    let pycors_home = home.join(".pycors");
+    let hygeia_home = home.join(".hygeia");
 
     let mocked_home = Some(home.clone());
-    let mocked_pycors_home = Some(pycors_home);
+    let mocked_hygeia_home = Some(hygeia_home);
     let mocked_usr_bin = home.join("usr_bin");
     let mocked_usr_local_bin = home.join("usr_local_bin");
     let mocked_paths = vec![mocked_usr_bin, mocked_usr_local_bin];
@@ -1140,7 +1140,7 @@ fn compatible_toolchain_builder_load_from_string() {
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()
         .times(1)
-        .return_const(mocked_pycors_home);
+        .return_const(mocked_hygeia_home);
     mock.expect_home().times(0).return_const(mocked_home);
     mock.expect_paths().times(1).return_const(mocked_paths);
     let paths_provider = PycorsPathsProvider::from(mock);

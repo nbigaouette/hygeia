@@ -103,7 +103,7 @@ impl ToolChainTable {
     fn printstd(&self) {
         let mut table = Table::new();
         // ╭──────────┬───────────┬───────────────────────┬────────────╮
-        // │ Active   │ Version   │ Installed by pycors   │ Location   │
+        // │ Active   │ Version   │ Installed by hygeia   │ Location   │
         // ╰──────────┴───────────┴───────────────────────┴────────────╯
         // Header
         table.add_row(row![

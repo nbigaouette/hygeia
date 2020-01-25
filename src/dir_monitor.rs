@@ -50,7 +50,7 @@ impl DirectoryMonitor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pycors_test_helpers::create_test_temp_dir;
+    use hygeia_test_helpers::create_test_temp_dir;
     use std::{
         fs::{create_dir_all, remove_dir_all, File},
         io::Write,

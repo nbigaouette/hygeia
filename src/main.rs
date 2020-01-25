@@ -14,7 +14,7 @@ use std::{
 
 use thiserror::Error;
 
-use pycors::{
+use hygeia::{
     commands::{self, Command},
     constants::EXECUTABLE_NAME,
     shim, Opt, Result, StructOpt,

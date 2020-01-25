@@ -451,7 +451,7 @@ pub enum SpinnerMessage {
 mod tests {
     use super::*;
 
-    use pycors_test_helpers::create_test_temp_dir;
+    use hygeia_test_helpers::create_test_temp_dir;
 
     fn fixture_installed_toolchains() -> Vec<InstalledToolchain> {
         vec![
@@ -497,7 +497,7 @@ mod tests {
         assert!(!copied_file_location.exists());
         let nb_bytes_copied = copy_file("LICENSE-APACHE", &copied_file_location).unwrap();
         // On Azure Pipelines, the Windows build reports `11039` bytes copied, not 10838.
-        // See https://dev.azure.com/nbigaouette/pycors/_build/results?buildId=13
+        // See https://dev.azure.com/nbigaouette/hygeia/_build/results?buildId=13
         #[cfg(target_os = "windows")]
         {
             if nb_bytes_copied != 10838 {
