@@ -4,6 +4,10 @@
 [![Security Audit](https://github.com/nbigaouette/pycors/workflows/Nightly%20Security%20Audit/badge.svg?branch=master)](https://github.com/nbigaouette/pycors/actions)
 [![Coverage Status](https://codecov.io/gh/nbigaouette/pycors/branch/master/graph/badge.svg)](https://codecov.io/gh/nbigaouette/pycors)
 
+<p align="center">
+  <img src="logo.png" height="200" alt="logo"/>
+</p>
+
 `pycors` is a **Py**thon interpreter **co**ntroller built using **R**u**s**t. It's goal is to allow
 individual projects to specify which interpreter to use using a `.python-version` file.
 
