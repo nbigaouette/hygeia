@@ -1,16 +1,16 @@
 [package]
-name = "pycors"
+name = "hygeia"
 version = "0.2.2"
 authors = ["Nicolas Bigaouette <nbigaouette@gmail.com>"]
-homepage = "https://github.com/nbigaouette/pycors"
-repository = "https://github.com/nbigaouette/pycors"
+homepage = "https://github.com/nbigaouette/hygeia"
+repository = "https://github.com/nbigaouette/hygeia"
 edition = "2018"
 
 [workspace]
 members = [
     "xtask",
     "tests/print_file_to_stdout",
-    "pycors_test_helpers",
+    "hygeia_test_helpers",
 ]
 
 [dependencies]
@@ -55,7 +55,7 @@ mockall = "0.6"
 assert_cmd = "0.12"
 predicates = "1"
 indoc = "0.3"
-pycors_test_helpers = {path = "pycors_test_helpers"}
+hygeia_test_helpers = {path = "hygeia_test_helpers"}
 rstest = "0.5"
 # pretty_assertions = "0.6"
 

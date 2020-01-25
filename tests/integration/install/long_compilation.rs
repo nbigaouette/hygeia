@@ -16,11 +16,11 @@ fn simple_install_from_scratch_success() {
     #[allow(unreachable_code)]
     {
         let home = create_test_temp_dir!();
-        let pycors_home = home.join(".pycors");
+        let hygeia_home = home.join(".hygeia");
 
         let mut mock = MockPycorsHomeProviderTrait::new();
         mock.expect_home().return_const(home.clone());
-        mock.expect_project_home().return_const(pycors_home.clone());
+        mock.expect_project_home().return_const(hygeia_home.clone());
         let paths_provider = PycorsPathsProvider::from(mock);
 
         let cwd = home.join("current_dir");
@@ -30,7 +30,7 @@ fn simple_install_from_scratch_success() {
         let output = cmd
             .arg("install")
             .arg("=3.7.5")
-            .env(project_home_env_variable(), &pycors_home)
+            .env(project_home_env_variable(), &hygeia_home)
             .env(home_overwrite_env_variable(), &home)
             .env("RUST_LOG", "")
             .current_dir(&cwd)
@@ -66,11 +66,11 @@ fn simple_install_from_scratch_select_success() {
     #[allow(unreachable_code)]
     {
         let home = create_test_temp_dir!();
-        let pycors_home = home.join(".pycors");
+        let hygeia_home = home.join(".hygeia");
 
         let mut mock = MockPycorsHomeProviderTrait::new();
         mock.expect_home().return_const(home.clone());
-        mock.expect_project_home().return_const(pycors_home.clone());
+        mock.expect_project_home().return_const(hygeia_home.clone());
         let paths_provider = PycorsPathsProvider::from(mock);
 
         let cwd = home.join("current_dir");
@@ -81,7 +81,7 @@ fn simple_install_from_scratch_select_success() {
             .arg("install")
             .arg("=3.7.5")
             .arg("--select")
-            .env(project_home_env_variable(), &pycors_home)
+            .env(project_home_env_variable(), &hygeia_home)
             .env(home_overwrite_env_variable(), &home)
             .env("RUST_LOG", "")
             .current_dir(&cwd)
@@ -121,11 +121,11 @@ fn install_twice_noop() {
     #[allow(unreachable_code)]
     {
         let home = create_test_temp_dir!();
-        let pycors_home = home.join(".pycors");
+        let hygeia_home = home.join(".hygeia");
 
         let mut mock = MockPycorsHomeProviderTrait::new();
         mock.expect_home().return_const(home.clone());
-        mock.expect_project_home().return_const(pycors_home.clone());
+        mock.expect_project_home().return_const(hygeia_home.clone());
         let paths_provider = PycorsPathsProvider::from(mock);
 
         let cwd = home.join("current_dir");
@@ -135,7 +135,7 @@ fn install_twice_noop() {
         let output = cmd
             .arg("install")
             .arg("=3.7.5")
-            .env(project_home_env_variable(), &pycors_home)
+            .env(project_home_env_variable(), &hygeia_home)
             .env(home_overwrite_env_variable(), &home)
             .env("RUST_LOG", "")
             .current_dir(&cwd)
@@ -157,7 +157,7 @@ fn install_twice_noop() {
         let output = cmd
             .arg("install")
             .arg("=3.7.5")
-            .env(project_home_env_variable(), &pycors_home)
+            .env(project_home_env_variable(), &hygeia_home)
             .env(home_overwrite_env_variable(), &home)
             .current_dir(&cwd)
             .unwrap();
@@ -188,11 +188,11 @@ fn install_twice_forced() {
     #[allow(unreachable_code)]
     {
         let home = create_test_temp_dir!();
-        let pycors_home = home.join(".pycors");
+        let hygeia_home = home.join(".hygeia");
 
         let mut mock = MockPycorsHomeProviderTrait::new();
         mock.expect_home().return_const(home.clone());
-        mock.expect_project_home().return_const(pycors_home.clone());
+        mock.expect_project_home().return_const(hygeia_home.clone());
         let paths_provider = PycorsPathsProvider::from(mock);
 
         let cwd = home.join("current_dir");
@@ -202,7 +202,7 @@ fn install_twice_forced() {
         let output = cmd
             .arg("install")
             .arg("=3.7.5")
-            .env(project_home_env_variable(), &pycors_home)
+            .env(project_home_env_variable(), &hygeia_home)
             .env(home_overwrite_env_variable(), &home)
             .env("RUST_LOG", "")
             .current_dir(&cwd)
@@ -233,7 +233,7 @@ fn install_twice_forced() {
             .arg("install")
             .arg("=3.7.5")
             .arg("--force")
-            .env(project_home_env_variable(), &pycors_home)
+            .env(project_home_env_variable(), &hygeia_home)
             .env(home_overwrite_env_variable(), &home)
             .env("RUST_LOG", "")
             .current_dir(&cwd)

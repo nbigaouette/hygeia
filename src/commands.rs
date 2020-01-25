@@ -23,7 +23,7 @@ pub enum Command {
     /// Get path to active interpreter
     ///
     /// For example:
-    ///     pycors path
+    ///     hygeia path
     ///     /usr/local/bin
     #[structopt(name = "path")]
     Path {
@@ -35,7 +35,7 @@ pub enum Command {
     /// Get version of active interpreter
     ///
     /// For example:
-    ///     pycors version
+    ///     hygeia version
     ///     3.7.2
     #[structopt(name = "version")]
     Version {
@@ -47,13 +47,13 @@ pub enum Command {
     /// Select specified Python versions to use
     ///
     /// The specified Python version will _not_ be installed if not already installed.
-    /// Use 'pycors install' for this.
+    /// Use 'hygeia install' for this.
     ///
     /// For example:
-    ///   pycors select 3.6
+    ///   hygeia select 3.6
     /// will select ~3.6 (the most up to date version of the 3.6 series).
     ///
-    ///   pycors select =3.7.2
+    ///   hygeia select =3.7.2
     /// will select an exact version.
     #[structopt(name = "select")]
     Select(VersionOrPath),
@@ -83,8 +83,8 @@ pub enum Command {
     /// Run a binary from the installed '.python-version'
     ///
     /// For example:
-    ///     pycors run "python -v"
-    ///     pycors run "python -c \"print('string with spaces')\""
+    ///     hygeia run "python -v"
+    ///     hygeia run "python -c \"print('string with spaces')\""
     #[structopt(name = "run")]
     Run {
         /// Use specified interpreter version
@@ -96,7 +96,7 @@ pub enum Command {
 
     /// Setup the shim
     ///
-    /// This will install pycor's binary to '~/.pycors/bin' and add the
+    /// This will install pycor's binary to '~/.hygeia/bin' and add the
     /// directory to the '$PATH' environment variable (through '~/.profile').
     ///
     /// Supported shells: Bash, Fish, Zsh, PowerShell and Elvish.
@@ -107,7 +107,7 @@ pub enum Command {
 #[derive(StructOpt, Debug)]
 pub struct InstallExtraPackagesOptions {
     /// Install extra Python packages from file at default location
-    /// ('${PYCORS_HOME}/extra-packages-to-install.txt')
+    /// ('${HYGEIA_HOME}/extra-packages-to-install.txt')
     #[structopt(long = "extra", short = "e")]
     install_extra_packages: bool,
 

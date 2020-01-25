@@ -6,7 +6,7 @@ fn main() {
     let bin_name = current_exe.file_name().unwrap();
 
     let stdout_filename = bin_dir.join(format!(
-        "{}_pycors_tests_to_print_stdout.txt",
+        "{}_hygeia_tests_to_print_stdout.txt",
         bin_name.to_str().unwrap()
     ));
     if stdout_filename.exists() {
@@ -15,7 +15,7 @@ fn main() {
     }
 
     let stderr_filename = bin_dir.join(format!(
-        "{}_pycors_tests_to_print_stderr.txt",
+        "{}_hygeia_tests_to_print_stderr.txt",
         bin_name.to_str().unwrap()
     ));
     if stderr_filename.exists() {

@@ -7,7 +7,7 @@ use zip::write::FileOptions;
 
 type DynError = Box<dyn std::error::Error>;
 
-const BIN_NAME: &str = "pycors";
+const BIN_NAME: &str = "hygeia";
 
 #[cfg(windows)]
 const BIN_EXTENSION: &str = ".exe";

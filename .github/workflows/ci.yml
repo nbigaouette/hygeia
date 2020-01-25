@@ -117,24 +117,24 @@ jobs:
         with:
           command: test
           args: --no-run
-      - name: Upload pycors as artifact (Linux)
+      - name: Upload hygeia as artifact (Linux)
         uses: actions/upload-artifact@v1
         if: contains(matrix.os, 'ubuntu')
         with:
-          name: pycors-linux
-          path: target/debug/pycors
-      - name: Upload pycors as artifact (macOS)
+          name: hygeia-linux
+          path: target/debug/hygeia
+      - name: Upload hygeia as artifact (macOS)
         uses: actions/upload-artifact@v1
         if: contains(matrix.os, 'macOS')
         with:
-          name: pycors-macos
-          path: target/debug/pycors
-      - name: Upload pycors.exe as artifact (Windows)
+          name: hygeia-macos
+          path: target/debug/hygeia
+      - name: Upload hygeia.exe as artifact (Windows)
         uses: actions/upload-artifact@v1
         if: "contains(matrix.os, 'windows')"
         with:
-          name: pycors.exe
-          path: target/debug/pycors.exe
+          name: hygeia.exe
+          path: target/debug/hygeia.exe
       - name: Unit Tests (cargo test)
         uses: actions-rs/cargo@v1
         with:
@@ -255,7 +255,7 @@ jobs:
           path: target
           key: cargo-build-target-tarpaulin-${{ hashFiles('**/Cargo.lock') }}
       - name: Run tarpaulin
-        run: cargo tarpaulin --out Xml --verbose --exclude-files "tests/integration/*" --exclude-files "xtask/*" --exclude-files "pycors_test_helpers/*" integration_tests -- "tests::"
+        run: cargo tarpaulin --out Xml --verbose --exclude-files "tests/integration/*" --exclude-files "xtask/*" --exclude-files "hygeia_test_helpers/*" integration_tests -- "tests::"
       - name: Upload coverage to codecov.io
         # run: bash <(curl -s https://codecov.io/bash)
         uses: codecov/codecov-action@v1
@@ -364,6 +364,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.get_release_info.outputs.upload_url }}
-          asset_path: ./pycors-${{ steps.package.outputs.git_describe }}-${{ matrix.target }}.zip
-          asset_name: pycors-${{ steps.package.outputs.git_describe }}-${{ matrix.target }}.zip
+          asset_path: ./hygeia-${{ steps.package.outputs.git_describe }}-${{ matrix.target }}.zip
+          asset_name: hygeia-${{ steps.package.outputs.git_describe }}-${{ matrix.target }}.zip
           asset_content_type: application/zip

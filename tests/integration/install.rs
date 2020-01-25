@@ -3,7 +3,7 @@ use super::*;
 use anyhow::Context;
 use rstest::rstest;
 
-use pycors_test_helpers::EXECUTABLE_EXTENSION;
+use hygeia_test_helpers::EXECUTABLE_EXTENSION;
 
 mod long_compilation;
 mod windows_only;
@@ -165,11 +165,11 @@ fn assert_python_successfully_installed<P, S, T>(
 )]
 fn all(version: &str) {
     let home = create_test_temp_dir!(version);
-    let pycors_home = home.join(".pycors");
+    let hygeia_home = home.join(".hygeia");
 
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_home().return_const(home.clone());
-    mock.expect_project_home().return_const(pycors_home.clone());
+    mock.expect_project_home().return_const(hygeia_home.clone());
     let paths_provider = PycorsPathsProvider::from(mock);
 
     let cwd = home.join("current_dir");
@@ -179,7 +179,7 @@ fn all(version: &str) {
     let output = cmd
         .arg("install")
         .arg(format!("={}", version))
-        .env(project_home_env_variable(), &pycors_home)
+        .env(project_home_env_variable(), &hygeia_home)
         .env(home_overwrite_env_variable(), &home)
         .env("RUST_LOG", "")
         .current_dir(&cwd)

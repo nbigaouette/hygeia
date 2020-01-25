@@ -6,7 +6,7 @@ use super::*;
 #[test]
 fn setup_bash_success_from_scratch() {
     let home = create_test_temp_dir!();
-    let pycors_home = home.join(".pycors");
+    let hygeia_home = home.join(".hygeia");
     let cwd = home.join("current_dir");
     fs::create_dir_all(&cwd).unwrap();
 
@@ -14,9 +14,9 @@ fn setup_bash_success_from_scratch() {
     let output = cmd
         .arg("setup")
         .arg("bash")
-        .env(project_home_env_variable(), &pycors_home)
+        .env(project_home_env_variable(), &hygeia_home)
         .env(home_overwrite_env_variable(), &home)
-        .env("PATH", pycors_home.join("usr_bin"))
+        .env("PATH", hygeia_home.join("usr_bin"))
         .env("RUST_LOG", "")
         .current_dir(&cwd)
         .unwrap();
@@ -41,17 +41,17 @@ fn setup_bash_success_from_scratch() {
 # WARNING: Those lines _need_ to be at the end of the file: {} needs to
 #          appear as soon as possible in the $PATH environment variable to
 #          to function properly.
-export PYCORS_HOME="{}"
+export HYGEIA_HOME="{}"
 source {}
-# End of pycors config block.
+# End of hygeia config block.
 #############################################################################
 "#,
         EXECUTABLE_NAME,
         EXECUTABLE_NAME,
         EXECUTABLE_NAME,
         EXECUTABLE_NAME,
-        pycors_home.display(),
-        Path::new("${PYCORS_HOME}")
+        hygeia_home.display(),
+        Path::new("${HYGEIA_HOME}")
             .join("shell")
             .join("bash")
             .join("config.sh")
@@ -69,7 +69,7 @@ source {}
 #[test]
 fn setup_bash_success_twice() {
     let home = create_test_temp_dir!();
-    let pycors_home = home.join(".pycors");
+    let hygeia_home = home.join(".hygeia");
     let cwd = home.join("current_dir");
     fs::create_dir_all(&cwd).unwrap();
 
@@ -84,17 +84,17 @@ fn setup_bash_success_twice() {
 # WARNING: Those lines _need_ to be at the end of the file: {} needs to
 #          appear as soon as possible in the $PATH environment variable to
 #          to function properly.
-export PYCORS_HOME="{}"
+export HYGEIA_HOME="{}"
 source {}
-# End of pycors config block.
+# End of hygeia config block.
 #############################################################################
 "#,
         EXECUTABLE_NAME,
         EXECUTABLE_NAME,
         EXECUTABLE_NAME,
         EXECUTABLE_NAME,
-        pycors_home.display(),
-        Path::new("${PYCORS_HOME}")
+        hygeia_home.display(),
+        Path::new("${HYGEIA_HOME}")
             .join("shell")
             .join("bash")
             .join("config.sh")
@@ -105,9 +105,9 @@ source {}
     let output = cmd
         .arg("setup")
         .arg("bash")
-        .env(project_home_env_variable(), &pycors_home)
+        .env(project_home_env_variable(), &hygeia_home)
         .env(home_overwrite_env_variable(), &home)
-        .env("PATH", pycors_home.join("usr_bin"))
+        .env("PATH", hygeia_home.join("usr_bin"))
         .env("RUST_LOG", "")
         .current_dir(&cwd)
         .unwrap();
@@ -147,9 +147,9 @@ source {}
     let output = cmd
         .arg("setup")
         .arg("bash")
-        .env(project_home_env_variable(), &pycors_home)
+        .env(project_home_env_variable(), &hygeia_home)
         .env(home_overwrite_env_variable(), &home)
-        .env("PATH", pycors_home.join("usr_bin"))
+        .env("PATH", hygeia_home.join("usr_bin"))
         .env("RUST_LOG", "")
         .current_dir(&cwd)
         .unwrap();
@@ -163,7 +163,7 @@ source {}
         )
         .stderr(predicate::str::is_empty().trim());
 
-    // After a second 'pycors setup bash', the extra lines should be above since
+    // After a second 'hygeia setup bash', the extra lines should be above since
     // our block is extracted and moved to the end of the file.
     let bashrc_content = fs::read_to_string(home.join(".bashrc")).unwrap();
     assert_eq!(

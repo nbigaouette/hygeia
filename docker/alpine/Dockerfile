@@ -3,7 +3,7 @@ ARG OS_VERSION=3.10.3
 
 FROM ${OS_NAME}:${OS_VERSION} as builder
 
-LABEL pycors_${OS_NAME}_${OS_VERSION}_builder=true
+LABEL hygeia_${OS_NAME}_${OS_VERSION}_builder=true
 
 ARG DOCKER_GID=7926
 ARG DOCKER_UID=7926
@@ -11,7 +11,7 @@ ARG RUST_VERSION=1.40.0
 ARG RUSTFLAGS
 
 ENV RUST_VERSION=${RUST_VERSION}
-ENV RUST_LOG=pycors=debug
+ENV RUST_LOG=hygeia=debug
 ENV RUSTFLAGS=${RUSTFLAGS}
 
 # -------------------------------------------------------------------------------
@@ -23,36 +23,36 @@ RUN apk add --no-cache \
     curl \
     # cargo dependencies
     build-base \
-    # pycors dependencies
+    # hygeia dependencies
     openssl-dev \
     pkgconf
 # -------------------------------------------------------------------------------
 
 
 
-RUN addgroup -g ${DOCKER_GID} -S pycors && adduser -u ${DOCKER_UID} -S pycors -G pycors && \
-    chown pycors:pycors /home/pycors
+RUN addgroup -g ${DOCKER_GID} -S hygeia && adduser -u ${DOCKER_UID} -S hygeia -G hygeia && \
+    chown hygeia:hygeia /home/hygeia
 
 # Let user run sudo without password
-RUN echo "pycors ALL=(ALL) NOPASSWD:ALL" | EDITOR='tee -a' visudo
+RUN echo "hygeia ALL=(ALL) NOPASSWD:ALL" | EDITOR='tee -a' visudo
 
-USER pycors
+USER hygeia
 
-WORKDIR /home/pycors
+WORKDIR /home/hygeia
 
 # Install Rust (through rustup)
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile=minimal --default-toolchain ${RUST_VERSION}
-ENV PATH="/home/pycors/.cargo/bin:${PATH}"
+ENV PATH="/home/hygeia/.cargo/bin:${PATH}"
 
 
 # -------------------------------------------------------------------------------
 # Pycors specific
 # Copy a cache and extract
-COPY --chown=pycors:pycors docker/${OS_NAME}/artifacts/docker_cargo_cache.tar.gz* Cargo.* ./
-COPY --chown=pycors:pycors src ./src
-COPY --chown=pycors:pycors tests ./tests
-COPY --chown=pycors:pycors xtask ./xtask
-COPY --chown=pycors:pycors extra-packages-to-install.txt ./extra-packages-to-install.txt
+COPY --chown=hygeia:hygeia docker/${OS_NAME}/artifacts/docker_cargo_cache.tar.gz* Cargo.* ./
+COPY --chown=hygeia:hygeia src ./src
+COPY --chown=hygeia:hygeia tests ./tests
+COPY --chown=hygeia:hygeia xtask ./xtask
+COPY --chown=hygeia:hygeia extra-packages-to-install.txt ./extra-packages-to-install.txt
 
 RUN tar -zxf docker_cargo_cache.tar.gz || echo " ---> Cache file not found, skipping (please ignore tar error)."
 
@@ -68,7 +68,7 @@ RUN cargo run -- setup bash
 # ########################################################################
 FROM ${OS_NAME}:${OS_VERSION}
 
-LABEL pycors_${OS_NAME}_${OS_VERSION}_builder=false
+LABEL hygeia_${OS_NAME}_${OS_VERSION}_builder=false
 
 ARG DOCKER_GID=7926
 ARG DOCKER_UID=7926
@@ -90,17 +90,17 @@ RUN apk add --no-cache \
 
 
 
-RUN addgroup -g ${DOCKER_GID} -S pycors && \
-    adduser -u ${DOCKER_UID} -S pycors -G pycors
+RUN addgroup -g ${DOCKER_GID} -S hygeia && \
+    adduser -u ${DOCKER_UID} -S hygeia -G hygeia
 # Let user run sudo without password
-RUN echo "pycors ALL=(ALL) NOPASSWD:ALL" | EDITOR='tee -a' visudo
+RUN echo "hygeia ALL=(ALL) NOPASSWD:ALL" | EDITOR='tee -a' visudo
 
-USER pycors
+USER hygeia
 
-COPY --chown=pycors:pycors --from=builder /home/pycors/.pycors /home/pycors/.pycors
-COPY --chown=pycors:pycors --from=builder /home/pycors/.bashrc /home/pycors/.bashrc
-COPY --chown=pycors:pycors --from=builder /home/pycors/docker_cargo_cache.tar.gz /home/pycors/docker_cargo_cache.tar.gz
+COPY --chown=hygeia:hygeia --from=builder /home/hygeia/.hygeia /home/hygeia/.hygeia
+COPY --chown=hygeia:hygeia --from=builder /home/hygeia/.bashrc /home/hygeia/.bashrc
+COPY --chown=hygeia:hygeia --from=builder /home/hygeia/docker_cargo_cache.tar.gz /home/hygeia/docker_cargo_cache.tar.gz
 
-WORKDIR /home/pycors
+WORKDIR /home/hygeia
 
-ENV PATH="/home/pycors/.pycors/shims:${PATH}"
+ENV PATH="/home/hygeia/.hygeia/shims:${PATH}"

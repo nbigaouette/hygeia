@@ -13,7 +13,7 @@ use indoc::indoc;
 use predicates::prelude::*;
 use semver::Version;
 
-use pycors::{
+use hygeia::{
     constants::{
         home_overwrite_env_variable, project_home_env_variable, EXECUTABLE_NAME, INFO_FILE,
         TOOLCHAIN_FILE,
@@ -22,7 +22,7 @@ use pycors::{
     Result,
 };
 
-use pycors_test_helpers::{create_test_temp_dir, function_path, mock_executable, MockedOutput};
+use hygeia_test_helpers::{create_test_temp_dir, function_path, mock_executable, MockedOutput};
 
 mod help;
 mod install;
@@ -49,8 +49,8 @@ fn select(version: &str, cwd: &Path) {
     f.write_all(version.as_bytes()).unwrap();
 }
 
-fn installed(pycors_home: &Path, version: &str, installed_by_us: bool) -> Result<String> {
-    let installed_dir = pycors_home.join("installed").join("cpython");
+fn installed(hygeia_home: &Path, version: &str, installed_by_us: bool) -> Result<String> {
+    let installed_dir = hygeia_home.join("installed").join("cpython");
     let installation_dir = installed_dir.join(version);
 
     #[cfg(windows)]

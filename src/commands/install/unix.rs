@@ -103,7 +103,7 @@ pub fn compile_source(
                 "so"
             }
         );
-        log::warn!("See https://github.com/nbigaouette/pycors/issues/122 for more information.")
+        log::warn!("See https://github.com/nbigaouette/hygeia/issues/122 for more information.")
     }
     if release {
         configure_args.push("--enable-optimizations".to_string());

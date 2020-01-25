@@ -41,7 +41,7 @@ pub mod tests {
     use std::env;
 
     // Version is reported as "unknown" in GitHub Actions.
-    // See https://github.com/nbigaouette/pycors/pull/90/checks?check_run_id=311900597
+    // See https://github.com/nbigaouette/hygeia/pull/90/checks?check_run_id=311900597
     #[test]
     #[ignore]
     fn version() {

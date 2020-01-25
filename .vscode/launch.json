@@ -12,11 +12,11 @@
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=pycors",
-                    "--package=pycors"
+                    "--bin=hygeia",
+                    "--package=hygeia"
                 ],
                 "filter": {
-                    "name": "pycors",
+                    "name": "hygeia",
                     "kind": "bin"
                 }
             },
@@ -26,15 +26,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "pycors list",
+            "name": "hygeia list",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=pycors",
-                    "--package=pycors"
+                    "--bin=hygeia",
+                    "--package=hygeia"
                 ],
                 "filter": {
-                    "name": "pycors",
+                    "name": "hygeia",
                     "kind": "bin"
                 }
             },
@@ -46,15 +46,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "pycors setup bash",
+            "name": "hygeia setup bash",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=pycors",
-                    "--package=pycors"
+                    "--bin=hygeia",
+                    "--package=hygeia"
                 ],
                 "filter": {
-                    "name": "pycors",
+                    "name": "hygeia",
                     "kind": "bin"
                 }
             },
