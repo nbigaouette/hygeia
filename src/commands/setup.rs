@@ -4,7 +4,10 @@ use structopt::clap::Shell;
 
 use crate::{
     constants::{EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME_CONTENT},
-    utils::{self, directory::PycorsPathsProviderFromEnv},
+    utils::{
+        self,
+        directory::{shell::ShellPathProvider, PycorsPathsProviderFromEnv},
+    },
     Result,
 };
 
@@ -25,13 +28,13 @@ pub fn run(shell: Shell) -> Result<()> {
         paths_provider.installed(),
         paths_provider
             .project_home()
-            .join(utils::directory::shell::bash::config::dir_relative()),
+            .join(utils::directory::shell::Bash::new().dir_relative()),
         paths_provider
             .project_home()
-            .join(utils::directory::shell::zsh::config::dir_relative()),
+            .join(utils::directory::shell::Zsh::new().dir_relative()),
         paths_provider
             .project_home()
-            .join(utils::directory::shell::powershell::config::dir_relative()),
+            .join(utils::directory::shell::Powershell::new().dir_relative()),
         paths_provider.shims(),
     ] {
         if !utils::path_exists(&dir) {

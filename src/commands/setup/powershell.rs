@@ -5,9 +5,9 @@ use structopt::{clap::Shell, StructOpt};
 
 use crate::{
     constants::EXECUTABLE_NAME,
-    utils::{
-        self,
-        directory::{PycorsHomeProviderTrait, PycorsPathsProvider},
+    utils::directory::{
+        shell::{Powershell, ShellPathProvider},
+        PycorsHomeProviderTrait, PycorsPathsProvider,
     },
     Opt, Result,
 };
@@ -22,8 +22,7 @@ where
             .with_context(|| format!("Failed to create directory {:?}", project_home))?;
     }
 
-    let autocomplete_file =
-        project_home.join(utils::directory::shell::powershell::config::autocomplete());
+    let autocomplete_file = project_home.join(Powershell::new().autocomplete());
     let mut f = fs::File::create(&autocomplete_file)
         .with_context(|| format!("Failed to create file {:?}", autocomplete_file))?;
     Opt::clap().gen_completions_to(EXECUTABLE_NAME, Shell::PowerShell, &mut f);

@@ -14,7 +14,7 @@ use crate::{
     },
     utils::{
         self,
-        directory::{PycorsHomeProviderTrait, PycorsPathsProvider},
+        directory::{shell::ShellPathProvider, PycorsHomeProviderTrait, PycorsPathsProvider},
     },
     Opt, Result,
 };
@@ -31,8 +31,7 @@ where
     let project_home = paths_provider.project_home();
 
     // Add the autocomplete too
-    let autocomplete_file =
-        project_home.join(utils::directory::shell::bash::config::autocomplete());
+    let autocomplete_file = project_home.join(utils::directory::shell::Bash::new().autocomplete());
     let mut f = fs::File::create(&autocomplete_file)
         .with_context(|| format!("Failed creating file {:?}", autocomplete_file))?;
     Opt::clap().gen_completions_to(EXECUTABLE_NAME, Shell::Bash, &mut f);
@@ -75,7 +74,7 @@ where
         String::from(r#"fi"#),
     ];
 
-    let config_file = project_home.join(utils::directory::shell::bash::config::file_path());
+    let config_file = project_home.join(utils::directory::shell::Bash::new().file_path());
     let f = BufWriter::new(fs::File::create(&config_file)?);
     write_config_to(f, &config_lines, &autocomplete_file)?;
 
@@ -126,7 +125,7 @@ where
             format!(
                 "source {}",
                 Path::new(&format!("${{{}_HOME}}", exec_name_capital))
-                    .join(utils::directory::shell::bash::config::file_path())
+                    .join(utils::directory::shell::Bash::new().file_path())
                     .display()
             )
         )

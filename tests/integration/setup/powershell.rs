@@ -1,7 +1,10 @@
 use super::*;
 use pycors::{
     constants::document_overwrite_env_variable,
-    utils::directory::{shell, PycorsPathsProvider},
+    utils::directory::{
+        shell::{Powershell, ShellPathProvider},
+        PycorsPathsProvider,
+    },
 };
 
 #[cfg_attr(not(windows), ignore)]
@@ -48,7 +51,7 @@ fn setup_powershell_success_from_scratch() {
         paths_provider.shims().display(),
         paths_provider
             .project_home()
-            .join(shell::powershell::config::autocomplete())
+            .join(Powershell::new().autocomplete())
             .display(),
     );
 
