@@ -5,23 +5,38 @@ use std::{
 };
 
 use anyhow::Context;
-use structopt::{clap::Shell, StructOpt};
+use structopt::StructOpt;
 
 use crate::{
     constants::{
         EXECUTABLE_NAME, SHELL_CONFIG_IDENTIFYING_PATTERN_END,
         SHELL_CONFIG_IDENTIFYING_PATTERN_START,
     },
-    utils::{
-        self,
-        directory::{PycorsHomeProviderTrait, PycorsPathsProvider},
-    },
+    utils::directory::{shell::ShellPathProvider, PycorsHomeProviderTrait, PycorsPathsProvider},
     Opt, Result,
 };
 
-pub fn setup_zsh<P>(paths_provider: &PycorsPathsProvider<P>) -> Result<()>
+fn extra_config_lines<S>(shell: &S, project_home: &Path) -> String
+where
+    S: ShellPathProvider,
+{
+    match shell.shell_type() {
+        structopt::clap::Shell::Bash => format!(
+            r#"source "{}""#,
+            project_home.join(shell.autocomplete()).display()
+        ),
+        structopt::clap::Shell::Zsh => format!(
+            "fpath=({} $fpath)\ncompinit",
+            project_home.join(shell.dir_relative()).display()
+        ),
+        _ => unimplemented!(),
+    }
+}
+
+pub fn setup_shell<P, S>(paths_provider: &PycorsPathsProvider<P>, shell: S) -> Result<()>
 where
     P: PycorsHomeProviderTrait,
+    S: ShellPathProvider,
 {
     let exec_name_capital = EXECUTABLE_NAME.to_uppercase();
 
@@ -31,11 +46,10 @@ where
     let project_home = paths_provider.project_home();
 
     // Add the autocomplete too
-    let shell_config_dir = project_home.join(utils::directory::shell::zsh::config::dir_relative());
-    let autocomplete_file = project_home.join(utils::directory::shell::zsh::config::autocomplete());
+    let autocomplete_file = project_home.join(shell.autocomplete());
     let mut f = fs::File::create(&autocomplete_file)
         .with_context(|| format!("Failed creating file {:?}", autocomplete_file))?;
-    Opt::clap().gen_completions_to(EXECUTABLE_NAME, Shell::Zsh, &mut f);
+    Opt::clap().gen_completions_to(EXECUTABLE_NAME, shell.shell_type(), &mut f);
 
     let config_lines: Vec<String> = vec![
         String::from(r#"# Add the shims directory to path, removing all other"#),
@@ -73,43 +87,43 @@ where
         ),
         String::from(r#"    fi"#),
         String::from(r#"fi"#),
+        extra_config_lines(&shell, &project_home),
     ];
 
-    let config_file = project_home.join(utils::directory::shell::zsh::config::file_path());
-    let f = BufWriter::new(fs::File::create(&config_file)?);
-    write_config_to(f, &config_lines, &shell_config_dir)?;
+    let config_file = project_home.join(shell.file_path());
+    let mut f = BufWriter::new(fs::File::create(&config_file)?);
+    for line in config_lines {
+        writeln!(f, "{}", line)?;
+    }
 
-    for zsh_config_file in &[".zshrc"] {
-        let tmp_file_path = paths_provider.cache().join(zsh_config_file);
-        let zsh_config_file = home.join(zsh_config_file);
+    for rc_file in shell.shell_rcs() {
+        let tmp_file_path = paths_provider.cache().join(rc_file);
+        let rc_file = home.join(rc_file);
 
-        if !zsh_config_file.exists() {
-            log::debug!("File {:?} does not exists, creating.", zsh_config_file);
-            let mut f = fs::File::create(&zsh_config_file)?;
+        if !rc_file.exists() {
+            log::debug!("File {:?} does not exists, creating.", rc_file);
+            let mut f = fs::File::create(&rc_file)?;
             f.write_all(b"")?;
         }
 
-        log::info!("Adding configuration to {:?}...", zsh_config_file);
+        log::info!("Adding configuration to {:?}...", rc_file);
 
         let mut tmp_file =
             BufWriter::new(fs::File::create(&tmp_file_path).with_context(|| {
                 format!("Failed to create temporary fille {:?}", tmp_file_path)
             })?);
         let mut config_reader = BufReader::new(
-            fs::File::open(&zsh_config_file)
-                .with_context(|| format!("Failed to open file {:?}", zsh_config_file))?,
+            fs::File::open(&rc_file)
+                .with_context(|| format!("Failed to open file {:?}", rc_file))?,
         );
-        remove_block(&mut config_reader, &mut tmp_file).with_context(|| {
-            format!(
-                "Failed to remove custom config block from {:?}",
-                zsh_config_file
-            )
-        })?;
+        remove_block(&mut config_reader, &mut tmp_file)
+            .with_context(|| format!("Failed to remove custom config block from {:?}", rc_file))?;
         // Make sure we close the file
         std::mem::drop(config_reader);
 
         write_header_to(&mut tmp_file)
             .with_context(|| format!("Failed to write block header to {:?}", tmp_file_path))?;
+
         writeln!(
             &mut tmp_file,
             "{}",
@@ -126,7 +140,7 @@ where
             format!(
                 "source {}",
                 Path::new(&format!("${{{}_HOME}}", exec_name_capital))
-                    .join(utils::directory::shell::zsh::config::file_path())
+                    .join(shell.file_path())
                     .display()
             )
         )
@@ -136,10 +150,10 @@ where
         std::mem::drop(tmp_file);
 
         // Move tmp file back atomically
-        fs::rename(&tmp_file_path, &zsh_config_file).with_context(|| {
+        fs::rename(&tmp_file_path, &rc_file).with_context(|| {
             format!(
                 "Failed to rename temporary file {:?} to {:?}",
-                tmp_file_path, zsh_config_file
+                tmp_file_path, rc_file
             )
         })?;
     }
@@ -191,20 +205,6 @@ where
     for line in lines {
         writeln!(f, "{}", line)?;
     }
-
-    Ok(())
-}
-
-fn write_config_to<W, S>(mut f: W, lines_to_append: &[S], shell_config_dir: &Path) -> Result<()>
-where
-    W: Write,
-    S: AsRef<str>,
-{
-    for line in lines_to_append {
-        writeln!(f, "{}", line.as_ref())?;
-    }
-    writeln!(f, r#"fpath=({} $fpath)"#, shell_config_dir.display())?;
-    writeln!(f, r#"compinit"#)?;
 
     Ok(())
 }
@@ -265,21 +265,6 @@ mod tests {
     use std::io::Cursor;
 
     use super::*;
-
-    #[test]
-    fn write_config_to_string() {
-        let mut writer: Vec<u8> = Vec::new();
-        let lines_to_append = vec![String::from("# Line to append")];
-
-        let autocomplete_file = Path::new("foo.sh");
-
-        write_config_to(&mut writer, &lines_to_append, &autocomplete_file).unwrap();
-
-        let expected = "# Line to append\nfpath=(foo.sh $fpath)\ncompinit\n";
-        let written = String::from_utf8(writer).unwrap();
-
-        assert_eq!(written, expected);
-    }
 
     #[test]
     fn remove_block_from_string() {

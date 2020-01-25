@@ -4,13 +4,15 @@ use structopt::clap::Shell;
 
 use crate::{
     constants::{EXECUTABLE_NAME, EXTRA_PACKAGES_FILENAME_CONTENT},
-    utils::{self, directory::PycorsPathsProviderFromEnv},
+    utils::{
+        self,
+        directory::{shell::ShellPathProvider, PycorsPathsProviderFromEnv},
+    },
     Result,
 };
 
-pub mod bash;
 pub mod powershell;
-pub mod zsh;
+pub mod sh;
 
 pub fn run(shell: Shell) -> Result<()> {
     log::info!("Setting up the shim...");
@@ -25,13 +27,13 @@ pub fn run(shell: Shell) -> Result<()> {
         paths_provider.installed(),
         paths_provider
             .project_home()
-            .join(utils::directory::shell::bash::config::dir_relative()),
+            .join(utils::directory::shell::Bash::new().dir_relative()),
         paths_provider
             .project_home()
-            .join(utils::directory::shell::zsh::config::dir_relative()),
+            .join(utils::directory::shell::Zsh::new().dir_relative()),
         paths_provider
             .project_home()
-            .join(utils::directory::shell::powershell::config::dir_relative()),
+            .join(utils::directory::shell::Powershell::new().dir_relative()),
         paths_provider.shims(),
     ] {
         if !utils::path_exists(&dir) {
@@ -54,8 +56,8 @@ pub fn run(shell: Shell) -> Result<()> {
 
     // Add ~/.EXECUTABLE_NAME/shims to $PATH in ~/.bashrc and ~/.bash_profile and install autocomplete
     match shell {
-        Shell::Bash => bash::setup_bash(&paths_provider),
-        Shell::Zsh => zsh::setup_zsh(&paths_provider),
+        Shell::Bash => sh::setup_shell(&paths_provider, utils::directory::shell::Bash::new()),
+        Shell::Zsh => sh::setup_shell(&paths_provider, utils::directory::shell::Zsh::new()),
         Shell::PowerShell => powershell::setup_powershell(&paths_provider),
         _ => anyhow::bail!("Unsupported shell: {}", shell),
     }?;

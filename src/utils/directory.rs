@@ -149,55 +149,82 @@ where
 }
 
 pub mod shell {
-    pub mod bash {
-        pub mod config {
-            use std::path::{Path, PathBuf};
 
-            pub fn dir_relative() -> PathBuf {
-                Path::new("shell").join("bash")
-            }
+    use std::path::{Path, PathBuf};
 
-            pub fn file_path() -> PathBuf {
-                dir_relative().join("config.sh")
-            }
+    pub trait ShellPathProvider {
+        fn new() -> Self;
+        fn dir_relative(&self) -> PathBuf;
+        fn file_path(&self) -> PathBuf;
+        fn autocomplete(&self) -> PathBuf;
+        fn shell_type(&self) -> structopt::clap::Shell;
+        fn shell_rcs(&self) -> &'static [&'static str];
+    }
+    pub struct Bash;
+    pub struct Zsh;
+    pub struct Powershell;
 
-            pub fn autocomplete() -> PathBuf {
-                dir_relative().join("completion.sh")
-            }
+    impl ShellPathProvider for Bash {
+        fn new() -> Self {
+            Bash {}
+        }
+        fn dir_relative(&self) -> PathBuf {
+            Path::new("shell").join("bash")
+        }
+        fn file_path(&self) -> PathBuf {
+            self.dir_relative().join("config.sh")
+        }
+        fn autocomplete(&self) -> PathBuf {
+            self.dir_relative().join("completion.sh")
+        }
+        fn shell_type(&self) -> structopt::clap::Shell {
+            structopt::clap::Shell::Bash
+        }
+        fn shell_rcs(&self) -> &'static [&'static str] {
+            &[".bashrc", ".bash_profile"]
         }
     }
-    pub mod powershell {
-        pub mod config {
-            use std::path::{Path, PathBuf};
 
-            pub fn dir_relative() -> PathBuf {
-                Path::new("shell").join("powershell")
-            }
-
-            pub fn file_path() -> PathBuf {
-                dir_relative().join("config.ps1")
-            }
-
-            pub fn autocomplete() -> PathBuf {
-                dir_relative().join("completion.ps1")
-            }
+    impl ShellPathProvider for Zsh {
+        fn new() -> Self {
+            Zsh {}
+        }
+        fn dir_relative(&self) -> PathBuf {
+            Path::new("shell").join("zsh")
+        }
+        fn file_path(&self) -> PathBuf {
+            self.dir_relative().join("config.sh")
+        }
+        fn autocomplete(&self) -> PathBuf {
+            self.dir_relative()
+                .join(format!("_{}", crate::constants::EXECUTABLE_NAME))
+        }
+        fn shell_type(&self) -> structopt::clap::Shell {
+            structopt::clap::Shell::Zsh
+        }
+        fn shell_rcs(&self) -> &'static [&'static str] {
+            &[".zshrc"]
         }
     }
-    pub mod zsh {
-        pub mod config {
-            use std::path::{Path, PathBuf};
 
-            pub fn dir_relative() -> PathBuf {
-                Path::new("shell").join("zsh")
-            }
-
-            pub fn file_path() -> PathBuf {
-                dir_relative().join("config.sh")
-            }
-
-            pub fn autocomplete() -> PathBuf {
-                dir_relative().join(format!("_{}", crate::constants::EXECUTABLE_NAME))
-            }
+    impl ShellPathProvider for Powershell {
+        fn new() -> Self {
+            Powershell {}
+        }
+        fn dir_relative(&self) -> PathBuf {
+            Path::new("shell").join("powershell")
+        }
+        fn file_path(&self) -> PathBuf {
+            self.dir_relative().join("config.ps1")
+        }
+        fn autocomplete(&self) -> PathBuf {
+            self.dir_relative().join("completion.ps1")
+        }
+        fn shell_type(&self) -> structopt::clap::Shell {
+            structopt::clap::Shell::PowerShell
+        }
+        fn shell_rcs(&self) -> &'static [&'static str] {
+            unimplemented!()
         }
     }
 }
@@ -207,6 +234,8 @@ pub mod tests {
     use std::path::Path;
 
     use super::*;
+
+    use crate::utils::directory::shell::ShellPathProvider;
 
     use pycors_test_helpers::create_test_temp_dir;
 
@@ -223,7 +252,7 @@ pub mod tests {
     #[test]
     fn bash_dir_relative() {
         assert_eq!(
-            shell::bash::config::dir_relative(),
+            shell::Bash::new().dir_relative(),
             Path::new("shell").join("bash")
         );
     }
@@ -231,7 +260,7 @@ pub mod tests {
     #[test]
     fn bash_file_path() {
         assert_eq!(
-            shell::bash::config::file_path(),
+            shell::Bash::new().file_path(),
             Path::new("shell").join("bash").join("config.sh")
         );
     }
@@ -239,7 +268,7 @@ pub mod tests {
     #[test]
     fn bash_autocomplete() {
         assert_eq!(
-            shell::bash::config::autocomplete(),
+            shell::Bash::new().autocomplete(),
             Path::new("shell").join("bash").join("completion.sh")
         );
     }
@@ -247,7 +276,7 @@ pub mod tests {
     #[test]
     fn zsh_dir_relative() {
         assert_eq!(
-            shell::zsh::config::dir_relative(),
+            shell::Zsh::new().dir_relative(),
             Path::new("shell").join("zsh")
         );
     }
@@ -255,7 +284,7 @@ pub mod tests {
     #[test]
     fn zsh_file_path() {
         assert_eq!(
-            shell::zsh::config::file_path(),
+            shell::Zsh::new().file_path(),
             Path::new("shell").join("zsh").join("config.sh")
         );
     }
@@ -263,7 +292,7 @@ pub mod tests {
     #[test]
     fn zsh_autocomplete() {
         assert_eq!(
-            shell::zsh::config::autocomplete(),
+            shell::Zsh::new().autocomplete(),
             Path::new("shell").join("zsh").join("_pycors")
         );
     }
