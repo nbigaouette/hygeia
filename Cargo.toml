@@ -6,6 +6,18 @@ homepage = "https://github.com/nbigaouette/hygeia"
 repository = "https://github.com/nbigaouette/hygeia"
 edition = "2018"
 
+description = "Python toolchain manager 🐍"
+license = "MIT OR Apache-2.0"
+documentation = "https://docs.rs/hygeia"
+
+readme = "README.md"
+keywords = ["python"]
+categories = ["command-line-utilities", "development-tools"]
+
+[badges]
+codecov = { repository = "https://github.com/nbigaouette/hygeia", branch = "master", service = "github" }
+maintenance = { status = "actively-developed" }
+
 [workspace]
 members = [
     "xtask",
