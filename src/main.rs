@@ -82,9 +82,24 @@ pub fn no_shim_execution() -> Result<()> {
             }
             Command::Run { version, command } => commands::run::run(version, &command)?,
             Command::Setup { shell } => commands::setup::run(shell)?,
+            Command::Update => update()?
         }
     }
 
+    Ok(())
+}
+
+
+fn update() -> Result<()> {
+    let status = self_update::backends::github::Update::configure()
+        .repo_owner("nbigaouette")
+        .repo_name(EXECUTABLE_NAME)
+        .bin_name(EXECUTABLE_NAME)
+        .show_download_progress(true)
+        .current_version(self_update::cargo_crate_version!())
+        .build()?
+        .update()?;
+    println!("Update status: `{}`!", status.version());
     Ok(())
 }
 

@@ -102,6 +102,9 @@ pub enum Command {
     /// Supported shells: Bash, Fish, Zsh, PowerShell and Elvish.
     #[structopt(name = "setup")]
     Setup { shell: structopt::clap::Shell },
+
+    /// Update pycors to latest version
+    Update,
 }
 
 #[derive(StructOpt, Debug)]
