@@ -157,6 +157,8 @@ pub mod shell {
         fn dir_relative(&self) -> PathBuf;
         fn file_path(&self) -> PathBuf;
         fn autocomplete(&self) -> PathBuf;
+        fn shell_type(&self) -> structopt::clap::Shell;
+        fn shell_rcs(&self) -> &'static [&'static str];
     }
     pub struct Bash;
     pub struct Zsh;
@@ -175,6 +177,12 @@ pub mod shell {
         fn autocomplete(&self) -> PathBuf {
             self.dir_relative().join("completion.sh")
         }
+        fn shell_type(&self) -> structopt::clap::Shell {
+            structopt::clap::Shell::Bash
+        }
+        fn shell_rcs(&self) -> &'static [&'static str] {
+            &[".bashrc", ".bash_profile"]
+        }
     }
 
     impl ShellPathProvider for Zsh {
@@ -191,6 +199,12 @@ pub mod shell {
             self.dir_relative()
                 .join(format!("_{}", crate::constants::EXECUTABLE_NAME))
         }
+        fn shell_type(&self) -> structopt::clap::Shell {
+            structopt::clap::Shell::Zsh
+        }
+        fn shell_rcs(&self) -> &'static [&'static str] {
+            &[".zshrc"]
+        }
     }
 
     impl ShellPathProvider for Powershell {
@@ -205,6 +219,12 @@ pub mod shell {
         }
         fn autocomplete(&self) -> PathBuf {
             self.dir_relative().join("completion.ps1")
+        }
+        fn shell_type(&self) -> structopt::clap::Shell {
+            structopt::clap::Shell::PowerShell
+        }
+        fn shell_rcs(&self) -> &'static [&'static str] {
+            unimplemented!()
         }
     }
 }

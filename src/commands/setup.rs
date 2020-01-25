@@ -11,9 +11,8 @@ use crate::{
     Result,
 };
 
-pub mod bash;
 pub mod powershell;
-pub mod zsh;
+pub mod sh;
 
 pub fn run(shell: Shell) -> Result<()> {
     log::info!("Setting up the shim...");
@@ -57,8 +56,8 @@ pub fn run(shell: Shell) -> Result<()> {
 
     // Add ~/.EXECUTABLE_NAME/shims to $PATH in ~/.bashrc and ~/.bash_profile and install autocomplete
     match shell {
-        Shell::Bash => bash::setup_bash(&paths_provider),
-        Shell::Zsh => zsh::setup_zsh(&paths_provider),
+        Shell::Bash => sh::setup_shell(&paths_provider, utils::directory::shell::Bash::new()),
+        Shell::Zsh => sh::setup_shell(&paths_provider, utils::directory::shell::Zsh::new()),
         Shell::PowerShell => powershell::setup_powershell(&paths_provider),
         _ => anyhow::bail!("Unsupported shell: {}", shell),
     }?;
