@@ -312,7 +312,7 @@ where
 
     let message_width = if let Some((Width(width), _)) = terminal_size() {
         // There is two characters before the message: the spinner and a space
-        let message_width = (width as usize) - 2;
+        let message_width = (width as usize).saturating_sub(2);
         Some(message_width)
     } else {
         log::warn!("Unable to get terminal size");
