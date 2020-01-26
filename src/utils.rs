@@ -312,8 +312,13 @@ where
 
     let message_width = if let Some((Width(width), _)) = terminal_size() {
         // There is two characters before the message: the spinner and a space
-        let message_width = (width as usize).saturating_sub(2);
-        Some(message_width)
+        let terminal_width = (width as usize).saturating_sub(2);
+        // If terminal with is less than 5, skip sending the line to the spinner
+        if terminal_width < 5 {
+            None
+        } else {
+            Some(terminal_width)
+        }
     } else {
         log::warn!("Unable to get terminal size");
         None
@@ -332,11 +337,11 @@ where
             Ok(line) => {
                 log_line(&line, &mut log_file);
                 let message = format!("{}: {}", line_header, line.replace("\t", " "));
-                let message = match message_width {
-                    None => message,
-                    Some(width) => console::truncate_str(&message, width, "...").to_string(),
-                };
-                tx.send(SpinnerMessage::Message(message))?
+                if let Some(width) = message_width {
+                    tx.send(SpinnerMessage::Message(
+                        console::truncate_str(&message, width, "...").to_string(),
+                    ))?;
+                }
             }
         };
     }
