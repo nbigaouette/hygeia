@@ -46,12 +46,13 @@ ENV PATH="/home/hygeia/.cargo/bin:${PATH}"
 
 
 # -------------------------------------------------------------------------------
-# Pycors specific
+# Hygeia specific
 # Copy a cache and extract
 COPY --chown=hygeia:hygeia docker/${OS_NAME}/artifacts/docker_cargo_cache.tar.gz* Cargo.* ./
 COPY --chown=hygeia:hygeia src ./src
 COPY --chown=hygeia:hygeia tests ./tests
 COPY --chown=hygeia:hygeia xtask ./xtask
+COPY --chown=hygeia:hygeia hygeia_test_helpers ./hygeia_test_helpers
 COPY --chown=hygeia:hygeia extra-packages-to-install.txt ./extra-packages-to-install.txt
 
 RUN tar -zxf docker_cargo_cache.tar.gz || echo " ---> Cache file not found, skipping (please ignore tar error)."
