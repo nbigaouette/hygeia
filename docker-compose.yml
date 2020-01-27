@@ -53,6 +53,21 @@ services:
     tty: true
     volumes:
       - ./docker/ubuntu/artifacts:/home/hygeia/artifacts
+  debian_sid:
+    image: hygeia_debian_sid
+    build:
+      context: .
+      dockerfile: docker/debian/sid/Dockerfile
+      args:
+        OS_NAME: "debian"
+        OS_VERSION: "sid-20191224"
+        RUST_VERSION: "1.40.0"
+    environment:
+      RUST_LOG: hygeia=debug
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./docker/debian/sid/artifacts:/home/hygeia/artifacts
   fedora:
     image: hygeia_fedora
     build:
