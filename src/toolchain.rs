@@ -237,7 +237,6 @@ fn path_is_python_executable(path: &Path) -> bool {
         Some(os_str) => match os_str.to_str() {
             Some(filename) => {
                 let is_match = RE.is_match(filename);
-                println!("filename: {:?} --> is_match = {}", filename, is_match);
                 is_match
             }
             None => {
