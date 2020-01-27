@@ -104,6 +104,7 @@ pub enum Command {
     Setup { shell: structopt::clap::Shell },
 
     /// Update pycors to latest version
+    #[cfg(feature = "self-update")]
     Update,
 }
 

@@ -82,14 +82,15 @@ pub fn no_shim_execution() -> Result<()> {
             }
             Command::Run { version, command } => commands::run::run(version, &command)?,
             Command::Setup { shell } => commands::setup::run(shell)?,
-            Command::Update => update()?
+            #[cfg(feature = "self-update")]
+            Command::Update => update()?,
         }
     }
 
     Ok(())
 }
 
-
+#[cfg(feature = "self-update")]
 fn update() -> Result<()> {
     let status = self_update::backends::github::Update::configure()
         .repo_owner("nbigaouette")
