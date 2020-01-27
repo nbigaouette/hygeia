@@ -31,7 +31,6 @@ mod path;
 mod run;
 mod select;
 mod setup;
-mod version;
 
 mockall::mock! {
     PycorsHomeProviderTrait {}     // Name of the mock struct, less the "Mock" prefix

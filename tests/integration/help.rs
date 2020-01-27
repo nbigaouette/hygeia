@@ -6,15 +6,11 @@ fn assert_help_output(output: std::process::Output) {
     assert_output
         .success()
         .stdout(
-            predicate::str::starts_with(format!(
-                "{} {}\n",
-                env!("CARGO_PKG_NAME"),
-                env!("CARGO_PKG_VERSION")
-            ))
-            .normalize()
-            .and(predicate::str::contains("USAGE:"))
-            .and(predicate::str::contains("FLAGS:"))
-            .and(predicate::str::contains("SUBCOMMANDS:")),
+            predicate::str::starts_with(env!("CARGO_PKG_NAME"))
+                .normalize()
+                .and(predicate::str::contains("USAGE:"))
+                .and(predicate::str::contains("FLAGS:"))
+                .and(predicate::str::contains("SUBCOMMANDS:")),
         )
         .stderr(predicate::str::is_empty().trim());
 }
