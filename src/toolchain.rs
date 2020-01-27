@@ -9,9 +9,10 @@ use std::{
 };
 
 use anyhow::Context;
+use lazy_static::lazy_static;
+use regex::Regex;
 use semver::{Version, VersionReq};
 use thiserror::Error;
-use which::which_in;
 
 use crate::{
     constants::{EXECUTABLE_NAME, SHIMS_DIRECTORY_IDENTIFIER_FILE, TOOLCHAIN_FILE},
@@ -222,6 +223,35 @@ impl SelectedToolchain {
     }
 }
 
+fn path_is_python_executable(path: &Path) -> bool {
+    lazy_static! {
+        static ref RE: Regex = if cfg!(windows) {
+            Regex::new(r"^python[2-3]?(\.?[0-9]*){1,2}.exe$")
+        } else {
+            Regex::new(r"^python[2-3]?(\.?[0-9]*){1,2}$")
+        }
+        .unwrap();
+    }
+
+    match path.file_name() {
+        Some(os_str) => match os_str.to_str() {
+            Some(filename) => {
+                let is_match = RE.is_match(filename);
+                println!("filename: {:?} --> is_match = {}", filename, is_match);
+                is_match
+            }
+            None => {
+                log::error!("Failed to convert filename to &str: {}", path.display());
+                false
+            }
+        },
+        None => {
+            log::error!("Failed to get filename of {}", path.display());
+            false
+        }
+    }
+}
+
 fn get_python_versions_from_path<P, S>(
     path: P,
     paths_provider: &PycorsPathsProvider<S>,
@@ -233,7 +263,6 @@ where
     let path: &Path = path.as_ref();
 
     let mut other_pythons: HashMap<Version, PathBuf> = HashMap::new();
-    let versions_suffix = &["", "2", "3"];
 
     if !path.exists() {
         log::debug!("Skipping non-existing directory {}", path.display());
@@ -254,62 +283,70 @@ where
         return other_pythons;
     }
 
-    for version_suffix in versions_suffix {
-        let executable = format!("python{}", version_suffix);
+    match path.read_dir() {
+        Ok(entries) => {
+            for entry in entries {
+                if let Ok(entry) = entry {
+                    let entry_path = entry.path();
+                    if path_is_python_executable(&entry_path) {
+                        let python_path = path.clone();
+                        let full_executable_path = entry_path;
 
-        let full_executable_path = match which_in(&executable, Some(&path), "/") {
-            Err(_) => {
-                // log::debug!("Executable '{}' not found in {:?}", executable, path);
-                continue;
-            }
-            Ok(python_path) => python_path,
-        };
-        let python_path = path.to_path_buf();
+                        let cmd_output = std::process::Command::new(&full_executable_path)
+                            .arg("-V")
+                            .stdout(std::process::Stdio::piped())
+                            .stderr(std::process::Stdio::piped())
+                            .output()
+                            .with_context(|| {
+                                format!("Failed to execute command: {:?}", full_executable_path)
+                            });
+                        let python_version: String =
+                            match extract_version_from_command(&full_executable_path, cmd_output) {
+                                Ok(python_version) => python_version,
+                                Err(e) => {
+                                    log::error!("extract_version_from_command() failed: {:?}", e);
+                                    continue;
+                                }
+                            };
 
-        let cmd_output = std::process::Command::new(&full_executable_path)
-            .arg("-V")
-            .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::piped())
-            .output()
-            .with_context(|| format!("Failed to execute command: {:?}", full_executable_path));
-        let python_version: String =
-            match extract_version_from_command(&full_executable_path, cmd_output) {
-                Ok(python_version) => python_version,
-                Err(e) => {
-                    log::error!("extract_version_from_command() failed: {:?}", e);
-                    continue;
+                        let python_version_str = match python_version.split_whitespace().nth(1) {
+                            None => {
+                                log::error!(
+                                    "Failed to parse output from `{} -V`: {}",
+                                    full_executable_path.display(),
+                                    python_version
+                                );
+                                continue;
+                            }
+                            Some(python_version_str) => python_version_str.trim_end_matches('+'),
+                        };
+                        let python_version = match Version::parse(python_version_str) {
+                            Err(e) => {
+                                log::error!(
+                                    "Failed to parse version string {:?}: {:?}",
+                                    python_version_str,
+                                    e
+                                );
+                                continue;
+                            }
+                            Ok(python_version) => python_version,
+                        };
+                        log::debug!(
+                            "Found python executable in {}: {}",
+                            python_path.display(),
+                            python_version
+                        );
+
+                        other_pythons.insert(python_version, python_path);
+                    }
                 }
-            };
-
-        let python_version_str = match python_version.split_whitespace().nth(1) {
-            None => {
-                log::error!(
-                    "Failed to parse output from `{} -V`: {}",
-                    full_executable_path.display(),
-                    python_version
-                );
-                continue;
             }
-            Some(python_version_str) => python_version_str.trim_end_matches('+'),
-        };
-        let python_version = match Version::parse(python_version_str) {
-            Err(e) => {
-                log::error!(
-                    "Failed to parse version string {:?}: {:?}",
-                    python_version_str,
-                    e
-                );
-                continue;
-            }
-            Ok(python_version) => python_version,
-        };
-        log::debug!(
-            "Found python executable in {}: {}",
-            python_path.display(),
-            python_version
-        );
-
-        other_pythons.insert(python_version, python_path);
+        }
+        Err(e) => log::error!(
+            "Failed to get directory entries for {}: {}",
+            path.display(),
+            e
+        ),
     }
 
     other_pythons
