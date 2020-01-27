@@ -1,38 +1,38 @@
-ARG OS_NAME=alpine
-ARG OS_VERSION=3.10.3
+ARG OS_NAME=debian
+ARG OS_VERSION=sid-20191224
 
 FROM ${OS_NAME}:${OS_VERSION} as builder
 
 LABEL hygeia_${OS_NAME}_${OS_VERSION}_builder=true
 
-ARG DOCKER_GID=7926
-ARG DOCKER_UID=7926
+ARG DOCKER_GID=792677
+ARG DOCKER_UID=792677
 ARG RUST_VERSION=1.40.0
-ARG RUSTFLAGS
+
 
 ENV RUST_VERSION=${RUST_VERSION}
 ENV RUST_LOG=hygeia=debug
-ENV RUSTFLAGS=${RUSTFLAGS}
+
 
 # -------------------------------------------------------------------------------
 # OS-specific
-RUN apk add --no-cache \
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install \
     vim \
     sudo \
     # To download rustup
     curl \
-    # cargo dependencies
-    build-base \
     # hygeia dependencies
-    openssl-dev \
-    pkgconf
+    build-essential \
+    libssl-dev \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
 # -------------------------------------------------------------------------------
 
 
-
-RUN addgroup -g ${DOCKER_GID} -S hygeia && adduser -u ${DOCKER_UID} -S hygeia -G hygeia && \
+RUN groupadd --system hygeia --gid ${DOCKER_GID} && \
+    useradd --create-home --system --gid hygeia --uid ${DOCKER_UID} hygeia && \
     chown hygeia:hygeia /home/hygeia
-
 # Let user run sudo without password
 RUN echo "hygeia ALL=(ALL) NOPASSWD:ALL" | EDITOR='tee -a' visudo
 
@@ -71,28 +71,29 @@ FROM ${OS_NAME}:${OS_VERSION}
 
 LABEL hygeia_${OS_NAME}_${OS_VERSION}_builder=false
 
-ARG DOCKER_GID=7926
-ARG DOCKER_UID=7926
+ARG DOCKER_GID=792677
+ARG DOCKER_UID=792677
 
 # -------------------------------------------------------------------------------
 # OS-specific
+# Enable 'source' repositories
+RUN echo "deb-src http://deb.debian.org/debian sid main" >> /etc/apt/sources.list
+# Python build dependencies
 # See https://devguide.python.org/setup/#linux
-RUN apk add --no-cache \
-    build-base \
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y build-dep \
+    python3 && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install \
+    libssl-dev zlib1g-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev \
+    libgdbm-dev libdb5.3-dev libbz2-dev libexpat1-dev liblzma-dev libffi-dev uuid-dev \
+    ca-certificates \
     sudo \
     vim \
-    # Python build dependencies
-    # See https://git.alpinelinux.org/aports/tree/main/python3/APKBUILD?h=3.10-stable
-    expat-dev openssl-dev zlib-dev ncurses-dev bzip2-dev xz-dev sqlite-dev libffi-dev \
-    tcl-dev linux-headers gdbm-dev readline-dev
+    && rm -rf /var/lib/apt/lists/*
 # -------------------------------------------------------------------------------
 
-
-
-
-
-RUN addgroup -g ${DOCKER_GID} -S hygeia && \
-    adduser -u ${DOCKER_UID} -S hygeia -G hygeia
+RUN groupadd --system hygeia --gid ${DOCKER_GID} && \
+    useradd --create-home --system --gid hygeia --uid ${DOCKER_UID} hygeia
 # Let user run sudo without password
 RUN echo "hygeia ALL=(ALL) NOPASSWD:ALL" | EDITOR='tee -a' visudo
 
