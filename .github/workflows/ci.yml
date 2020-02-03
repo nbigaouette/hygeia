@@ -388,6 +388,15 @@ jobs:
         if: contains(matrix.target, 'musl')
         run: |
           sudo apt-get install musl-tools
+      - name: Copy crt2.o from mingw (windows-gnu)
+        if: contains(matrix.target, 'x86_64-pc-windows-gnu')
+        # See:
+        #   https://github.com/rust-lang/rust/issues/49078
+        #   https://github.com/rust-lang/rust/issues/53454
+        #   https://www.reddit.com/r/rust/comments/cvyuqk/uptodate_way_to_crosscompile_from_osx_to_windows/
+        run: |
+          $crt2="C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw64\x86_64-w64-mingw32\lib\crt2.o"
+          Copy-Item $crt2 -Destination C:\Rust\.rustup\toolchains\1.40.0-x86_64-pc-windows-msvc\lib\rustlib\x86_64-pc-windows-gnu\lib\crt2.o -Force
       - name: Build release
         uses: actions-rs/cargo@v1
         with:
