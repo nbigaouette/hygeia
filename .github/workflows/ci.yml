@@ -1,7 +1,6 @@
 # TODO:
 #   * Use a real changelog for the release (see https://github.com/urbica/martin/blob/master/.github/workflows/ci.yml#L198)
 #   * Nightly run for cargo audit
-#   * Cache? See https://github.com/marketplace/actions/cache and https://help.github.com/en/actions/automating-your-workflow-with-github-actions/caching-dependencies-to-speed-up-workflows
 #   * Centralize Rust version into a single env variable (possible?)
 #   * Possible to centralize OS versions into env variable?
 #     https://stackoverflow.com/questions/58981442/how-can-i-centralize-dry-a-string-in-github-actions-config-yaml
@@ -53,21 +52,21 @@ jobs:
           profile: minimal
           toolchain: ${{ matrix.rust }}
           override: true
-      - name: Cache (cargo registry)
-        uses: actions/cache@v1
-        with:
-          path: ~/.cargo/registry
-          key: cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-      - name: Cache (cargo index)
-        uses: actions/cache@v1
-        with:
-          path: ~/.cargo/git
-          key: cargo-index-${{ hashFiles('**/Cargo.lock') }}
-      - name: Cache (cargo build)
-        uses: actions/cache@v1
-        with:
-          path: target
-          key: cargo-build-target-Linux-${{ hashFiles('**/Cargo.lock') }}
+      # - name: Cache (cargo registry)
+      #   uses: actions/cache@v1
+      #   with:
+      #     path: ~/.cargo/registry
+      #     key: cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      # - name: Cache (cargo index)
+      #   uses: actions/cache@v1
+      #   with:
+      #     path: ~/.cargo/git
+      #     key: cargo-index-${{ hashFiles('**/Cargo.lock') }}
+      # - name: Cache (cargo build)
+      #   uses: actions/cache@v1
+      #   with:
+      #     path: target
+      #     key: cargo-build-target-Linux-${{ hashFiles('**/Cargo.lock') }}
       - uses: actions-rs/cargo@v1
         with:
           command: check
@@ -78,9 +77,35 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-18.04, windows-2019, macOS-latest]
-        rust:
-          - 1.40.0
+        build:
+          - linux-musl
+          - linux-gnu
+          - macos
+          - win-gnu
+          - win-msvc
+        include:
+          - build: linux-musl
+            os: ubuntu-18.04
+            rust: 1.40.0
+            target: x86_64-unknown-linux-musl
+          - build: linux-gnu
+            os: ubuntu-18.04
+            rust: 1.40.0
+            target: x86_64-unknown-linux-gnu
+          - build: macos
+            os: macOS-latest
+            rust: 1.40.0
+            target: x86_64-apple-darwin
+          - build: win-gnu
+            os: windows-2019
+            rust: 1.40.0
+            target: x86_64-pc-windows-gnu
+          - build: win-msvc
+            os: windows-2019
+            rust: 1.40.0
+            target: x86_64-pc-windows-msvc
+    env:
+      CARGO_BUILD_TARGET: ${{ matrix.target }}
     steps:
       - name: Git checkout
         uses: actions/checkout@v1
@@ -91,22 +116,35 @@ jobs:
         with:
           profile: minimal
           toolchain: ${{ matrix.rust }}
+          target: ${{ matrix.target }}
           override: true
-      - name: Cache (cargo registry)
-        uses: actions/cache@v1
-        with:
-          path: ~/.cargo/registry
-          key: cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-      - name: Cache (cargo index)
-        uses: actions/cache@v1
-        with:
-          path: ~/.cargo/git
-          key: cargo-index-${{ hashFiles('**/Cargo.lock') }}
-      - name: Cache (cargo build)
-        uses: actions/cache@v1
-        with:
-          path: target
-          key: cargo-build-target-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+      - name: Install additional packages (linux-musl)
+        if: contains(matrix.target, 'x86_64-unknown-linux-musl')
+        run: sudo apt-get install musl-tools
+      - name: Copy crt2.o from mingw (windows-gnu)
+        if: contains(matrix.target, 'x86_64-pc-windows-gnu')
+        # See:
+        #   https://github.com/rust-lang/rust/issues/49078
+        #   https://github.com/rust-lang/rust/issues/53454
+        #   https://www.reddit.com/r/rust/comments/cvyuqk/uptodate_way_to_crosscompile_from_osx_to_windows/
+        run: |
+          $crt2="C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw64\x86_64-w64-mingw32\lib\crt2.o"
+          Copy-Item $crt2 -Destination C:\Rust\.rustup\toolchains\1.40.0-x86_64-pc-windows-msvc\lib\rustlib\x86_64-pc-windows-gnu\lib\crt2.o -Force
+      # - name: Cache (cargo registry)
+      #   uses: actions/cache@v1
+      #   with:
+      #     path: ~/.cargo/registry
+      #     key: cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      # - name: Cache (cargo index)
+      #   uses: actions/cache@v1
+      #   with:
+      #     path: ~/.cargo/git
+      #     key: cargo-index-${{ hashFiles('**/Cargo.lock') }}
+      # - name: Cache (cargo build)
+      #   uses: actions/cache@v1
+      #   with:
+      #     path: target
+      #     key: cargo-build-target-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
       - name: Build (cargo build)
         uses: actions-rs/cargo@v1
         with:
@@ -121,20 +159,20 @@ jobs:
         uses: actions/upload-artifact@v1
         if: contains(matrix.os, 'ubuntu')
         with:
-          name: hygeia-linux
-          path: target/debug/hygeia
+          name: hygeia-${{ matrix.target }}-${{github.sha}}
+          path: target/${{ matrix.target }}/debug/hygeia
       - name: Upload hygeia as artifact (macOS)
         uses: actions/upload-artifact@v1
         if: contains(matrix.os, 'macOS')
         with:
-          name: hygeia-macos
-          path: target/debug/hygeia
+          name: hygeia-${{ matrix.target }}-${{github.sha}}
+          path: target/${{ matrix.target }}/debug/hygeia
       - name: Upload hygeia.exe as artifact (Windows)
         uses: actions/upload-artifact@v1
         if: "contains(matrix.os, 'windows')"
         with:
-          name: hygeia.exe
-          path: target/debug/hygeia.exe
+          name: hygeia-${{ matrix.target }}-${{github.sha}}
+          path: target/${{ matrix.target }}/debug/hygeia.exe
       - name: Unit Tests (cargo test)
         uses: actions-rs/cargo@v1
         with:
@@ -169,21 +207,21 @@ jobs:
           toolchain: ${{ matrix.rust }}
           override: true
       - run: rustup component add clippy
-      - name: Cache (cargo registry)
-        uses: actions/cache@v1
-        with:
-          path: ~/.cargo/registry
-          key: cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-      - name: Cache (cargo index)
-        uses: actions/cache@v1
-        with:
-          path: ~/.cargo/git
-          key: cargo-index-${{ hashFiles('**/Cargo.lock') }}
-      - name: Cache (cargo build)
-        uses: actions/cache@v1
-        with:
-          path: target
-          key: cargo-build-target-Linux-${{ hashFiles('**/Cargo.lock') }}
+      # - name: Cache (cargo registry)
+      #   uses: actions/cache@v1
+      #   with:
+      #     path: ~/.cargo/registry
+      #     key: cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      # - name: Cache (cargo index)
+      #   uses: actions/cache@v1
+      #   with:
+      #     path: ~/.cargo/git
+      #     key: cargo-index-${{ hashFiles('**/Cargo.lock') }}
+      # - name: Cache (cargo build)
+      #   uses: actions/cache@v1
+      #   with:
+      #     path: target
+      #     key: cargo-build-target-Linux-${{ hashFiles('**/Cargo.lock') }}
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
@@ -239,21 +277,21 @@ jobs:
       options: --security-opt seccomp=unconfined
     steps:
       - uses: actions/checkout@v1
-      - name: Cache (cargo registry)
-        uses: actions/cache@v1
-        with:
-          path: ~/.cargo/registry
-          key: cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-      - name: Cache (cargo index)
-        uses: actions/cache@v1
-        with:
-          path: ~/.cargo/git
-          key: cargo-index-${{ hashFiles('**/Cargo.lock') }}
-      - name: Cache (cargo build)
-        uses: actions/cache@v1
-        with:
-          path: target
-          key: cargo-build-target-tarpaulin-${{ hashFiles('**/Cargo.lock') }}
+      # - name: Cache (cargo registry)
+      #   uses: actions/cache@v1
+      #   with:
+      #     path: ~/.cargo/registry
+      #     key: cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      # - name: Cache (cargo index)
+      #   uses: actions/cache@v1
+      #   with:
+      #     path: ~/.cargo/git
+      #     key: cargo-index-${{ hashFiles('**/Cargo.lock') }}
+      # - name: Cache (cargo build)
+      #   uses: actions/cache@v1
+      #   with:
+      #     path: target
+      #     key: cargo-build-target-tarpaulin-${{ hashFiles('**/Cargo.lock') }}
       - name: Run tarpaulin
         run: cargo tarpaulin --out Xml --verbose --exclude-files "tests/integration/*" --exclude-files "xtask/*" --exclude-files "hygeia_test_helpers/*" integration_tests -- "tests::"
       - name: Upload coverage to codecov.io
@@ -309,7 +347,8 @@ jobs:
         build:
           - musl
           - macos
-          - win-msvc-64
+          - win-gnu
+          - win-msvc
         include:
           - build: musl
             os: ubuntu-18.04
@@ -319,10 +358,16 @@ jobs:
             os: macOS-latest
             rust: 1.40.0
             target: x86_64-apple-darwin
-          - build: win-msvc-64
+          - build: win-gnu
+            os: windows-2019
+            rust: 1.40.0
+            target: x86_64-pc-windows-gnu
+          - build: win-msvc
             os: windows-2019
             rust: 1.40.0
             target: x86_64-pc-windows-msvc
+    env:
+      CARGO_BUILD_TARGET: ${{ matrix.target }}
     steps:
       - name: Git checkout
         uses: actions/checkout@v1
@@ -335,6 +380,7 @@ jobs:
         with:
           profile: minimal
           toolchain: ${{ matrix.rust }}
+          target: ${{ matrix.target }}
           override: true
       - name: Install Rust Target
         run: rustup target add ${{ matrix.target }}
@@ -346,7 +392,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release --target ${{ matrix.target }}
+          args: --release
 
       - name: Package artifacts
         id: package

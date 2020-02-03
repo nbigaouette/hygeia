@@ -52,7 +52,13 @@ fn _mock_executable(
     output: MockedOutput,
 ) -> crate::Result<()> {
     let _cargo_output = std::process::Command::new("cargo")
-        .args(&["build", "--package", "print_file_to_stdout"])
+        .args(&[
+            "build",
+            "--package",
+            "print_file_to_stdout",
+            "--target",
+            env!("TARGET"), // Set by build.rs
+        ])
         .output()
         .with_context(|| "Failed to execute 'cargo build --package print_file_to_stdout")?;
 
@@ -91,22 +97,14 @@ fn _mock_executable(
             .with_context(|| format!("Failed to write to file {:?}", stderr_filepath))?;
     }
 
-    let print_file_to_stdout = {
-        let target_dir = match env::var("CARGO_TARGET_DIR") {
-            Ok(dir) => dir,
-            Err(_) => String::from("target"),
-        };
-
-        #[cfg_attr(not(windows), allow(unused_mut))]
-        let mut tmp = Path::new(&target_dir)
+    let print_file_to_stdout =
+        Path::new(&env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| String::from("target")))
+            .join(env!("TARGET"))
             .join("debug")
-            .join("print_file_to_stdout");
-
-        #[cfg(windows)]
-        tmp.set_extension("exe");
-
-        tmp
-    };
+            .join(format!(
+                "print_file_to_stdout{}",
+                std::env::consts::EXE_SUFFIX
+            ));
 
     fs::copy(
         &print_file_to_stdout,

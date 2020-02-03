@@ -1,2 +1,8 @@
 [alias]
 xtask = "run --release --manifest-path ./xtask/Cargo.toml --"
+
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-Ctarget-feature=+crt-static"]
+
+[target.x86_64-pc-windows-gnu]
+linker = "x86_64-w64-mingw32-gcc"
