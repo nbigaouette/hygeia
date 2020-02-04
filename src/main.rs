@@ -95,7 +95,11 @@ fn update() -> Result<()> {
     let status = self_update::backends::github::Update::configure()
         .repo_owner("nbigaouette")
         .repo_name(EXECUTABLE_NAME)
-        .bin_name(EXECUTABLE_NAME)
+        .bin_name(&format!(
+            "{}{}",
+            EXECUTABLE_NAME,
+            std::env::consts::EXE_SUFFIX
+        ))
         .show_download_progress(true)
         .current_version(self_update::cargo_crate_version!())
         .build()?

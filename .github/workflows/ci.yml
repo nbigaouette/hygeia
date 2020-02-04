@@ -19,7 +19,7 @@ jobs:
     strategy:
       matrix:
         rust:
-          - 1.40.0
+          - 1.41.0
     steps:
       - uses: actions/checkout@v1
       - uses: actions-rs/toolchain@v1
@@ -42,7 +42,7 @@ jobs:
     strategy:
       matrix:
         rust:
-          - 1.40.0
+          - 1.41.0
     steps:
       - uses: actions/checkout@v1
         with:
@@ -86,23 +86,23 @@ jobs:
         include:
           - build: linux-musl
             os: ubuntu-18.04
-            rust: 1.40.0
+            rust: 1.41.0
             target: x86_64-unknown-linux-musl
           - build: linux-gnu
             os: ubuntu-18.04
-            rust: 1.40.0
+            rust: 1.41.0
             target: x86_64-unknown-linux-gnu
           - build: macos
             os: macOS-latest
-            rust: 1.40.0
+            rust: 1.41.0
             target: x86_64-apple-darwin
           - build: win-gnu
             os: windows-2019
-            rust: 1.40.0
+            rust: 1.41.0
             target: x86_64-pc-windows-gnu
           - build: win-msvc
             os: windows-2019
-            rust: 1.40.0
+            rust: 1.41.0
             target: x86_64-pc-windows-msvc
     env:
       CARGO_BUILD_TARGET: ${{ matrix.target }}
@@ -129,7 +129,7 @@ jobs:
         #   https://www.reddit.com/r/rust/comments/cvyuqk/uptodate_way_to_crosscompile_from_osx_to_windows/
         run: |
           $crt2="C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw64\x86_64-w64-mingw32\lib\crt2.o"
-          Copy-Item $crt2 -Destination C:\Rust\.rustup\toolchains\1.40.0-x86_64-pc-windows-msvc\lib\rustlib\x86_64-pc-windows-gnu\lib\crt2.o -Force
+          Copy-Item $crt2 -Destination C:\Rust\.rustup\toolchains\1.41.0-x86_64-pc-windows-msvc\lib\rustlib\x86_64-pc-windows-gnu\lib\crt2.o -Force
       # - name: Cache (cargo registry)
       #   uses: actions/cache@v1
       #   with:
@@ -196,7 +196,7 @@ jobs:
     strategy:
       matrix:
         rust:
-          - 1.40.0
+          - 1.41.0
     steps:
       - uses: actions/checkout@v1
         with:
@@ -233,7 +233,7 @@ jobs:
     strategy:
       matrix:
         rust:
-          - 1.40.0
+          - 1.41.0
 
     steps:
       - name: Checkout
@@ -269,7 +269,7 @@ jobs:
     name: Code coverage
     runs-on: ubuntu-18.04
     container:
-      image: xd009642/tarpaulin@sha256:5b9ad2082bd87f791528598fcbb9c94c920029ee464d6e688c9ab1bf78e4ab89
+      image: xd009642/tarpaulin@sha256:fbb21ab94af20ad2f17d7586ff45f1e60fb4c6231a94d8071b070625b8dee011
       env:
         RUST_BACKTRACE: 1
       volumes:
@@ -352,19 +352,19 @@ jobs:
         include:
           - build: musl
             os: ubuntu-18.04
-            rust: 1.40.0
+            rust: 1.41.0
             target: x86_64-unknown-linux-musl
           - build: macos
             os: macOS-latest
-            rust: 1.40.0
+            rust: 1.41.0
             target: x86_64-apple-darwin
           - build: win-gnu
             os: windows-2019
-            rust: 1.40.0
+            rust: 1.41.0
             target: x86_64-pc-windows-gnu
           - build: win-msvc
             os: windows-2019
-            rust: 1.40.0
+            rust: 1.41.0
             target: x86_64-pc-windows-msvc
     env:
       CARGO_BUILD_TARGET: ${{ matrix.target }}
@@ -396,7 +396,7 @@ jobs:
         #   https://www.reddit.com/r/rust/comments/cvyuqk/uptodate_way_to_crosscompile_from_osx_to_windows/
         run: |
           $crt2="C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw64\x86_64-w64-mingw32\lib\crt2.o"
-          Copy-Item $crt2 -Destination C:\Rust\.rustup\toolchains\1.40.0-x86_64-pc-windows-msvc\lib\rustlib\x86_64-pc-windows-gnu\lib\crt2.o -Force
+          Copy-Item $crt2 -Destination C:\Rust\.rustup\toolchains\1.41.0-x86_64-pc-windows-msvc\lib\rustlib\x86_64-pc-windows-gnu\lib\crt2.o -Force
       - name: Build release
         uses: actions-rs/cargo@v1
         with:
