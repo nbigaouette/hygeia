@@ -53,6 +53,7 @@ services:
     tty: true
     volumes:
       - ./docker/ubuntu/artifacts:/home/hygeia/artifacts
+      - .:/home/hygeia/hygeia.git
   debian_sid:
     image: hygeia_debian_sid
     build:
@@ -68,6 +69,7 @@ services:
     tty: true
     volumes:
       - ./docker/debian/sid/artifacts:/home/hygeia/artifacts
+      - .:/home/hygeia/hygeia.git
   fedora:
     image: hygeia_fedora
     build:
@@ -83,6 +85,7 @@ services:
     tty: true
     volumes:
       - ./docker/fedora/artifacts:/home/hygeia/artifacts
+      - .:/home/hygeia/hygeia.git
   alpine:
     image: hygeia_alpine
     build:
@@ -100,3 +103,4 @@ services:
     tty: true
     volumes:
       - ./docker/alpine/artifacts:/home/hygeia/artifacts
+      - .:/home/hygeia/hygeia.git
