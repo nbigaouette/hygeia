@@ -63,7 +63,7 @@ futures = "0.3"
 zip = {version = "0.5", default-features = false, features = ["deflate"]}
 
 [patch.crates-io]
-self_update = { git = 'https://github.com/nbigaouette/self_update', rev = "9171d65", default-features = false }
+self_update = { git = 'https://github.com/nbigaouette/self_update', rev = "a8a09f46770b2ed5048546aee00304cb", default-features = false }
 
 [dev-dependencies]
 mockall = "0.6"
