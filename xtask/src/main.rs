@@ -111,6 +111,7 @@ fn run_tests(tests_type: Tests) -> Result<(), DynError> {
                 "--",
                 "--color=always",
                 "--nocapture",
+                "--test-threads=1",
             ])?;
         }
         Tests::Integration(integration_tests) => match integration_tests {
