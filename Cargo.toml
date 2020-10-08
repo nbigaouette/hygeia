@@ -39,7 +39,7 @@ log = "0.4"
 prettytable-rs = "0.8"
 question = "0.2"
 regex = "1"
-select = "0.4"
+select = "0.5"
 self_update = { version = "0.20", optional = true, default-features = false, features = ["archive-zip"] }
 semver = { version = "0.9", features = ["serde"] }
 serde = {version = "1", features =[ "derive"]}
