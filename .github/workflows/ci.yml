@@ -273,7 +273,7 @@ jobs:
       env:
         RUST_BACKTRACE: 1
       volumes:
-        - ${GITHUB_WORKSPACE}:/volume
+        - $GITHUB_WORKSPACE:/volume
       options: --security-opt seccomp=unconfined
     steps:
       - uses: actions/checkout@v1
