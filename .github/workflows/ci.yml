@@ -269,7 +269,7 @@ jobs:
     name: Code coverage
     runs-on: ubuntu-18.04
     container:
-      image: xd009642/tarpaulin@sha256:fbb21ab94af20ad2f17d7586ff45f1e60fb4c6231a94d8071b070625b8dee011
+      image: xd009642/tarpaulin@sha256:ed96e52f1c9e376f640624b2335c03bbec5a332479dc745335712686d3677d3d
       env:
         RUST_BACKTRACE: 1
       volumes:
