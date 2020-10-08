@@ -11,7 +11,6 @@ use select::{
 };
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
-use serde_json;
 use thiserror::Error;
 use url::Url;
 
