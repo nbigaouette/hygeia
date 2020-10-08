@@ -742,7 +742,7 @@ dependencies = [
  "hygeia_test_helpers",
  "hyper",
  "hyper-tls",
- "indicatif",
+ "indicatif 0.15.0",
  "indoc",
  "lazy_static",
  "log",
@@ -857,6 +857,18 @@ name = "indicatif"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8572bccfb0665e70b7faf44ee28841b8e0823450cd4ad562a76b5a3c4bf48487"
+dependencies = [
+ "console",
+ "lazy_static",
+ "number_prefix",
+ "regex",
+]
+
+[[package]]
+name = "indicatif"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7baab56125e25686df467fe470785512329883aab42696d661247aca2a2896e4"
 dependencies = [
  "console",
  "lazy_static",
@@ -1775,7 +1787,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c047c1227ffcf31a3b6f64df97c61e79539721facef7ff06a2ece7a7f3052f1f"
 dependencies = [
  "hyper-old-types",
- "indicatif",
+ "indicatif 0.13.0",
  "log",
  "quick-xml",
  "regex",
