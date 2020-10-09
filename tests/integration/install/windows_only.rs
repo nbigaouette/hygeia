@@ -127,7 +127,7 @@ fn simple_install_from_scratch_select_success() {
         let selected_file_content = fs::read_to_string(&selected_file)
             .with_context(|| format!("Failed to read selected file {:?}", selected_file))
             .unwrap();
-        assert_eq!(selected_file_content, "= 3.7.5\n");
+        assert_eq!(selected_file_content, "=3.7.5\n");
     }
 }
 

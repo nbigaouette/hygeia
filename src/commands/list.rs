@@ -130,7 +130,7 @@ impl ToolChainTable {
             let mut col_2 = Cell::new_align(
                 &t.version
                     .as_ref()
-                    .map(|t| format!("{}", t).replace("= ", ""))
+                    .map(|t| format!("{}", t).replace("=", ""))
                     .unwrap_or_default(),
                 prettytable::format::Alignment::CENTER,
             );

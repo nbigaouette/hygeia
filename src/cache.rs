@@ -11,7 +11,6 @@ use select::{
 };
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
-use serde_json;
 use thiserror::Error;
 use url::Url;
 
@@ -366,6 +365,12 @@ where
     }
 
     // Sort the versions vector (in reverse order)
+    // NOTE: Clippy warns 'unnecessary_sort_by', but the suggestion fails to compile.
+    // The lint is thus disabled here.
+    // See:
+    //  https://rust-lang.github.io/rust-clippy/master/index.html#unnecessary_sort_by
+    //  https://github.com/rust-lang/rust-clippy/issues/6001
+    #[allow(clippy::unnecessary_sort_by)]
     toolchains.sort_unstable_by(|a, b| b.version().cmp(&a.version()));
     Ok(toolchains)
 }

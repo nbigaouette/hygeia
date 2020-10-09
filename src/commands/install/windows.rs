@@ -45,6 +45,11 @@ pub fn install_package(
                 i, archive_path
             )
         })?;
+
+        // sanitized_name() is deprecated in zip since 0.5.7 but its replacement is
+        // not ready yet.
+        // https://github.com/zip-rs/zip/commit/d92a06adec90ec3f1d92dfc071280d84008dce78
+        #[allow(deprecated)]
         let filename = file.sanitized_name();
 
         if (&*file.name()).ends_with('/') {

@@ -24,7 +24,7 @@ fn from_none_exact() {
         .stderr(predicate::str::is_empty().trim());
 
     let file_content = fs::read_to_string(cwd.join(TOOLCHAIN_FILE)).unwrap();
-    assert_eq!(file_content.trim(), "= 3.7.5");
+    assert_eq!(file_content.trim(), "=3.7.5");
 }
 
 #[test]
@@ -51,7 +51,7 @@ fn from_none_tilde() {
         .stderr(predicate::str::is_empty().trim());
 
     let file_content = fs::read_to_string(cwd.join(TOOLCHAIN_FILE)).unwrap();
-    assert_eq!(file_content.trim(), "= 3.7.5");
+    assert_eq!(file_content.trim(), "=3.7.5");
 }
 
 #[test]
@@ -79,7 +79,7 @@ fn from_some_exact() {
         .stderr(predicate::str::is_empty().trim());
 
     let file_content = fs::read_to_string(cwd.join(TOOLCHAIN_FILE)).unwrap();
-    assert_eq!(file_content.trim(), "= 3.7.5");
+    assert_eq!(file_content.trim(), "=3.7.5");
 }
 
 #[test]
@@ -113,7 +113,7 @@ fn from_some_not_installed() {
     let hygeia_home = home.join(".hygeia");
     let cwd = home.join("current_dir");
     let _location_380_dir = installed(&hygeia_home, "3.8.0", true).unwrap();
-    select("= 3.8.0", &cwd);
+    select("=3.8.0", &cwd);
 
     let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
     let output = cmd
@@ -130,5 +130,5 @@ fn from_some_not_installed() {
         .stderr(predicate::str::similar("Error: Python version =3.7.5 not found!").trim());
 
     let file_content = fs::read_to_string(cwd.join(TOOLCHAIN_FILE)).unwrap();
-    assert_eq!(file_content.trim(), "= 3.8.0");
+    assert_eq!(file_content.trim(), "=3.8.0");
 }
