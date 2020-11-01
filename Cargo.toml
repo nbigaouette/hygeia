@@ -28,7 +28,7 @@ members = [
 [dependencies]
 console = "0.13"
 chrono = { version = "0.4", features = ["serde"] }
-dirs = "3"
+dirs-next = "2"
 env_logger = "0.8"
 anyhow = "1.0"
 flate2 = "1.0"
