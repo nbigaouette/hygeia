@@ -29,7 +29,7 @@ members = [
 console = "0.12"
 chrono = { version = "0.4", features = ["serde"] }
 dirs = "3"
-env_logger = "0.7"
+env_logger = "0.8"
 anyhow = "1.0"
 flate2 = "1.0"
 git-testament = "0.1"
