@@ -53,13 +53,13 @@ impl PycorsHomeProviderTrait for PycorsPathsProviderFromEnv {
     fn home(&self) -> Option<PathBuf> {
         match env::var_os(constants::home_overwrite_env_variable()) {
             Some(home) => Some(PathBuf::from(home)),
-            None => dirs::home_dir(),
+            None => dirs_next::home_dir(),
         }
     }
     fn document(&self) -> Option<PathBuf> {
         match env::var_os(constants::document_overwrite_env_variable()) {
             Some(document) => Some(PathBuf::from(document)),
-            None => dirs::document_dir(),
+            None => dirs_next::document_dir(),
         }
     }
 
@@ -302,7 +302,7 @@ pub mod tests {
         use crate::constants::project_home_env_variable;
 
         fn default_home_full_path() -> PathBuf {
-            dirs::home_dir().unwrap()
+            dirs_next::home_dir().unwrap()
         }
 
         fn default_dot_full_path() -> PathBuf {
