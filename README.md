@@ -46,12 +46,12 @@ Make sure dependencies are installed:
 1. [Homebrew](https://brew.sh/)
 
     ```sh
-    > brew install openssl xz
+    ❯ brew install openssl readline sqlite3 xz zlib
     ```
 2. XCode
 
     ```sh
-    > xcode-select --install
+    ❯ xcode-select --install
     ```
 
 See the [Python Developer's Guide](https://devguide.python.org/setup/#macos-and-os-x) for more information.
@@ -86,7 +86,7 @@ As simple as `cargo build`!
 See `hygeia --help` for all commands:
 
 ```sh
-> hygeia --help
+❯ hygeia --help
 hygeia 0.1.4
 Nicolas Bigaouette <nbigaouette@gmail.com>
 Control which Python toolchain to use on a directory basis.
@@ -116,7 +116,7 @@ To set up Hygeia by installing it (and its shims) to `$HYGEIA_HOME`
 and configuring a bash shell:
 
 ```sh
-> hygeia setup bash
+❯ hygeia setup bash
 ```
 
 This will:
@@ -133,7 +133,7 @@ This will:
 ### Listing Interpreters
 
 ```sh
-> hygeia list
+❯ hygeia list
 +--------+---------+------------------------------------------------+
 | Active | Version | Location                                       |
 +--------+---------+------------------------------------------------+
@@ -157,7 +157,7 @@ If the file `.python-version` contains a version _not_ installed, the list
 reports it as active but not available:
 
 ```sh
-> hygeia list
+❯ hygeia list
 +--------+---------+------------------------------------------------+
 | Active | Version | Location                                       |
 +--------+---------+------------------------------------------------+
@@ -174,14 +174,14 @@ reports it as active but not available:
 To get the active interpreter's path:
 
 ```sh
-> hygeia path
+❯ hygeia path
 /Users/nbigaouette/.hygeia/installed/3.6.8/bin
 ```
 
 To get the active interpreter's version:
 
 ```sh
-> hygeia version
+❯ hygeia version
 3.6.8
 ```
 
@@ -192,8 +192,8 @@ directory) with the latest [_Semantic Versioning_](https://semver.org/) version
 compatible with `3.7`.
 
 ```sh
-> hygeia select ~3.7
-> hygeia version
+❯ hygeia select ~3.7
+❯ hygeia version
 3.7.2
 ```
 
@@ -221,7 +221,7 @@ Obtain the list of interpreters (and their installed path) using `hygeia list`.
 Export the `RUST_LOG` environment variable to enable hygeia' log level:
 
 ```sh
-> export RUST_LOG=hygeia=debug
+❯ export RUST_LOG=hygeia=debug
 ```
 
 See the Rust crates [`log`](https://docs.rs/log) and [`env_logger`](https://docs.rs/env_logger) for
@@ -234,7 +234,7 @@ Installing a Python package can be done using `pip` (which will call hygeia' shi
 [numpy](http://www.numpy.org/):
 
 ```sh
-> pip install numpy
+❯ pip install numpy
 ```
 
 ## License
