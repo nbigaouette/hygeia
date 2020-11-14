@@ -11,7 +11,7 @@
 _Hygeia_ is Python interpreter manager, built with ❤ in Rust. It's goal is to allow
 individual projects to specify which interpreter to use using a `.python-version` file.
 
-The previous project's name was _hygeia_.
+The previous project's name was _pycors_.
 
 Python packaging situation is painful. macOS comes with Python 2.7 which is coming close to being
 end-of-life. Additionally, it does not include `pip`, the package installer. `pip` was only included
