@@ -93,12 +93,12 @@ binaries are used.
 
 1. Visit the [release page](https://github.com/nbigaouette/hygeia/releases) to download the latest precompiled version for your platform (Linux, macOS, Windows).
 2. Extract to a temporary location.
-3. Open a terminal and execute `./hygeia setup bash`. This will:
-    1. copy itself to `$HYGEIA_HOME` (`${HOME}/.hygeia`) as a shim for Python
-    2. create the file `$HYGEIA_HOME/extra-packages-to-install.txt` containing
+3. Open a terminal and execute `./hygeia setup <SHELL>` (where `SHELL` is one of `bash`, `zsh` or `powershell`). This will:
+    1. copy itself to `${HYGEIA_HOME}` (`${HOME}/.hygeia`) as a shim for Python
+    2. create the file `${HYGEIA_HOME}/extra-packages-to-install.txt` containing
     [a list of Python packages to pip-install](extra-packages-to-install.txt)
     when flag `--extra`/`-e` is used with `install` or `select` commands
-    3. setup `~/.bashrc` to add `${HOME}/.hygeia/shims` in the front of your `${PATH}`
+    1. setup `~/.<SHELL>rc` to add `${HOME}/.hygeia/shims` in the front of your `${PATH}`
 4. You can delete the downloaded archive and the extracted binary.
 
 ## Compilation
