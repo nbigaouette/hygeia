@@ -58,7 +58,31 @@ See the [Python Developer's Guide](https://devguide.python.org/setup/#macos-and-
 
 ### Linux
 
-TBD
+Please refer to [pyenv](https://github.com/pyenv/pyenv/wiki#suggested-build-environment)'s wiki for more details.
+
+#### Deb-based
+
+```sh
+❯ sudo apt-get update; sudo apt-get install --no-install-recommends make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
+```
+
+#### Yum-based
+
+```sh
+❯ yum install gcc zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel openssl-devel tk-devel libffi-devel xz
+```
+
+#### DNF-based
+
+```sh
+❯ dnf install make gcc zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel openssl-devel tk-devel libffi-devel xz
+```
+
+#### Pacman-based
+
+```sh
+pacman -S base-devel openssl zlib
+```
 
 ### Windows
 
