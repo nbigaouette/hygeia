@@ -31,7 +31,6 @@ similar. `pyenv` is written in Bash though, which
 [prevents it from being used easily on Windows](https://github.com/pyenv/pyenv/issues/62).
 Hygeia aims to be portable across Windows, Linux and macOS.
 
-
 [![demo](https://asciinema.org/a/0K3KpPTPczFTdgSWyTJSjtpne.svg)](https://asciinema.org/a/0K3KpPTPczFTdgSWyTJSjtpne?autoplay=1)
 
 ## Requirements
@@ -40,7 +39,9 @@ Since Python interpreters are downloaded and compiled,
 some build tools are required.
 
 <details>
-<summary>### macOS / OSX</summary>
+<summary>macOS / OSX</summary>
+
+### macOS / OSX
 
 Make sure dependencies are installed:
 
@@ -60,7 +61,9 @@ See the [Python Developer's Guide](https://devguide.python.org/setup/#macos-and-
 </details>
 
 <details>
-<summary>### Linux</summary>
+<summary>Linux</summary>
+
+### Linux
 
 Please refer to [pyenv](https://github.com/pyenv/pyenv/wiki#suggested-build-environment)'s wiki for more details.
 
@@ -90,9 +93,10 @@ pacman -S base-devel openssl zlib
 
 </details>
 
-
 <details>
-<summary>### Windows</summary>
+<summary>Windows</summary>
+
+### Windows
 
 Nothing (expect Hygeia itself) is required to install a Python toolchain under Windows; pre-built
 binaries are used.
