@@ -1,0 +1,26 @@
+on: [push]
+
+name: Integration test
+
+env:
+  RUST_BACKTRACE: 1
+
+jobs:
+  install:
+    name: Install
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macOS-latest
+          - windows-latest
+    steps:
+      - name: Install (Unix)
+        if: "matrix.os != 'windows-latest'"
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/nbigaouette/hygeia/master/install.sh | sh
+      # - name: Install (Windows)
+      #   if: "matrix.os == 'windows-latest'"
+      #   run: |
+      #     curl -fsSL https://raw.githubusercontent.com/nbigaouette/hygeia/master/install.sh | sh
