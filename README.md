@@ -13,27 +13,33 @@ individual projects to specify which interpreter to use using a `.python-version
 
 The previous project's name was _pycors_.
 
-Python packaging situation is painful. macOS comes with Python 2.7 which is coming close to being
-end-of-life. Additionally, it does not include `pip`, the package installer. `pip` was only included
-by default with Python >= 3.4.
+- [Hygeia](#hygeia)
+  - [Installation](#installation)
+    - [Requirements](#requirements)
+    - [macOS / OSX](#macos--osx)
+    - [Linux](#linux)
+      - [Deb-based](#deb-based)
+      - [Yum-based](#yum-based)
+      - [DNF-based](#dnf-based)
+      - [Pacman-based](#pacman-based)
+    - [Windows](#windows)
+    - [Easy Installation](#easy-installation)
+    - [Manual Installation](#manual-installation)
+    - [Compilation](#compilation)
+  - [Project Details](#project-details)
+  - [Usage](#usage)
+    - [Installing a Python Toolchain](#installing-a-python-toolchain)
+    - [Listing Interpreters](#listing-interpreters)
+    - [Set Interpreter as Active](#set-interpreter-as-active)
+    - [Uninstall an Interpreter](#uninstall-an-interpreter)
+  - [Notes](#notes)
+    - [Logging](#logging)
+  - [License](#license)
+  - [Conduct](#conduct)
 
-The [install instructions](https://pip.pypa.io/en/stable/installing/) for `pip` contains a large warning
-against installing it in the system interpreter.
+## Installation
 
-[`virtualenv`](https://virtualenv.pypa.io/) could be used, but it needs to be installed... using `pip`,
-resulting in a chicken-and-egg situation.
-
-_Hygeia_ will download and compile specified versions of [Python](https://www.python.org/) and allow
-switching between them easily.
-
-The project took a lot of inspiration from [`pyenv`](https://github.com/pyenv/pyenv), which does something
-similar. `pyenv` is written in Bash though, which
-[prevents it from being used easily on Windows](https://github.com/pyenv/pyenv/issues/62).
-Hygeia aims to be portable across Windows, Linux and macOS.
-
-[![demo](https://asciinema.org/a/0K3KpPTPczFTdgSWyTJSjtpne.svg)](https://asciinema.org/a/0K3KpPTPczFTdgSWyTJSjtpne?autoplay=1)
-
-## Requirements
+### Requirements
 
 Since Python interpreters are downloaded and compiled,
 some build tools are required.
@@ -103,25 +109,50 @@ binaries are used.
 
 </details>
 
-## Installation
+### Easy Installation
+
+Copy-paste and run the following in a terminal:
 
 ```sh
-❯ curl -fsSL https://raw.githubusercontent.com/nbigaouette/hygeia/master/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/nbigaouette/hygeia/master/install.sh | sh
 ```
+
+### Manual Installation
+
+If you are not comfortable with running the curl installation above, simply follow these steps:
 
 1. Visit the [release page](https://github.com/nbigaouette/hygeia/releases) to download the latest precompiled version for your platform (Linux, macOS, Windows).
 2. Extract to a temporary location.
-3. Open a terminal and execute `./hygeia setup <SHELL>` (where `SHELL` is one of `bash`, `zsh` or `powershell`). This will:
-    1. copy itself to `${HYGEIA_HOME}` (`${HOME}/.hygeia`) as a shim for Python
-    2. create the file `${HYGEIA_HOME}/extra-packages-to-install.txt` containing
-    [a list of Python packages to pip-install](extra-packages-to-install.txt)
-    when flag `--extra`/`-e` is used with `install` or `select` commands
-    1. setup `~/.<SHELL>rc` to add `${HOME}/.hygeia/shims` in the front of your `${PATH}`
+3. Open a terminal and execute `./hygeia setup <SHELL>` (where `SHELL` is one of `bash`, `zsh` or `powershell`).
 4. You can delete the downloaded archive and the extracted binary.
 
-## Compilation
+### Compilation
 
-As simple as `cargo build`!
+As simple as `cargo build`! Then, to install and configure your shell:
+
+```sh
+cargo run -- setup <SHELL>
+```
+
+where `<SHELL>` is to be replaced with `bash`, `zsh` or `powershell`.
+
+## Project Details
+
+Python packaging situation is painful. Having been spoiled by [rustup](https://rustup.rs/), Rust's
+installer and toolchain manager, I wanted a similar experience for Python.
+
+_Hygeia_ will download, compile and manage different versions of [Python](https://www.python.org/).
+Projects can then specify which versions they want to use through a `.python-version` file,
+similarly to the [`rust-toolchain`](https://rust-lang.github.io/rustup/overrides.html#the-toolchain-file)
+the rustup uses.
+This allows different project to use different Python versions without messing up one's system installation.
+
+The project took a lot of inspiration from [`pyenv`](https://github.com/pyenv/pyenv), which does something
+similar. `pyenv` is written in Bash though, which
+[prevents it from being used easily on Windows](https://github.com/pyenv/pyenv/issues/62).
+Hygeia aims to be portable across Windows, Linux and macOS.
+
+[![demo](https://asciinema.org/a/0K3KpPTPczFTdgSWyTJSjtpne.svg)](https://asciinema.org/a/0K3KpPTPczFTdgSWyTJSjtpne?autoplay=1)
 
 ## Usage
 
@@ -129,102 +160,108 @@ See `hygeia --help` for all commands:
 
 ```sh
 ❯ hygeia --help
-hygeia 0.1.4
-Nicolas Bigaouette <nbigaouette@gmail.com>
-Control which Python toolchain to use on a directory basis.
+hygeia v0.3.3 (1f6c49f02 2020-02-03)
+Control which Python toolchain to use on a directory basis
 
 USAGE:
-    hygeia [SUBCOMMAND]
+    hygeia [FLAGS] [SUBCOMMAND]
 
 FLAGS:
     -h, --help       Prints help information
     -V, --version    Prints version information
+    -v, --verbose    Verbose mode (-v, -vv, -vvv, etc.)
 
 SUBCOMMANDS:
-    autocomplete    Print to stdout an autocomplete script for the specified shell
-    help            Prints this message or the help of the given subcommand(s)
-    install         Install version, either from the provided version or from `.python-version`
-    list            List installed Python versions
-    path            Get path to active interpreter
-    run             Run a binary from the installed `.python-version`
-    select          Select specified Python versions to use
-    setup           Setup the shim
-    version         Get version of active interpreter
+    help       Prints this message or the help of the given subcommand(s)
+    install    Install version, either from the provided version or from '.python-version'
+    list       List installed Python versions
+    path       Get path to active interpreter
+    run        Run a binary from the installed '.python-version'
+    select     Select specified Python versions to use
+    setup      Setup the shim
+    update     Update pycors to latest version
+    version    Get version of active interpreter
 ```
 
-### Initial Set Up
+### Installing a Python Toolchain
 
-To set up Hygeia by installing it (and its shims) to `$HYGEIA_HOME`
-and configuring a bash shell:
+Install the latest semver compatible version:
 
 ```sh
-❯ hygeia setup bash
+❯ hygeia install --extra 3.9
 ```
 
-This will:
+which is equivalent to:
 
-* Copy the `hygeia` binary to `$HYGEIA_HOME/shims/`;
-* Create hard-links to it with Python binary names;
-* Create a bash completion script in `$HYGEIA_HOME/hygeia.bash-completion`;
-* Add `$HYGEIA_HOME/shims/` to `$PATH` through `~/.bashrc`;
-* Add line sourcing `$HYGEIA_HOME/hygeia.bash-completion` in `~/.bashrc`;
-* Create the file `$HYGEIA_HOME/extra-packages-to-install.txt` containing
-  [a list of Python packages to pip-install](extra-packages-to-install.txt)
-  when flag `--extra`/`-e` is used with `install` or `select` command.
+```sh
+❯ hygeia install --extra"~3.9"
+```
+
+**NOTE**: Zsh requires quoting the version, while bash does not.
+
+Install a specific version:
+
+```sh
+❯ hygeia install "=3.8.5"
+```
 
 ### Listing Interpreters
 
 ```sh
+❯ cat .python-version
+= 3.8.2
 ❯ hygeia list
-+--------+---------+------------------------------------------------+
-| Active | Version | Location                                       |
-+--------+---------+------------------------------------------------+
-|        |  3.7.1  | /Users/nbigaouette/.hygeia/installed/3.7.1/bin |
-+--------+---------+------------------------------------------------+
-|        |  3.7.2  | /Users/nbigaouette/.hygeia/installed/3.7.2/bin |
-+--------+---------+------------------------------------------------+
-|        |  3.5.6  | /Users/nbigaouette/.hygeia/installed/3.5.6/bin |
-+--------+---------+------------------------------------------------+
-|   ✓    |  3.6.8  | /Users/nbigaouette/.hygeia/installed/3.6.8/bin |
-+--------+---------+------------------------------------------------+
-|        |  3.7.2  | /usr/local/bin                                 |
-+--------+---------+------------------------------------------------+
-|        | 2.7.15  | /usr/local/bin                                 |
-+--------+---------+------------------------------------------------+
-|        | 2.7.10  | /usr/bin                                       |
-+--------+---------+------------------------------------------------+
++--------+---------+---------------------+--------------------------------------------------------+
+| Active | Version | Installed by hygeia | Location                                               |
++--------+---------+---------------------+--------------------------------------------------------+
+|        |  3.8.6  |                     | /usr/local/bin                                         |
++--------+---------+---------------------+--------------------------------------------------------+
+|   ✓    |  3.8.2  |          ✓          | /Users/nbigaouette/.hygeia/installed/cpython/3.8.2/bin |
++--------+---------+---------------------+--------------------------------------------------------+
+|        |  3.8.2  |                     | /usr/bin                                               |
++--------+---------+---------------------+--------------------------------------------------------+
+|        |  3.8.1  |          ✓          | /Users/nbigaouette/.hygeia/installed/cpython/3.8.1/bin |
++--------+---------+---------------------+--------------------------------------------------------+
+|        | 2.7.16  |                     | /usr/bin                                               |
++--------+---------+---------------------+--------------------------------------------------------+
 ```
 
 If the file `.python-version` contains a version _not_ installed, the list
 reports it as active but not available:
 
 ```sh
+❯ cat .python-version
+= 3.8.3
 ❯ hygeia list
-+--------+---------+------------------------------------------------+
-| Active | Version | Location                                       |
-+--------+---------+------------------------------------------------+
-|   ✗    | = 3.6.8 |                 Not installed                  |
-+--------+---------+------------------------------------------------+
-|        |  3.7.2  | /usr/local/bin                                 |
-+--------+---------+------------------------------------------------+
-|        | 2.7.15  | /usr/local/bin                                 |
-+--------+---------+------------------------------------------------+
-|        | 2.7.10  | /usr/bin                                       |
-+--------+---------+------------------------------------------------+
++--------+---------+---------------------+--------------------------------------------------------+
+| Active | Version | Installed by hygeia | Location                                               |
++--------+---------+---------------------+--------------------------------------------------------+
+|   ✗    |  3.8.3  |                     |                                                        |
++--------+---------+---------------------+--------------------------------------------------------+
+|        |  3.8.6  |                     | /usr/local/bin                                         |
++--------+---------+---------------------+--------------------------------------------------------+
+|        |  3.8.2  |          ✓          | /Users/nbigaouette/.hygeia/installed/cpython/3.8.2/bin |
++--------+---------+---------------------+--------------------------------------------------------+
+|        |  3.8.2  |                     | /usr/bin                                               |
++--------+---------+---------------------+--------------------------------------------------------+
+|        |  3.8.1  |          ✓          | /Users/nbigaouette/.hygeia/installed/cpython/3.8.1/bin |
++--------+---------+---------------------+--------------------------------------------------------+
+|        | 2.7.16  |                     | /usr/bin                                               |
++--------+---------+---------------------+--------------------------------------------------------+
 ```
 
 To get the active interpreter's path:
 
 ```sh
 ❯ hygeia path
-/Users/nbigaouette/.hygeia/installed/3.6.8/bin
+/Users/nbigaouette/.hygeia/installed/cpython/3.8.2/bin
 ```
 
 To get the active interpreter's version:
 
 ```sh
 ❯ hygeia version
-3.6.8
+3.8.2
 ```
 
 ### Set Interpreter as Active
@@ -234,9 +271,9 @@ directory) with the latest [_Semantic Versioning_](https://semver.org/) version
 compatible with `3.7`.
 
 ```sh
-❯ hygeia select ~3.7
+❯ hygeia select "~3.7"
 ❯ hygeia version
-3.7.2
+3.7.9
 ```
 
 Note that `--extra` can be used with `select` or `install` command to read file
@@ -251,7 +288,7 @@ section in the [semver crate documentation](https://docs.rs/semver/0.9.0).
 
 ### Uninstall an Interpreter
 
-Or simply delete the directory containing the installed interpreter, for example `$HYGEIA_HOME/installed/3.5.6`
+Simply delete the directory containing the installed interpreter, for example `$HYGEIA_HOME/installed/cpython/3.8.2`
 (where `$HYGEIA_HOME` defaults to `$HOME/.hygeia`).
 
 Obtain the list of interpreters (and their installed path) using `hygeia list`.
@@ -268,16 +305,6 @@ Export the `RUST_LOG` environment variable to enable hygeia' log level:
 
 See the Rust crates [`log`](https://docs.rs/log) and [`env_logger`](https://docs.rs/env_logger) for
 more information.
-
-### Python Packages
-
-Installing a Python package can be done using `pip` (which will call hygeia' shim).
-
-[numpy](http://www.numpy.org/):
-
-```sh
-❯ pip install numpy
-```
 
 ## License
 
