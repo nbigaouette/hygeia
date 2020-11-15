@@ -39,7 +39,8 @@ Hygeia aims to be portable across Windows, Linux and macOS.
 Since Python interpreters are downloaded and compiled,
 some build tools are required.
 
-### macOS / OSX
+<details>
+<summary>### macOS / OSX</summary>
 
 Make sure dependencies are installed:
 
@@ -56,7 +57,10 @@ Make sure dependencies are installed:
 
 See the [Python Developer's Guide](https://devguide.python.org/setup/#macos-and-os-x) for more information.
 
-### Linux
+</details>
+
+<details>
+<summary>### Linux</summary>
 
 Please refer to [pyenv](https://github.com/pyenv/pyenv/wiki#suggested-build-environment)'s wiki for more details.
 
@@ -84,12 +88,22 @@ Please refer to [pyenv](https://github.com/pyenv/pyenv/wiki#suggested-build-envi
 pacman -S base-devel openssl zlib
 ```
 
-### Windows
+</details>
+
+
+<details>
+<summary>### Windows</summary>
 
 Nothing (expect Hygeia itself) is required to install a Python toolchain under Windows; pre-built
 binaries are used.
 
+</details>
+
 ## Installation
+
+```sh
+❯ curl -fsSL https://raw.githubusercontent.com/nbigaouette/hygeia/master/install.sh | sh
+```
 
 1. Visit the [release page](https://github.com/nbigaouette/hygeia/releases) to download the latest precompiled version for your platform (Linux, macOS, Windows).
 2. Extract to a temporary location.
