@@ -24,3 +24,10 @@ jobs:
       #   if: "matrix.os == 'windows-latest'"
       #   run: |
       #     curl -fsSL https://raw.githubusercontent.com/nbigaouette/hygeia/master/install.sh | sh
+      - name: Hygeia Version
+        run: |
+          hygeia --version
+      - name: List Installed Python Toolchains
+        run: |
+          hygeia --version
+          hygeia list
