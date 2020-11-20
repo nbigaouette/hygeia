@@ -36,9 +36,6 @@ jobs:
   install_zsh:
     name: Install (Zsh)
     runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        shell: zsh --errexit -l {0}
     strategy:
       matrix:
         os:
@@ -49,14 +46,21 @@ jobs:
           - macOS-11.0
           # - windows-latest
     steps:
+      - name: Install extra packages (Linux)
+        if: contains(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get install zsh
       - name: Debug prints
+        shell: zsh --errexit -l {0}
         run: |
           echo "SHELL: ${SHELL}"
       - name: Install Hygeia (Zsh)
+        shell: zsh --errexit -l {0}
         run: |
           curl -fsSL https://raw.githubusercontent.com/nbigaouette/hygeia/readme-instructions/install.sh | sh
           cp ~/.zshrc ~/.zshenv
       - name: Hygeia Information
+        shell: zsh --errexit -l {0}
         run: |
           hygeia --version
           hygeia list
