@@ -38,7 +38,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     defaults:
       run:
-        shell: zsh
+        shell: zsh --errexit -l {0}
     strategy:
       matrix:
         os:
