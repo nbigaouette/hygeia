@@ -25,10 +25,10 @@ jobs:
           curl -fsSL https://raw.githubusercontent.com/nbigaouette/hygeia/master/install.sh | sh
           cp ~/.zshrc ~/.zshenv
 
-      # - name: Install (Windows)
-      #   if: "matrix.os == 'windows-latest'"
-      #   run: |
-      #     curl -fsSL https://raw.githubusercontent.com/nbigaouette/hygeia/master/install.sh | sh
+      - name: Install (Windows)
+        if: contains(matrix.os, 'windows')
+        run: |
+          . { iwr -useb https://raw.githubusercontent.com/nbigaouette/hygeia/readme-instructions/install.ps1 } | iex
 
       # - name: Install extra packages (macOS)
       #   if: contains(matrix.os, 'macOS')
