@@ -90,5 +90,9 @@ jobs:
       - name: Hygeia Information
         run: |
           echo "SHELL: ${SHELL}"
+          echo $profile
+          echo $env:Path
+          echo $env:PATH
+          Get-Content $profile
           hygeia --version
           hygeia list
