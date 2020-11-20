@@ -45,7 +45,7 @@ fn setup_powershell_success_from_scratch() {
         .stderr(predicate::str::is_empty().trim());
 
     let expected_ps_profile = format!(
-        r#"$env:Path += ";{}"
+        r#"$env:PATH += ";{}"
 . {}
 "#,
         paths_provider.shims().display(),
