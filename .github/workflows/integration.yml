@@ -6,9 +6,12 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
-  install:
-    name: Install
+  install_bash:
+    name: Install (Bash)
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     strategy:
       matrix:
         os:
@@ -18,47 +21,66 @@ jobs:
           - macOS-10.15
           - macOS-11.0
           - windows-latest
-        shell:
-          - bash
-          - zsh
-          - pwsh
-        include:
-          - shell: bash
-            shell_executable: bash -leo pipefail {0}
-          - shell: zsh
-            shell_executable: zsh --errexit -l {0}
-          - shell: pwsh
-            shell_executable: pwsh
     steps:
-      - name: Install extra packages (Linux)
-        if: contains(matrix.os, 'ubuntu')
+      - name: Debug prints
         run: |
-          sudo apt-get install zsh
-      # - name: Install extra packages (macOS)
-      #   if: contains(matrix.os, 'macOS')
-      #   run: |
-      #     brew install zsh
-      #     brew cask install powershell
+          echo "SHELL: ${SHELL}"
+      - name: Install Hygeia
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/nbigaouette/hygeia/readme-instructions/install.sh | sh
+      - name: Hygeia Information
+        run: |
+          hygeia --version
+          hygeia list
 
-      - name: Install Hygeia (PowerShell)
-        shell: ${{ matrix.shell_executable }}
-        if: contains(matrix.shell_executable, 'pwsh')
+  install_zsh:
+    name: Install (Zsh)
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: zsh
+    strategy:
+      matrix:
+        os:
+          - ubuntu-16.04
+          - ubuntu-18.04
+          - ubuntu-20.04
+          - macOS-10.15
+          - macOS-11.0
+          # - windows-latest
+    steps:
+      - name: Debug prints
         run: |
-          . { iwr -useb https://raw.githubusercontent.com/nbigaouette/hygeia/readme-instructions/install.ps1 } | iex
+          echo "SHELL: ${SHELL}"
       - name: Install Hygeia (Zsh)
-        shell: ${{ matrix.shell_executable }}
-        if: contains(matrix.shell_executable, 'zsh')
         run: |
           curl -fsSL https://raw.githubusercontent.com/nbigaouette/hygeia/readme-instructions/install.sh | sh
           cp ~/.zshrc ~/.zshenv
-      - name: Install Hygeia (Bash)
-        shell: ${{ matrix.shell_executable }}
-        if: contains(matrix.shell_executable, 'bash')
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/nbigaouette/hygeia/readme-instructions/install.sh | sh
-
       - name: Hygeia Information
-        shell: ${{ matrix.shell_executable }}
+        run: |
+          hygeia --version
+          hygeia list
+
+  install_powershell:
+    name: Install (PowerShell)
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: pwsh
+    strategy:
+      matrix:
+        os:
+          - ubuntu-16.04
+          - ubuntu-18.04
+          - ubuntu-20.04
+          - macOS-10.15
+          - macOS-11.0
+          - windows-latest
+    steps:
+      - name: Install Hygeia (PowerShell)
+        run: |
+          . { iwr -useb https://raw.githubusercontent.com/nbigaouette/hygeia/readme-instructions/install.ps1 } | iex
+      - name: Hygeia Information
         run: |
           echo "SHELL: ${SHELL}"
           hygeia --version
