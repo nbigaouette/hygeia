@@ -42,7 +42,7 @@ fn setup_bash_success_from_scratch() {
 #          appear as soon as possible in the $PATH environment variable to
 #          to function properly.
 export HYGEIA_HOME="{}"
-source {}
+source "{}"
 # End of hygeia config block.
 #############################################################################
 "#,
@@ -85,7 +85,7 @@ fn setup_bash_success_twice() {
 #          appear as soon as possible in the $PATH environment variable to
 #          to function properly.
 export HYGEIA_HOME="{}"
-source {}
+source "{}"
 # End of hygeia config block.
 #############################################################################
 "#,

@@ -138,7 +138,7 @@ where
             &mut tmp_file,
             "{}",
             format!(
-                "source {}",
+                r#"source "{}""#,
                 Path::new(&format!("${{{}_HOME}}", exec_name_capital))
                     .join(shell.file_path())
                     .display()
