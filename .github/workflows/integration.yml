@@ -61,10 +61,11 @@ jobs:
           ls -lah ~
           hygeia --version
           hygeia list
-      # - name: Hygeia Information (Powershell)
-      #   # if: contains(matrix.os, 'windows')
-      #   shell: pwsh
-      #   run: |
-      #     echo "SHELL: ${SHELL}"
-      #     hygeia --version
-      #     hygeia list
+
+      - name: Hygeia Information (Powershell)
+        # if: contains(matrix.os, 'windows')
+        shell: pwsh
+        run: |
+          echo "SHELL: ${SHELL}"
+          hygeia --version
+          hygeia list
