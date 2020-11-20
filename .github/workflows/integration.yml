@@ -13,6 +13,7 @@ jobs:
       run:
         shell: bash
     strategy:
+      fail-fast: false
       matrix:
         os:
           - ubuntu-16.04
@@ -37,6 +38,7 @@ jobs:
     name: Install (Zsh)
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os:
           - ubuntu-16.04
@@ -72,6 +74,7 @@ jobs:
       run:
         shell: pwsh
     strategy:
+      fail-fast: false
       matrix:
         os:
           - ubuntu-16.04
