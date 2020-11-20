@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -e -o nounset -o pipefail
+set -e -o nounset
 
 
 GITHUB_BASE_URL="https://github.com/nbigaouette/hygeia"
