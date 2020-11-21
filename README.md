@@ -111,10 +111,16 @@ binaries are used.
 
 ### Easy Installation
 
-Copy-paste and run the following in a terminal:
+Copy-paste and run the following in a terminal (bash or zsh):
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/nbigaouette/hygeia/master/install.sh | sh
+```
+
+For PowerShell:
+
+```powershell
+. { iwr -useb https://raw.githubusercontent.com/nbigaouette/hygeia/master/install.ps1 } | iex
 ```
 
 ### Manual Installation
