@@ -49,7 +49,7 @@ thiserror = "1.0"
 tar = "0.4"
 terminal_size = "0.1"
 url = { version = "2", features = ["serde"] }
-shlex = "0.1"
+shlex = "1.0"
 
 # Used for downloading
 hyper = "0.13"
