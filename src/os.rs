@@ -7,10 +7,9 @@ use crate::{utils::directory::PycorsPathsProviderFromEnv, Result};
 pub fn paths_to_prepends(version: &Version) -> Result<Vec<PathBuf>> {
     let bin_dir = PycorsPathsProviderFromEnv::new().bin_dir(version);
 
-    let mut paths = Vec::new();
-
     #[allow(clippy::redundant_clone)]
-    paths.push(bin_dir.clone());
+    #[allow(unused_mut)]
+    let mut paths = vec![bin_dir.clone()];
 
     #[cfg(windows)]
     {

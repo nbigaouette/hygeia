@@ -351,10 +351,14 @@ where
                                 .replace("rc", "-rc") // release candidates
                                 .replace("a", "-a") // alpha
                                 .replace("b", "-b"), // beta
-                        )
-                        .unwrap();
-                        let mut url = Url::parse(url).unwrap();
-                        let filename = url.path_segments().unwrap().last().unwrap().to_string();
+                        )?;
+                        let mut url = Url::parse(url)?;
+                        let filename = url
+                            .path_segments()
+                            .ok_or_else(|| anyhow::anyhow!("Fail to get url path segment"))?
+                            .last()
+                            .ok_or_else(|| anyhow::anyhow!("Fail to get url's last segment"))?
+                            .to_string();
                         url.path_segments_mut().unwrap().pop();
                         url.set_scheme("https").unwrap(); // 3.3.4, 3.3.5 has "http" instead of "https"
                         toolchains.push(A::new(version, url, filename))
