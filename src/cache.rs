@@ -42,7 +42,7 @@ impl ToolchainsCacheFetch for ToolchainsCacheFetchOnline {
         let mut downloader = HyperDownloader::new(PYTHON_SOURCE_INDEX_URL)?;
         // HTML file is too small to bother with a progress bar
         let with_progress_bar = false;
-        let mut rt = tokio::runtime::Runtime::new()?;
+        let rt = tokio::runtime::Runtime::new()?;
         let index_html: String =
             rt.block_on(download_to_string(&mut downloader, with_progress_bar))?;
 
@@ -52,7 +52,7 @@ impl ToolchainsCacheFetch for ToolchainsCacheFetchOnline {
         let mut downloader = HyperDownloader::new(PYTHON_WINDOWS_INDEX_URL)?;
         // HTML file is too small to bother with a progress bar
         let with_progress_bar = false;
-        let mut rt = tokio::runtime::Runtime::new()?;
+        let rt = tokio::runtime::Runtime::new()?;
         let index_html: String =
             rt.block_on(download_to_string(&mut downloader, with_progress_bar))?;
 
@@ -351,10 +351,14 @@ where
                                 .replace("rc", "-rc") // release candidates
                                 .replace("a", "-a") // alpha
                                 .replace("b", "-b"), // beta
-                        )
-                        .unwrap();
-                        let mut url = Url::parse(url).unwrap();
-                        let filename = url.path_segments().unwrap().last().unwrap().to_string();
+                        )?;
+                        let mut url = Url::parse(url)?;
+                        let filename = url
+                            .path_segments()
+                            .ok_or_else(|| anyhow::anyhow!("Fail to get url path segment"))?
+                            .last()
+                            .ok_or_else(|| anyhow::anyhow!("Fail to get url's last segment"))?
+                            .to_string();
                         url.path_segments_mut().unwrap().pop();
                         url.set_scheme("https").unwrap(); // 3.3.4, 3.3.5 has "http" instead of "https"
                         toolchains.push(A::new(version, url, filename))

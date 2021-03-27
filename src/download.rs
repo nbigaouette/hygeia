@@ -7,7 +7,7 @@ use std::{
 use anyhow::Context;
 use async_trait::async_trait;
 use bytes::Bytes;
-use hyper::{body::HttpBody as _, Client, Uri};
+use hyper::{body::HttpBody as _, client::Client, Uri};
 use hyper_tls::HttpsConnector;
 use indicatif::{ProgressBar, ProgressStyle};
 use url::Url;
@@ -62,7 +62,7 @@ where
 
 pub struct HyperDownloader {
     url: Url,
-    client: hyper::Client<hyper_tls::HttpsConnector<hyper::client::HttpConnector>>,
+    client: hyper::client::Client<hyper_tls::HttpsConnector<hyper::client::HttpConnector>>,
     response: Option<hyper::Response<hyper::Body>>,
     content_length: Option<u64>,
 }
@@ -268,7 +268,7 @@ mod tests {
 
     #[test]
     fn hyper_downloader_success_get() {
-        let mut rt = tokio::runtime::Runtime::new().unwrap();
+        let rt = tokio::runtime::Runtime::new().unwrap();
         let download_dir = create_test_temp_dir!();
         let downloaded_file = download_dir.join("index.html");
         if download_dir.exists() {
