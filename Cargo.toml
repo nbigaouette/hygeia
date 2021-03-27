@@ -63,7 +63,7 @@ futures = "0.3"
 zip = {version = "0.5", default-features = false, features = ["deflate"]}
 
 [dev-dependencies]
-mockall = "0.8"
+mockall = "0.9"
 assert_cmd = "1"
 predicates = "1"
 indoc = "1"

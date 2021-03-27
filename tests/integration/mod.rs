@@ -34,7 +34,7 @@ mod setup;
 
 mockall::mock! {
     PycorsHomeProviderTrait {}     // Name of the mock struct, less the "Mock" prefix
-    trait PycorsHomeProviderTrait {   // definition of the trait to mock
+    impl PycorsHomeProviderTrait for MockPycorsHomeProviderTrait {   // definition of the trait to mock
         fn home(&self) -> Option<PathBuf>;
         fn document(&self) -> Option<PathBuf>;
         fn project_home(&self) -> Option<PathBuf>;
