@@ -94,7 +94,7 @@ pub fn install_package(
     // File is too small to bother for a progress bar
     let with_progress_bar = false;
     let mut downloader = HyperDownloader::new(GET_PIP_URL)?;
-    let mut rt = tokio::runtime::Runtime::new()?;
+    let rt = tokio::runtime::Runtime::new()?;
     rt.block_on(download_to_path(
         &mut downloader,
         &cache_dir,

@@ -42,7 +42,7 @@ impl ToolchainsCacheFetch for ToolchainsCacheFetchOnline {
         let mut downloader = HyperDownloader::new(PYTHON_SOURCE_INDEX_URL)?;
         // HTML file is too small to bother with a progress bar
         let with_progress_bar = false;
-        let mut rt = tokio::runtime::Runtime::new()?;
+        let rt = tokio::runtime::Runtime::new()?;
         let index_html: String =
             rt.block_on(download_to_string(&mut downloader, with_progress_bar))?;
 
@@ -52,7 +52,7 @@ impl ToolchainsCacheFetch for ToolchainsCacheFetchOnline {
         let mut downloader = HyperDownloader::new(PYTHON_WINDOWS_INDEX_URL)?;
         // HTML file is too small to bother with a progress bar
         let with_progress_bar = false;
-        let mut rt = tokio::runtime::Runtime::new()?;
+        let rt = tokio::runtime::Runtime::new()?;
         let index_html: String =
             rt.block_on(download_to_string(&mut downloader, with_progress_bar))?;
 

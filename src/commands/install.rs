@@ -108,7 +108,7 @@ pub fn run(
 
             // Configure make make install
             let with_progress_bar = true;
-            let mut rt = tokio::runtime::Runtime::new()?;
+            let rt = tokio::runtime::Runtime::new()?;
 
             #[cfg(windows)]
             let download_url = requested_version.windows_pre_built_url().ok_or_else(|| {

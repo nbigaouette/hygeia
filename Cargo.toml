@@ -52,11 +52,11 @@ url = { version = "2", features = ["serde"] }
 shlex = "1.0"
 
 # Used for downloading
-hyper = "0.13"
-hyper-tls = "0.4"
-tokio = "0.2"
+hyper = { version = "0.14", features = ["client", "http1"] }
+hyper-tls = "0.5"
+tokio = { version = "1.4", features = ["rt", "rt-multi-thread"] }
 async-trait = "0.1"
-bytes = "0.5"
+bytes = "1.0"
 futures = "0.3"
 
 # On Windows
