@@ -68,7 +68,7 @@ assert_cmd = "1"
 predicates = "1"
 indoc = "1"
 hygeia_test_helpers = {path = "hygeia_test_helpers"}
-rstest = "0.6"
+rstest = "0.7"
 # pretty_assertions = "0.6"
 
 [target.'cfg(not(target_os = "windows"))'.dev-dependencies.users]
