@@ -396,7 +396,7 @@ fn selected_toolchain_not_installed_toolchain_same_location_some_false() {
     let location = PathBuf::from("/usr/bin");
 
     let selected_toolchain = SelectedToolchain::NotInstalledToolchain(NotInstalledToolchain {
-        location: Some(location.clone().join("different")),
+        location: Some(location.join("different")),
         version: None,
     });
     assert_eq!(selected_toolchain.same_location(&location), false);
