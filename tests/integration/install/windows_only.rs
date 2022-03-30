@@ -67,7 +67,7 @@ fn simple_install_from_scratch_success() {
         let assert_output = output.assert();
         assert_output
             .success()
-            .stdout(predicate::str::similar("Python 3.7.5").trim().normalize())
+            .stdout(predicate::str::diff("Python 3.7.5").trim().normalize())
             .stderr(predicate::str::is_empty().trim());
     }
 }

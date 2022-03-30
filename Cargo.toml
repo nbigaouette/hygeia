@@ -61,9 +61,9 @@ futures = "0.3"
 zip = { version = "0.6", default-features = false, features = ["deflate"] }
 
 [dev-dependencies]
-mockall = "0.9"
+mockall = "0.11"
 assert_cmd = "2"
-predicates = "1"
+predicates = "2"
 indoc = "1"
 hygeia_test_helpers = { path = "hygeia_test_helpers" }
 rstest = "0.12"

@@ -102,7 +102,7 @@ fn from_none_not_installed() {
     assert_output
         .failure()
         .stdout(predicate::str::is_empty().trim())
-        .stderr(predicate::str::similar("Error: Python version =3.7.5 not found!").trim());
+        .stderr(predicate::str::diff("Error: Python version =3.7.5 not found!").trim());
 
     assert!(!cwd.join(TOOLCHAIN_FILE).exists());
 }
@@ -127,7 +127,7 @@ fn from_some_not_installed() {
     assert_output
         .failure()
         .stdout(predicate::str::is_empty().trim())
-        .stderr(predicate::str::similar("Error: Python version =3.7.5 not found!").trim());
+        .stderr(predicate::str::diff("Error: Python version =3.7.5 not found!").trim());
 
     let file_content = fs::read_to_string(cwd.join(TOOLCHAIN_FILE)).unwrap();
     assert_eq!(file_content.trim(), "=3.8.0");
