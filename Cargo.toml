@@ -22,13 +22,13 @@ maintenance = { status = "actively-developed" }
 members = ["xtask", "tests/print_file_to_stdout", "hygeia_test_helpers"]
 
 [dependencies]
-console = "0.14"
+console = "0.15"
 chrono = { version = "0.4", features = ["serde"] }
 dirs-next = "2"
-env_logger = "0.8"
+env_logger = "0.9"
 anyhow = "1.0"
 flate2 = "1.0"
-git-testament = "0.1"
+git-testament = "0.2"
 indicatif = "0.15"
 lazy_static = "1"
 log = "0.4"
@@ -36,7 +36,7 @@ prettytable-rs = "0.8"
 question = "0.2"
 regex = "1"
 select = "0.5"
-self_update = { version = "0.20", optional = true, default-features = false, features = [
+self_update = { version = "0.29", optional = true, default-features = false, features = [
     "archive-zip",
 ] }
 semver = { version = "0.11", features = ["serde"] }
@@ -58,15 +58,15 @@ bytes = "1.0"
 futures = "0.3"
 
 # On Windows
-zip = { version = "0.5", default-features = false, features = ["deflate"] }
+zip = { version = "0.6", default-features = false, features = ["deflate"] }
 
 [dev-dependencies]
 mockall = "0.9"
-assert_cmd = "1"
+assert_cmd = "2"
 predicates = "1"
 indoc = "1"
 hygeia_test_helpers = { path = "hygeia_test_helpers" }
-rstest = "0.7"
+rstest = "0.12"
 # pretty_assertions = "0.6"
 
 [target.'cfg(not(target_os = "windows"))'.dev-dependencies.users]
