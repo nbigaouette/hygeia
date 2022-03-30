@@ -4,7 +4,7 @@ version = "0.3.7"
 authors = ["Nicolas Bigaouette <nbigaouette@gmail.com>"]
 homepage = "https://github.com/nbigaouette/hygeia"
 repository = "https://github.com/nbigaouette/hygeia"
-edition = "2018"
+edition = "2021"
 
 description = "Python toolchain manager 🐍"
 license = "MIT OR Apache-2.0"
@@ -19,11 +19,7 @@ codecov = { repository = "https://github.com/nbigaouette/hygeia", branch = "mast
 maintenance = { status = "actively-developed" }
 
 [workspace]
-members = [
-    "xtask",
-    "tests/print_file_to_stdout",
-    "hygeia_test_helpers",
-]
+members = ["xtask", "tests/print_file_to_stdout", "hygeia_test_helpers"]
 
 [dependencies]
 console = "0.14"
@@ -40,9 +36,11 @@ prettytable-rs = "0.8"
 question = "0.2"
 regex = "1"
 select = "0.5"
-self_update = { version = "0.20", optional = true, default-features = false, features = ["archive-zip"] }
+self_update = { version = "0.20", optional = true, default-features = false, features = [
+    "archive-zip",
+] }
 semver = { version = "0.11", features = ["serde"] }
-serde = {version = "1", features =[ "derive"]}
+serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 structopt = "0.3"
 thiserror = "1.0"
@@ -60,14 +58,14 @@ bytes = "1.0"
 futures = "0.3"
 
 # On Windows
-zip = {version = "0.5", default-features = false, features = ["deflate"]}
+zip = { version = "0.5", default-features = false, features = ["deflate"] }
 
 [dev-dependencies]
 mockall = "0.9"
 assert_cmd = "1"
 predicates = "1"
 indoc = "1"
-hygeia_test_helpers = {path = "hygeia_test_helpers"}
+hygeia_test_helpers = { path = "hygeia_test_helpers" }
 rstest = "0.7"
 # pretty_assertions = "0.6"
 
