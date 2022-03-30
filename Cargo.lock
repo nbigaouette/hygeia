@@ -709,7 +709,7 @@ dependencies = [
  "hygeia_test_helpers",
  "hyper",
  "hyper-tls",
- "indicatif 0.15.0",
+ "indicatif",
  "indoc",
  "lazy_static",
  "log",
@@ -804,25 +804,13 @@ dependencies = [
 
 [[package]]
 name = "indicatif"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7baab56125e25686df467fe470785512329883aab42696d661247aca2a2896e4"
-dependencies = [
- "console",
- "lazy_static",
- "number_prefix 0.3.0",
- "regex",
-]
-
-[[package]]
-name = "indicatif"
 version = "0.16.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2d207dc617c7a380ab07ff572a6e52fa202a2a8f355860ac9c38e23f8196be1b"
 dependencies = [
  "console",
  "lazy_static",
- "number_prefix 0.4.0",
+ "number_prefix",
  "regex",
 ]
 
@@ -1086,12 +1074,6 @@ checksum = "aba1801fb138d8e85e11d0fc70baf4fe1cdfffda7c6cd34a854905df588e5ed0"
 dependencies = [
  "libc",
 ]
-
-[[package]]
-name = "number_prefix"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "17b02fc0ff9a9e4b35b3342880f48e896ebf69f2967921fe8646bf5b7125956a"
 
 [[package]]
 name = "number_prefix"
@@ -1664,7 +1646,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "710b9f39843957861314222c3bad16b9138f664665125ba277a48930253c4ed5"
 dependencies = [
  "hyper",
- "indicatif 0.16.2",
+ "indicatif",
  "log",
  "quick-xml",
  "regex",

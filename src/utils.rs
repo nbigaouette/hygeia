@@ -413,7 +413,7 @@ where
 pub fn create_spinner(msg: &str) -> ProgressBar {
     let pb = ProgressBar::new_spinner();
 
-    pb.set_message(msg);
+    pb.set_message(msg.to_owned());
     pb.set_style(ProgressStyle::default_spinner().template("{spinner:.green} {msg}"));
 
     pb
@@ -435,7 +435,7 @@ pub fn spinner_in_thread<S: Into<String>>(
             if let Ok(msg) = rx.recv_timeout(d) {
                 match msg {
                     SpinnerMessage::Stop => break,
-                    SpinnerMessage::Message(message) => pb.set_message(&message),
+                    SpinnerMessage::Message(message) => pb.set_message(message),
                 }
             }
             pb.inc(1);

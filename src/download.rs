@@ -202,7 +202,7 @@ fn create_download_progress_bar(msg: &str, length: Option<u64>) -> ProgressBar {
         None => ProgressBar::new_spinner(),
     };
 
-    pb.set_message(msg);
+    pb.set_message(msg.to_owned());
     if length.is_some() {
         pb
             .set_style(ProgressStyle::default_bar()
