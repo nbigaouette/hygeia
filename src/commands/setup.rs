@@ -11,6 +11,7 @@ use crate::{
     Result,
 };
 
+pub mod fish;
 pub mod powershell;
 pub mod sh;
 
@@ -34,6 +35,9 @@ pub fn run(shell: Shell) -> Result<()> {
         paths_provider
             .project_home()
             .join(utils::directory::shell::Powershell::new().dir_relative()),
+        paths_provider
+            .project_home()
+            .join(utils::directory::shell::Fish::new().dir_relative()),
         paths_provider.shims(),
     ] {
         if !utils::path_exists(&dir) {
@@ -59,6 +63,7 @@ pub fn run(shell: Shell) -> Result<()> {
         Shell::Bash => sh::setup_shell(&paths_provider, utils::directory::shell::Bash::new()),
         Shell::Zsh => sh::setup_shell(&paths_provider, utils::directory::shell::Zsh::new()),
         Shell::PowerShell => powershell::setup_powershell(&paths_provider),
+        Shell::Fish => fish::setup_fish(&paths_provider),
         _ => anyhow::bail!("Unsupported shell: {}", shell),
     }?;
 
