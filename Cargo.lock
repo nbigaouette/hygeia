@@ -716,7 +716,7 @@ dependencies = [
  "rstest",
  "select",
  "self_update",
- "semver 0.11.0",
+ "semver 1.0.7",
  "serde",
  "serde_json",
  "shlex",
@@ -1648,7 +1648,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f301af10236f6df4160f7c3f04eec6dbc70ace82d23326abad5edee88801c6b6"
 dependencies = [
  "semver-parser",
- "serde",
 ]
 
 [[package]]
@@ -1656,6 +1655,9 @@ name = "semver"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d65bd28f48be7196d222d95b9243287f48d27aca604e08497513019ff0502cc4"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "semver-parser"

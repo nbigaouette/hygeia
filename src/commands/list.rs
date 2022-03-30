@@ -49,7 +49,7 @@ impl ToolChainTable {
             .iter()
             .map(|t| ToolChainTableLine {
                 active: false,
-                version: Some(VersionReq::exact(&t.version)),
+                version: Some(format!("={}", t.version).parse().unwrap()),
                 custom_install: t.is_custom_install(),
                 location: Some(t.location.clone()),
                 installed: true,
@@ -75,7 +75,7 @@ impl ToolChainTable {
                 let line: ToolChainTableLine = match toolchain {
                     SelectedToolchain::InstalledToolchain(t) => ToolChainTableLine {
                         active,
-                        version: Some(VersionReq::exact(&t.version)),
+                        version: Some(format!("={}", t.version).parse().unwrap()),
                         custom_install: is_a_custom_install(&t.location),
                         location: Some(t.location.clone()),
                         installed: true,

@@ -190,7 +190,9 @@ impl SelectedToolchain {
 
     pub fn version_req(&self) -> Option<VersionReq> {
         match self {
-            SelectedToolchain::InstalledToolchain(t) => Some(VersionReq::exact(&t.version)),
+            SelectedToolchain::InstalledToolchain(t) => {
+                Some(format!("={}", t.version).parse().unwrap())
+            }
             SelectedToolchain::NotInstalledToolchain(t) => t.version.clone(),
         }
     }
@@ -204,7 +206,7 @@ impl SelectedToolchain {
 
     pub fn same_version(&self, version: &VersionReq) -> bool {
         match self {
-            SelectedToolchain::InstalledToolchain(t) => VersionReq::exact(&t.version) == *version,
+            SelectedToolchain::InstalledToolchain(t) => version.matches(&t.version),
             SelectedToolchain::NotInstalledToolchain(t) => match &t.version {
                 None => false,
                 Some(v) => v == version,
