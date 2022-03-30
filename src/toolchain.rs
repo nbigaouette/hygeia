@@ -158,7 +158,7 @@ impl SelectedToolchain {
     ) -> SelectedToolchain {
         match toolchain_file {
             ToolchainFile::VersionReq(version_req) => {
-                match find_compatible_toolchain(&version_req, &installed_toolchains) {
+                match find_compatible_toolchain(version_req, installed_toolchains) {
                     Some(compatible_toolchain) => {
                         SelectedToolchain::InstalledToolchain(compatible_toolchain.clone())
                     }
@@ -281,60 +281,58 @@ where
 
     match path.read_dir() {
         Ok(entries) => {
-            for entry in entries {
-                if let Ok(entry) = entry {
-                    let entry_path = entry.path();
-                    if path_is_python_executable(&entry_path) {
-                        let python_path = path.clone();
-                        let full_executable_path = entry_path;
+            for entry in entries.flatten() {
+                let entry_path = entry.path();
+                if path_is_python_executable(&entry_path) {
+                    let python_path = path.clone();
+                    let full_executable_path = entry_path;
 
-                        let cmd_output = std::process::Command::new(&full_executable_path)
-                            .arg("-V")
-                            .stdout(std::process::Stdio::piped())
-                            .stderr(std::process::Stdio::piped())
-                            .output()
-                            .with_context(|| {
-                                format!("Failed to execute command: {:?}", full_executable_path)
-                            });
-                        let python_version: String =
-                            match extract_version_from_command(&full_executable_path, cmd_output) {
-                                Ok(python_version) => python_version,
-                                Err(e) => {
-                                    log::error!("extract_version_from_command() failed: {:?}", e);
-                                    continue;
-                                }
-                            };
-
-                        let python_version_str = match python_version.split_whitespace().nth(1) {
-                            None => {
-                                log::error!(
-                                    "Failed to parse output from `{} -V`: {}",
-                                    full_executable_path.display(),
-                                    python_version
-                                );
-                                continue;
-                            }
-                            Some(python_version_str) => python_version_str.trim_end_matches('+'),
-                        };
-                        let python_version = match Version::parse(python_version_str) {
-                            Err(e) => {
-                                log::error!(
-                                    "Failed to parse version string {:?}: {:?}",
-                                    python_version_str,
-                                    e
-                                );
-                                continue;
-                            }
+                    let cmd_output = std::process::Command::new(&full_executable_path)
+                        .arg("-V")
+                        .stdout(std::process::Stdio::piped())
+                        .stderr(std::process::Stdio::piped())
+                        .output()
+                        .with_context(|| {
+                            format!("Failed to execute command: {:?}", full_executable_path)
+                        });
+                    let python_version: String =
+                        match extract_version_from_command(&full_executable_path, cmd_output) {
                             Ok(python_version) => python_version,
+                            Err(e) => {
+                                log::error!("extract_version_from_command() failed: {:?}", e);
+                                continue;
+                            }
                         };
-                        log::debug!(
-                            "Found python executable in {}: {}",
-                            python_path.display(),
-                            python_version
-                        );
 
-                        other_pythons.insert(python_version, python_path);
-                    }
+                    let python_version_str = match python_version.split_whitespace().nth(1) {
+                        None => {
+                            log::error!(
+                                "Failed to parse output from `{} -V`: {}",
+                                full_executable_path.display(),
+                                python_version
+                            );
+                            continue;
+                        }
+                        Some(python_version_str) => python_version_str.trim_end_matches('+'),
+                    };
+                    let python_version = match Version::parse(python_version_str) {
+                        Err(e) => {
+                            log::error!(
+                                "Failed to parse version string {:?}: {:?}",
+                                python_version_str,
+                                e
+                            );
+                            continue;
+                        }
+                        Ok(python_version) => python_version,
+                    };
+                    log::debug!(
+                        "Found python executable in {}: {}",
+                        python_path.display(),
+                        python_version
+                    );
+
+                    other_pythons.insert(python_version, python_path);
                 }
             }
         }
@@ -473,7 +471,7 @@ where
     };
 
     // Find other Python installed (f.e. in system directories)
-    let other_pythons = get_python_versions_from_paths(&paths_provider);
+    let other_pythons = get_python_versions_from_paths(paths_provider);
     installed_python.extend(other_pythons);
 
     installed_python.sort_unstable_by(|p1, p2| p2.version.cmp(&p1.version));
@@ -493,7 +491,7 @@ where
         if path.join(SHIMS_DIRECTORY_IDENTIFIER_FILE).exists() {
             log::debug!("Skipping shims directory found in PATH ({:?})", path);
         } else {
-            other_pythons.extend(get_python_versions_from_path(&path, &paths_provider));
+            other_pythons.extend(get_python_versions_from_path(path, paths_provider));
         }
     }
 

@@ -246,12 +246,12 @@ where
         "Python_v{}_step_{}.log",
         version,
         line_header
-            .replace(":", "_")
-            .replace(" ", "_")
-            .replace("[", "")
-            .replace("/", "_of_")
-            .replace("]", "")
-            .replace("-", "")
+            .replace(':', "_")
+            .replace(' ', "_")
+            .replace('[', "")
+            .replace('/', "_of_")
+            .replace(']', "")
+            .replace('-', "")
     );
     let log_filepath = logs_dir.join(&log_filename);
     let mut log_file = BufWriter::new(
@@ -336,7 +336,7 @@ where
             }
             Ok(line) => {
                 log_line(&line, &mut log_file);
-                let message = format!("{}: {}", line_header, line.replace("\t", " "));
+                let message = format!("{}: {}", line_header, line.replace('\t', " "));
                 if let Some(width) = message_width {
                     tx.send(SpinnerMessage::Message(
                         console::truncate_str(&message, width, "...").to_string(),

@@ -126,7 +126,7 @@ pub fn run(
             ))?;
             // FIXME: Validate downloaded package with checksum
             // FIXME: Validate downloaded package with signature
-            install_package(release, &requested_version, install_extra_packages)?;
+            install_package(release, requested_version, install_extra_packages)?;
         }
     }
 
@@ -157,7 +157,7 @@ pub fn run(
         println!(
             "      {} select {}",
             EXECUTABLE_NAME,
-            format!("{}", VersionReq::exact(&requested_version.version)).replace(" ", "")
+            format!("{}", VersionReq::exact(&requested_version.version)).replace(' ', "")
         );
     }
 
@@ -171,7 +171,7 @@ fn install_package(
 ) -> Result<()> {
     #[cfg(not(target_os = "windows"))]
     {
-        unix::install_package(release, &available_toolchain, install_extra_packages)?;
+        unix::install_package(release, available_toolchain, install_extra_packages)?;
     }
     #[cfg(target_os = "windows")]
     {

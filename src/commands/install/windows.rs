@@ -103,9 +103,9 @@ pub fn install_package(
 
     let env_variables: [(&str, &str); 0] = [];
     utils::run_cmd_template(
-        &version,
+        version,
         "Install pip",
-        &python_exe.to_string_lossy().into_owned(),
+        &python_exe.to_string_lossy(),
         &[
             get_pip_py.to_string_lossy().into_owned(),
             "--no-warn-script-location".to_string(),
@@ -133,7 +133,7 @@ pub fn install_package(
     )?;
 
     if let Some(install_extra_packages) = install_extra_packages {
-        install_extra_pip_packages(&version, install_extra_packages)?;
+        install_extra_pip_packages(version, install_extra_packages)?;
     }
 
     Ok(())

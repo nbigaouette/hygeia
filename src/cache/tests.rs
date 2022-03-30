@@ -229,7 +229,7 @@ fn cache_outdated() {
     let mut f = File::create(cache_file).unwrap();
     let cache_bytes = cache_json.as_bytes();
     // Save the cache
-    f.write_all(&cache_bytes).unwrap();
+    f.write_all(cache_bytes).unwrap();
 
     let mut mock = MockPycorsHomeProviderTrait::new();
     mock.expect_project_home()

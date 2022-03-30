@@ -180,7 +180,7 @@ fn extract_version_from_command_success_py3() {
         stderr: b"".to_vec(),
     };
     let python_path = Path::new("/usr/local/python");
-    let extracted_version = extract_version_from_command(&python_path, Ok(output)).unwrap();
+    let extracted_version = extract_version_from_command(python_path, Ok(output)).unwrap();
     assert_eq!(extracted_version, expected_version);
 }
 
@@ -193,7 +193,7 @@ fn extract_version_from_command_success_py2() {
         stderr: expected_version.as_bytes().to_vec(),
     };
     let python_path = Path::new("/usr/local/python2");
-    let extracted_version = extract_version_from_command(&python_path, Ok(output)).unwrap();
+    let extracted_version = extract_version_from_command(python_path, Ok(output)).unwrap();
     assert_eq!(extracted_version, expected_version);
 }
 
@@ -291,7 +291,7 @@ fn selected_toolchain_installed_toolchain_is_installed_true() {
         location: PathBuf::from("/usr/bin"),
         version: Version::parse("3.7.4").unwrap(),
     });
-    assert_eq!(selected_toolchain.is_installed(), true);
+    assert!(selected_toolchain.is_installed());
 }
 
 #[test]
@@ -300,7 +300,7 @@ fn selected_toolchain_installed_toolchain_is_installed_false() {
         location: None,
         version: None,
     });
-    assert_eq!(selected_toolchain.is_installed(), false);
+    assert!(!selected_toolchain.is_installed());
 }
 
 #[test]
@@ -311,7 +311,7 @@ fn selected_toolchain_installed_toolchain_same_version_true() {
         location: PathBuf::from("/usr/bin"),
         version: Version::parse("3.7.4").unwrap(),
     });
-    assert_eq!(selected_toolchain.same_version(&version_req), true);
+    assert!(selected_toolchain.same_version(&version_req));
 }
 
 #[test]
@@ -322,7 +322,7 @@ fn selected_toolchain_installed_toolchain_same_version_false() {
         location: PathBuf::from("/usr/bin"),
         version: Version::parse("3.7.4").unwrap(),
     });
-    assert_eq!(selected_toolchain.same_version(&version_req), false);
+    assert!(!selected_toolchain.same_version(&version_req));
 }
 
 #[test]
@@ -333,7 +333,7 @@ fn selected_toolchain_not_installed_toolchain_same_version_version_true() {
         location: None,
         version: Some(VersionReq::parse("=3.7.4").unwrap()),
     });
-    assert_eq!(selected_toolchain.same_version(&version_req), true);
+    assert!(selected_toolchain.same_version(&version_req));
 }
 
 #[test]
@@ -344,7 +344,7 @@ fn selected_toolchain_not_installed_toolchain_same_version_version_false() {
         location: None,
         version: Some(VersionReq::parse("3.7.4").unwrap()),
     });
-    assert_eq!(selected_toolchain.same_version(&version_req), false);
+    assert!(!selected_toolchain.same_version(&version_req));
 }
 
 #[test]
@@ -355,7 +355,7 @@ fn selected_toolchain_not_installed_toolchain_same_version_none_false() {
         location: None,
         version: None,
     });
-    assert_eq!(selected_toolchain.same_version(&version_req), false);
+    assert!(!selected_toolchain.same_version(&version_req));
 }
 
 #[test]
@@ -366,7 +366,7 @@ fn selected_toolchain_installed_toolchain_same_location_true() {
         location: location.clone(),
         version: Version::parse("3.7.4").unwrap(),
     });
-    assert_eq!(selected_toolchain.same_location(&location), true);
+    assert!(selected_toolchain.same_location(&location));
 }
 
 #[test]
@@ -377,7 +377,7 @@ fn selected_toolchain_installed_toolchain_same_location_false() {
         location: PathBuf::from("/usr/local/bin"),
         version: Version::parse("3.7.4").unwrap(),
     });
-    assert_eq!(selected_toolchain.same_location(&location), false);
+    assert!(!selected_toolchain.same_location(&location));
 }
 
 #[test]
@@ -388,7 +388,7 @@ fn selected_toolchain_not_installed_toolchain_same_location_some_true() {
         location: Some(location.clone()),
         version: None,
     });
-    assert_eq!(selected_toolchain.same_location(&location), true);
+    assert!(selected_toolchain.same_location(&location));
 }
 
 #[test]
@@ -399,7 +399,7 @@ fn selected_toolchain_not_installed_toolchain_same_location_some_false() {
         location: Some(location.join("different")),
         version: None,
     });
-    assert_eq!(selected_toolchain.same_location(&location), false);
+    assert!(!selected_toolchain.same_location(&location));
 }
 
 #[test]
@@ -410,7 +410,7 @@ fn selected_toolchain_not_installed_toolchain_same_location_none_false() {
         location: None,
         version: None,
     });
-    assert_eq!(selected_toolchain.same_location(&location), false);
+    assert!(!selected_toolchain.same_location(&location));
 }
 
 #[test]

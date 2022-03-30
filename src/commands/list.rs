@@ -63,7 +63,7 @@ impl ToolChainTable {
             (None, _) => false,
             (_, None) => false,
             (Some(version), Some(location)) => {
-                toolchain.same_location(&location) && toolchain.same_version(&version)
+                toolchain.same_location(location) && toolchain.same_version(version)
             }
         }) {
             Some(installed_toolchain_line) => {
@@ -130,12 +130,12 @@ impl ToolChainTable {
             let mut col_2 = Cell::new_align(
                 &t.version
                     .as_ref()
-                    .map(|t| format!("{}", t).replace("=", ""))
+                    .map(|t| format!("{}", t).replace('=', ""))
                     .unwrap_or_default(),
                 prettytable::format::Alignment::CENTER,
             );
 
-            let mut col_3 = Cell::new_align(&custom_char, prettytable::format::Alignment::CENTER);
+            let mut col_3 = Cell::new_align(custom_char, prettytable::format::Alignment::CENTER);
 
             let mut col_4 = Cell::new_align(
                 &t.location

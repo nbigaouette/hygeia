@@ -230,9 +230,10 @@ pub fn git_describe() -> Result<String, DynError> {
         .map_err(|e: io::Error| -> DynError { Box::new(e) })
         .and_then(|output| {
             if !output.status.success() {
-                Err(DynError::from(format!(
+                Err(DynError::from(
                     "Failed to call 'git describe --always --tags --long --dirty=-modified'"
-                )))
+                        .to_string(),
+                ))
             } else {
                 Ok(output)
             }

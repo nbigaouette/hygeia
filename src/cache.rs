@@ -349,8 +349,8 @@ where
                         let version = Version::parse(
                             &version_string
                                 .replace("rc", "-rc") // release candidates
-                                .replace("a", "-a") // alpha
-                                .replace("b", "-b"), // beta
+                                .replace('a', "-a") // alpha
+                                .replace('b', "-b"), // beta
                         )?;
                         let mut url = Url::parse(url)?;
                         let filename = url
@@ -375,7 +375,7 @@ where
     //  https://rust-lang.github.io/rust-clippy/master/index.html#unnecessary_sort_by
     //  https://github.com/rust-lang/rust-clippy/issues/6001
     #[allow(clippy::unnecessary_sort_by)]
-    toolchains.sort_unstable_by(|a, b| b.version().cmp(&a.version()));
+    toolchains.sort_unstable_by(|a, b| b.version().cmp(a.version()));
     Ok(toolchains)
 }
 
