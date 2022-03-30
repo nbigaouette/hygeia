@@ -8,8 +8,9 @@
   <img src="logo.png" height="200" alt="logo"/>
 </p>
 
-_Hygeia_ is Python interpreter manager, built with ❤ in Rust. It's goal is to allow
-individual projects to specify which interpreter to use using a `.python-version` file.
+_Hygeia_ is a Python interpreter manager, built with ❤ in Rust. Its goal is to allow
+individual projects to specify which interpreter to use using a `.python-version` file,
+and to allow developers to easily manage and switch between interpreters in the CLI.
 
 The previous project's name was _pycors_.
 
@@ -20,7 +21,7 @@ by default with Python >= 3.4.
 The [install instructions](https://pip.pypa.io/en/stable/installing/) for `pip` contains a large warning
 against installing it in the system interpreter.
 
-[`virtualenv`](https://virtualenv.pypa.io/) could be used, but it needs to be installed... using `pip`,
+[`virtualenv`](https://virtualenv.pypa.io/) could be used, but it needs to be installed using `pip`,
 resulting in a chicken-and-egg situation.
 
 _Hygeia_ will download and compile specified versions of [Python](https://www.python.org/) and allow
@@ -46,12 +47,12 @@ Make sure dependencies are installed:
 1. [Homebrew](https://brew.sh/)
 
     ```sh
-    ❯ brew install openssl readline sqlite3 xz zlib
+    brew install openssl readline sqlite3 xz zlib
     ```
 2. XCode
 
     ```sh
-    ❯ xcode-select --install
+    xcode-select --install
     ```
 
 See the [Python Developer's Guide](https://devguide.python.org/setup/#macos-and-os-x) for more information.
@@ -63,19 +64,19 @@ Please refer to [pyenv](https://github.com/pyenv/pyenv/wiki#suggested-build-envi
 #### Deb-based
 
 ```sh
-❯ sudo apt-get update; sudo apt-get install --no-install-recommends make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
+sudo apt-get update && sudo apt-get install --no-install-recommends make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
 ```
 
 #### Yum-based
 
 ```sh
-❯ yum install gcc zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel openssl-devel tk-devel libffi-devel xz
+yum install gcc zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel openssl-devel tk-devel libffi-devel xz
 ```
 
 #### DNF-based
 
 ```sh
-❯ dnf install make gcc zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel openssl-devel tk-devel libffi-devel xz
+dnf install make gcc zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel openssl-devel tk-devel libffi-devel xz
 ```
 
 #### Pacman-based
@@ -98,7 +99,7 @@ binaries are used.
     2. create the file `${HYGEIA_HOME}/extra-packages-to-install.txt` containing
     [a list of Python packages to pip-install](extra-packages-to-install.txt)
     when flag `--extra`/`-e` is used with `install` or `select` commands
-    1. setup `~/.<SHELL>rc` to add `${HOME}/.hygeia/shims` in the front of your `${PATH}`
+    3. setup `~/.<SHELL>rc` to add `${HOME}/.hygeia/shims` in the front of your `${PATH}`
 4. You can delete the downloaded archive and the extracted binary.
 
 ## Compilation
@@ -140,7 +141,7 @@ To set up Hygeia by installing it (and its shims) to `$HYGEIA_HOME`
 and configuring a bash shell:
 
 ```sh
-❯ hygeia setup bash
+hygeia setup bash
 ```
 
 This will:
@@ -198,14 +199,14 @@ reports it as active but not available:
 To get the active interpreter's path:
 
 ```sh
-❯ hygeia path
+hygeia path
 /Users/nbigaouette/.hygeia/installed/3.6.8/bin
 ```
 
 To get the active interpreter's version:
 
 ```sh
-❯ hygeia version
+hygeia version
 3.6.8
 ```
 
@@ -228,24 +229,24 @@ can be used at the same time and the content of both files will be used.
 Lines starting with `#` are ignored (as comments).
 
 The parsing is performed by Rust's [semver crate](https://crates.io/crates/semver). For details
-about the parsing, see the [_Requirements_](https://docs.rs/semver/0.9.0/semver/#requirements)
-section in the [semver crate documentation](https://docs.rs/semver/0.9.0).
+about the parsing, see the [_Requirements_](https://docs.rs/semver/latest/semver/#requirements)
+section in the [semver crate documentation](https://docs.rs/semver/latest).
 
 ### Uninstall an Interpreter
 
 Or simply delete the directory containing the installed interpreter, for example `$HYGEIA_HOME/installed/3.5.6`
 (where `$HYGEIA_HOME` defaults to `$HOME/.hygeia`).
 
-Obtain the list of interpreters (and their installed path) using `hygeia list`.
+Obtain the list of interpreters (and their installed paths) using `hygeia list`.
 
 ## Notes
 
 ### Logging
 
-Export the `RUST_LOG` environment variable to enable hygeia' log level:
+Export the `RUST_LOG` environment variable to set Hygeia's log level:
 
 ```sh
-❯ export RUST_LOG=hygeia=debug
+export RUST_LOG=hygeia=debug
 ```
 
 See the Rust crates [`log`](https://docs.rs/log) and [`env_logger`](https://docs.rs/env_logger) for
@@ -253,12 +254,12 @@ more information.
 
 ### Python Packages
 
-Installing a Python package can be done using `pip` (which will call hygeia' shim).
+Installing a Python package can be done using `pip` (which will call Hygeia's shim).
 
 [numpy](http://www.numpy.org/):
 
 ```sh
-❯ pip install numpy
+pip install numpy
 ```
 
 ## License
