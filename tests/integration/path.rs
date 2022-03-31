@@ -18,7 +18,7 @@ fn none_found() {
     let assert_output = output.assert();
     assert_output
         .success()
-        .stdout(predicate::str::similar("\n").normalize())
+        .stdout(predicate::str::diff("\n").normalize())
     // .stderr(predicate::str::is_empty().trim())
     ;
 }
@@ -45,7 +45,7 @@ fn some_select() {
     let assert_output = output.assert();
     assert_output
         .success()
-        .stdout(predicate::str::similar(location_375_dir))
+        .stdout(predicate::str::diff(location_375_dir))
         .stderr(predicate::str::is_empty().trim());
 }
 
@@ -70,7 +70,7 @@ fn some_latest() {
     let assert_output = output.assert();
     assert_output
         .success()
-        .stdout(predicate::str::similar(location_380_dir))
+        .stdout(predicate::str::diff(location_380_dir))
         .stderr(predicate::str::is_empty().trim());
 }
 
@@ -97,6 +97,6 @@ fn some_version_overwrite() {
     let assert_output = output.assert();
     assert_output
         .success()
-        .stdout(predicate::str::similar(location_375_dir))
+        .stdout(predicate::str::diff(location_375_dir))
         .stderr(predicate::str::is_empty().trim());
 }

@@ -47,15 +47,15 @@ fn assert_python_successfully_installed<P, S, T>(
 
     let predicate_empty = predicate::str::is_empty().trim();
     let predicate_version = if version < Version::new(3, 3, 0) && version.patch == 0 {
-        predicate::str::similar(format!("Python {}.{}", version.major, version.minor))
+        predicate::str::diff(format!("Python {}.{}", version.major, version.minor))
             .trim()
             .normalize()
     } else {
-        predicate::str::similar(format!("Python {}", version))
+        predicate::str::diff(format!("Python {}", version))
             .trim()
             .normalize()
     };
-    let predicate_prefix = predicate::str::similar(format!(
+    let predicate_prefix = predicate::str::diff(format!(
         "{}",
         paths_provider.install_dir(&version).display()
     ))

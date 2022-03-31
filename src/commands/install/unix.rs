@@ -161,7 +161,7 @@ pub fn compile_source(
         .join(&basename);
 
     utils::run_cmd_template(
-        &version,
+        version,
         "[3/15] Configure",
         "./configure",
         &configure_args,
@@ -170,7 +170,7 @@ pub fn compile_source(
     )
     .with_context(|| format!("Failed to run command ./configure {:?}", configure_args))?;
     utils::run_cmd_template::<&str, &PathBuf, _, _>(
-        &version,
+        version,
         "[4/15] Make",
         "make",
         &[],
@@ -179,7 +179,7 @@ pub fn compile_source(
     )
     .with_context(|| "Failed to run command 'make'")?;
     utils::run_cmd_template(
-        &version,
+        version,
         "[5/15] Make install",
         "make",
         &["install"],
@@ -197,12 +197,12 @@ pub fn compile_source(
     })?;
 
     if let Some(install_extra_packages) = install_extra_packages {
-        install_extra_pip_packages(&version, install_extra_packages)
+        install_extra_pip_packages(version, install_extra_packages)
             .with_context(|| "Failed to install extra pip packages")?;
     }
 
     // Create symbolic links from binaries with `3` suffix
-    let bin_dir = PycorsPathsProviderFromEnv::new().bin_dir(&version);
+    let bin_dir = PycorsPathsProviderFromEnv::new().bin_dir(version);
     let basenames_to_link = &[
         "easy_install-###",
         "idle###",

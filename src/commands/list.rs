@@ -49,7 +49,7 @@ impl ToolChainTable {
             .iter()
             .map(|t| ToolChainTableLine {
                 active: false,
-                version: Some(VersionReq::exact(&t.version)),
+                version: Some(format!("={}", t.version).parse().unwrap()),
                 custom_install: t.is_custom_install(),
                 location: Some(t.location.clone()),
                 installed: true,
@@ -63,7 +63,7 @@ impl ToolChainTable {
             (None, _) => false,
             (_, None) => false,
             (Some(version), Some(location)) => {
-                toolchain.same_location(&location) && toolchain.same_version(&version)
+                toolchain.same_location(location) && toolchain.same_version(version)
             }
         }) {
             Some(installed_toolchain_line) => {
@@ -75,7 +75,7 @@ impl ToolChainTable {
                 let line: ToolChainTableLine = match toolchain {
                     SelectedToolchain::InstalledToolchain(t) => ToolChainTableLine {
                         active,
-                        version: Some(VersionReq::exact(&t.version)),
+                        version: Some(format!("={}", t.version).parse().unwrap()),
                         custom_install: is_a_custom_install(&t.location),
                         location: Some(t.location.clone()),
                         installed: true,
@@ -130,12 +130,12 @@ impl ToolChainTable {
             let mut col_2 = Cell::new_align(
                 &t.version
                     .as_ref()
-                    .map(|t| format!("{}", t).replace("=", ""))
+                    .map(|t| format!("{}", t).replace('=', ""))
                     .unwrap_or_default(),
                 prettytable::format::Alignment::CENTER,
             );
 
-            let mut col_3 = Cell::new_align(&custom_char, prettytable::format::Alignment::CENTER);
+            let mut col_3 = Cell::new_align(custom_char, prettytable::format::Alignment::CENTER);
 
             let mut col_4 = Cell::new_align(
                 &t.location

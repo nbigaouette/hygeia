@@ -34,7 +34,7 @@ fn run_success_python_version_from_selected() {
     let assert_output = output.assert();
     assert_output
         .success()
-        .stdout(predicate::str::similar("Python 3.7.5").trim().normalize())
+        .stdout(predicate::str::diff("Python 3.7.5").trim().normalize())
         .stderr(predicate::str::is_empty().trim());
 }
 
@@ -92,7 +92,7 @@ fn run_success_python_version_from_overwrite() {
     let assert_output = output.assert();
     assert_output
         .success()
-        .stdout(predicate::str::similar("Python 3.7.5").trim().normalize())
+        .stdout(predicate::str::diff("Python 3.7.5").trim().normalize())
         .stderr(predicate::str::is_empty().trim());
 
     let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
@@ -109,7 +109,7 @@ fn run_success_python_version_from_overwrite() {
     let assert_output = output.assert();
     assert_output
         .success()
-        .stdout(predicate::str::similar("Python 3.7.4").trim().normalize())
+        .stdout(predicate::str::diff("Python 3.7.4").trim().normalize())
         .stderr(predicate::str::is_empty().trim());
 
     let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
@@ -126,7 +126,7 @@ fn run_success_python_version_from_overwrite() {
     let assert_output = output.assert();
     assert_output
         .success()
-        .stdout(predicate::str::similar("Python 3.7.5").trim().normalize())
+        .stdout(predicate::str::diff("Python 3.7.5").trim().normalize())
         .stderr(predicate::str::is_empty().trim());
 
     let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
@@ -143,6 +143,6 @@ fn run_success_python_version_from_overwrite() {
     let assert_output = output.assert();
     assert_output
         .success()
-        .stdout(predicate::str::similar("Python 3.8.0").trim().normalize())
+        .stdout(predicate::str::diff("Python 3.8.0").trim().normalize())
         .stderr(predicate::str::is_empty().trim());
 }

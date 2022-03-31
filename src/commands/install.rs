@@ -73,7 +73,7 @@ pub fn run(
     let installed_toolchains = find_installed_toolchains(&paths_provider)?;
     let matching_installed_version: Option<&InstalledToolchain> =
         installed_toolchains.iter().find(|installed_python| {
-            VersionReq::exact(&requested_version.version).matches(&installed_python.version)
+            requested_version.version == installed_python.version
                 && installed_python.is_custom_install()
         });
 
@@ -126,7 +126,7 @@ pub fn run(
             ))?;
             // FIXME: Validate downloaded package with checksum
             // FIXME: Validate downloaded package with signature
-            install_package(release, &requested_version, install_extra_packages)?;
+            install_package(release, requested_version, install_extra_packages)?;
         }
     }
 
@@ -134,7 +134,7 @@ pub fn run(
     if select {
         log::info!("Writing configuration to file {:?}", TOOLCHAIN_FILE);
 
-        let version = format!("{}", VersionReq::exact(&requested_version.version));
+        let version = format!("={}", requested_version.version);
         let mut output = File::create(&TOOLCHAIN_FILE)?;
         output.write_all(version.as_bytes())?;
         output.write_all(b"\n")?;
@@ -155,9 +155,8 @@ pub fn run(
             requested_version.version
         );
         println!(
-            "      {} select {}",
-            EXECUTABLE_NAME,
-            format!("{}", VersionReq::exact(&requested_version.version)).replace(" ", "")
+            "      {} select ={}",
+            EXECUTABLE_NAME, requested_version.version
         );
     }
 
@@ -171,7 +170,7 @@ fn install_package(
 ) -> Result<()> {
     #[cfg(not(target_os = "windows"))]
     {
-        unix::install_package(release, &available_toolchain, install_extra_packages)?;
+        unix::install_package(release, available_toolchain, install_extra_packages)?;
     }
     #[cfg(target_os = "windows")]
     {

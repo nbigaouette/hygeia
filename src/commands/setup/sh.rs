@@ -126,23 +126,17 @@ where
 
         writeln!(
             &mut tmp_file,
-            "{}",
-            format!(
-                r#"export {}_HOME="{}""#,
-                exec_name_capital,
-                paths_provider.project_home().display()
-            )
+            r#"export {}_HOME="{}""#,
+            exec_name_capital,
+            paths_provider.project_home().display()
         )
         .with_context(|| format!("Failed to export line to {:?}", tmp_file_path))?;
         writeln!(
             &mut tmp_file,
-            "{}",
-            format!(
-                r#"source "{}""#,
-                Path::new(&format!("${{{}_HOME}}", exec_name_capital))
-                    .join(shell.file_path())
-                    .display()
-            )
+            r#"source "{}""#,
+            Path::new(&format!("${{{}_HOME}}", exec_name_capital))
+                .join(shell.file_path())
+                .display()
         )
         .with_context(|| format!("Failed to write source line to {:?}", tmp_file_path))?;
         write_footer_to(&mut tmp_file)

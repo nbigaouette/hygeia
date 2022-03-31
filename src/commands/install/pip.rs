@@ -31,7 +31,7 @@ pub fn install_extra_pip_packages(
     {
         let mut to_pip_installs: Vec<String> = Vec::new();
 
-        let bin_dir = PycorsPathsProviderFromEnv::new().bin_dir(&version);
+        let bin_dir = PycorsPathsProviderFromEnv::new().bin_dir(version);
         let mut bin_dir_monitor = DirectoryMonitor::new(&bin_dir)?;
 
         if install_extra_packages.install_extra_packages {

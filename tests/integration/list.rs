@@ -16,7 +16,7 @@ fn with_empty_dir() {
     let assert_output = output.assert();
     assert_output
             .success()
-            .stdout(predicate::str::similar(indoc!("
+            .stdout(predicate::str::diff(indoc!("
                 +--------+---------+---------------------+----------+
                 | Active | Version | Installed by hygeia | Location |
                 +--------+---------+---------------------+----------+"
@@ -50,7 +50,7 @@ fn two_custom_no_system() {
     let assert_output = output.assert();
     assert_output
             .success()
-            .stdout(predicate::str::similar(format!(
+            .stdout(predicate::str::diff(format!(
 "+--------+---------+---------------------+-{}-+
 | Active | Version | Installed by hygeia | Location {} |
 +--------+---------+---------------------+-{}-+
@@ -93,7 +93,7 @@ fn selected_but_not_installed() {
     let assert_output = output.assert();
     assert_output
             .success()
-            .stdout(predicate::str::similar(indoc!("
+            .stdout(predicate::str::diff(indoc!("
                 +--------+---------+---------------------+----------+
                 | Active | Version | Installed by hygeia | Location |
                 +--------+---------+---------------------+----------+

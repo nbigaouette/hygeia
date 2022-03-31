@@ -246,12 +246,12 @@ where
         "Python_v{}_step_{}.log",
         version,
         line_header
-            .replace(":", "_")
-            .replace(" ", "_")
-            .replace("[", "")
-            .replace("/", "_of_")
-            .replace("]", "")
-            .replace("-", "")
+            .replace(':', "_")
+            .replace(' ', "_")
+            .replace('[', "")
+            .replace('/', "_of_")
+            .replace(']', "")
+            .replace('-', "")
     );
     let log_filepath = logs_dir.join(&log_filename);
     let mut log_file = BufWriter::new(
@@ -336,7 +336,7 @@ where
             }
             Ok(line) => {
                 log_line(&line, &mut log_file);
-                let message = format!("{}: {}", line_header, line.replace("\t", " "));
+                let message = format!("{}: {}", line_header, line.replace('\t', " "));
                 if let Some(width) = message_width {
                     tx.send(SpinnerMessage::Message(
                         console::truncate_str(&message, width, "...").to_string(),
@@ -413,7 +413,7 @@ where
 pub fn create_spinner(msg: &str) -> ProgressBar {
     let pb = ProgressBar::new_spinner();
 
-    pb.set_message(msg);
+    pb.set_message(msg.to_owned());
     pb.set_style(ProgressStyle::default_spinner().template("{spinner:.green} {msg}"));
 
     pb
@@ -435,7 +435,7 @@ pub fn spinner_in_thread<S: Into<String>>(
             if let Ok(msg) = rx.recv_timeout(d) {
                 match msg {
                     SpinnerMessage::Stop => break,
-                    SpinnerMessage::Message(message) => pb.set_message(&message),
+                    SpinnerMessage::Message(message) => pb.set_message(message),
                 }
             }
             pb.inc(1);
