@@ -33,5 +33,4 @@ fn setup_fish_success_from_scratch() {
                 .trim(),
         )
         .stderr(predicate::str::is_empty().trim());
-    Command::new("hygeia").output().unwrap();
 }
