@@ -27,7 +27,8 @@ where
         .arg("-c")
         .arg("fish_add_path")
         .arg(format!("{}/shims", paths_provider.project_home().display()))
-        .output()?;
+        .output()
+        .with_context(|| "Failed to find 'fish' command in PATH")?;
 
     Ok(())
 }
