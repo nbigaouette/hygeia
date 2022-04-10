@@ -254,7 +254,7 @@ jobs:
       - name: Install 'cargo-deny'
         # See https://github.com/embarkstudios/cargo-deny
         run: |
-          curl -L "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.7.3/cargo-deny-0.7.3-x86_64-unknown-linux-musl.tar.gz" | tar -zxv
+          curl -L "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.11.3/cargo-deny-0.11.3-x86_64-unknown-linux-musl.tar.gz" | tar -zxv
           mv *-x86_64-*/cargo-* ~/.cargo/bin/
           rm -fr *-x86_64-*
           cargo deny --help
