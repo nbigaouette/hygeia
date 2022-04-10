@@ -163,6 +163,7 @@ pub mod shell {
     pub struct Bash;
     pub struct Zsh;
     pub struct Powershell;
+    pub struct Fish;
 
     impl ShellPathProvider for Bash {
         fn new() -> Self {
@@ -222,6 +223,27 @@ pub mod shell {
         }
         fn shell_type(&self) -> structopt::clap::Shell {
             structopt::clap::Shell::PowerShell
+        }
+        fn shell_rcs(&self) -> &'static [&'static str] {
+            unimplemented!()
+        }
+    }
+
+    impl ShellPathProvider for Fish {
+        fn new() -> Self {
+            Fish {}
+        }
+        fn dir_relative(&self) -> PathBuf {
+            Path::new("shell").join("fish")
+        }
+        fn file_path(&self) -> PathBuf {
+            self.dir_relative().join("config.fish")
+        }
+        fn autocomplete(&self) -> PathBuf {
+            self.dir_relative().join("completion.fish")
+        }
+        fn shell_type(&self) -> structopt::clap::Shell {
+            structopt::clap::Shell::Fish
         }
         fn shell_rcs(&self) -> &'static [&'static str] {
             unimplemented!()
