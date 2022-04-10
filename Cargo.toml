@@ -1,6 +1,6 @@
 [package]
 name = "hygeia"
-version = "0.3.7"
+version = "0.4.0"
 authors = ["Nicolas Bigaouette <nbigaouette@gmail.com>"]
 homepage = "https://github.com/nbigaouette/hygeia"
 repository = "https://github.com/nbigaouette/hygeia"
