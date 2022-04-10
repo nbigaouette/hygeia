@@ -8,13 +8,19 @@ fn setup_fish_success_from_scratch() {
     let cwd = home.join("current_dir");
     fs::create_dir_all(&cwd).unwrap();
 
+    let current_path = std::env::var("PATH")
+        .map(|p| format!("{};", p))
+        .unwrap_or_else(|_| String::new());
+
+    let new_path = format!("{}{}", current_path, hygeia_home.join("usr_bin").display());
+
     let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
     let output = cmd
         .arg("setup")
         .arg("fish")
         .env(project_home_env_variable(), &hygeia_home)
         .env(home_overwrite_env_variable(), &home)
-        .env("PATH", hygeia_home.join("usr_bin"))
+        .env("PATH", &new_path)
         .env("RUST_LOG", "")
         .current_dir(&cwd)
         .unwrap();
