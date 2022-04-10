@@ -3,6 +3,11 @@ use super::*;
 #[cfg_attr(windows, ignore)]
 #[test]
 fn setup_fish_success_from_scratch() {
+    if let Err(which::Error::CannotFindBinaryPath) = which::which("fish") {
+        eprintln!("Shell 'fish' not found; cannot run unit test 'setup_fish_success_from_scratch'");
+        return;
+    }
+
     let home = create_test_temp_dir!();
     let hygeia_home = home.join(".hygeia");
     let cwd = home.join("current_dir");

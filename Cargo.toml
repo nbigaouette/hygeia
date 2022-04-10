@@ -67,6 +67,7 @@ predicates = "2"
 indoc = "1"
 hygeia_test_helpers = { path = "hygeia_test_helpers" }
 rstest = "0.12"
+which = "4.2.5"
 # pretty_assertions = "0.6"
 
 [target.'cfg(not(target_os = "windows"))'.dev-dependencies.users]
