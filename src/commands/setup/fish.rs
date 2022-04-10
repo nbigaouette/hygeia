@@ -27,8 +27,7 @@ where
         .arg("-c")
         .arg("fish_add_path")
         .arg(format!("{}/shims", paths_provider.project_home().display()))
-        .output()
-        .expect("fish-add-path failed");
+        .output()?;
 
     Ok(())
 }
