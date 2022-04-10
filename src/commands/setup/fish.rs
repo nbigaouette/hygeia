@@ -23,7 +23,7 @@ where
         .with_context(|| format!("Failed creating file {:?}", autocomplete_file))?;
     Opt::clap().gen_completions_to(EXECUTABLE_NAME, Shell::Fish, &mut f);
 
-    Command::new("/usr/bin/fish")
+    Command::new("fish")
         .arg("-c")
         .arg("fish_add_path")
         .arg(format!("{}/shims", paths_provider.project_home().display()))
