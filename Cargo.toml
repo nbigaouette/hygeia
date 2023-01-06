@@ -52,7 +52,7 @@ shlex = "1.0"
 # Used for downloading
 hyper = { version = "0.14", features = ["client", "http1"] }
 hyper-tls = "0.5"
-tokio = { version = "1.4", features = ["rt", "rt-multi-thread"] }
+tokio = { version = "1.18", features = ["rt", "rt-multi-thread"] }
 async-trait = "0.1"
 bytes = "1.0"
 futures = "0.3"
